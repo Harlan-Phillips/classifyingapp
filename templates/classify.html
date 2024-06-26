@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Source Data</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<style>
+
+    .flex-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin: 20px;
+    }
+
+    .left-container {
+        flex: 1;
+    }
+
+    .right-container {
+        margin-left: 20px;
+    }
+
+    #image-section {
+            display: none;
+        }
+
+    .classification-buttons .btn,
+    .vlass-button {
+        margin-bottom: 25px;
+        margin-right: 5px;
+        margin-left: 15px;
+    }
+
+    .custom-btn {
+        background-color: #4CAF50; /* Green background */
+        color: white; /* White text */
+        border: none; /* Remove border */
+    }
+
+    .custom-btn:hover {
+        background-color: #45a049; /* Darker green background on hover */
+    }
+
+</style>
+
+<body>
+    {% include 'navbar.html' %}
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert-container mt-4">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    <div class="flex-container">
+        <div class="left-container">
+            <h1>{{ source_id }}</h1>
+            <p><div class="btn-group" role="group" aria-label="Basic example">
+                <a class="btn btn-outline-secondary" href="https://fritz.science/source/{{ source_id }}" target="_blank">Fritz</a>
+            </div></p>
+            <p><strong>RA:</strong> {{ ra }}</p>
+            <p><strong>Dec:</strong> {{ dec }}</p>
+            <p><strong>Scatter Separation:</strong> {{ scat_sep }}</p>
+            <p><strong>Galactic Latitude:</strong> {{ galactic_lat }}</p>
+            <!-- Display Legacy Survey Data -->
+            {% if legacy_survey_info %}
+                <h3>Legacy Survey Data</h3>
+                <p><strong>Number of Sources in 5 arcsec:</strong> {{ legacy_survey_info.num_sources }}</p>
+                <p><strong>Closest Source Distance:</strong> {{ legacy_survey_info.closest_distance }} arcsec</p>
+                <p><strong>Closest Source Position Angle:</strong> {{ legacy_survey_info.closest_position_angle }} degrees (east of north)</p>
+                <p><strong>Photometric Redshift:</strong> {{ legacy_survey_info.photoz_median }} (68% bounds: {{ legacy_survey_info.photoz_l68 }}, {{ legacy_survey_info.photoz_u68 }})</p>
+                <p><strong>Type:</strong> {{ legacy_survey_info.type }}</p>
+            {% else %}
+                <p>No Legacy Survey data available.</p>
+            {% endif %}
+
+            <h2>Light Curve</h2>
+            <img src="{{ url_for('static', filename=plot_filename.split('/')[-1]) }}" alt="Light Curve for {{ source_id }}">
+
+        </div>
+
+        <div class="right-container">
+            <h3>Current Classification</h3>
+            {% if most_confident_classification %}
+            <p><strong>{{ most_confident_classification }}</strong> by {{ classified_by_users | length }} users:</p>
+            <ul>
+                {% for username in classified_by_users %}
+                    <li>{{ username }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No classifications yet.</p>
+            {% endif %}
+            <div>
+                {% if ztf_cutout %}
+                    <img src="{{ url_for('static', filename=ztf_cutout) }}" alt="ZTF Cutout for {{ source_id }}">
+                {% else %}
+                {% endif %}
+            </div>
+            <div>
+                {% if ps1_cutout %}
+                    <img src="{{ url_for('static', filename=ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}">
+                {% else %}
+                {% endif %}
+            </div>
+            <div>
+                {% if ls_cutout %}
+                    <img src="{{ url_for('static', filename=ls_cutout) }}" alt="LS Cutout for {{ source_id }}">
+                {% else %}
+                {% endif %}
+            </div>
+            
+        </div>
+        
+    </div>
+    
+    <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
+    <div id="image-section">
+        {% for image in search_images %}
+            <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
+        {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
+        <input type="hidden" name="classification" id="classification">
+        <input type="hidden" name="confidence" id="confidence">
+
+        
+        <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="input-group">
+                <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
+                    <button type="button" onclick="setClassification('FBOT')" class="btn btn-outline-primary">FBOT</button>
+                    <button type="button" onclick="setClassification('Afterglow')" class="btn btn-outline-primary">Afterglow</button>
+                    <button type="button" data-toggle="collapse" data-target="#supernova-subtypes" onclick="setClassification('Supernova')" class="btn btn-outline-primary">Supernova</button>
+                    <button type="button" onclick="setClassification('Quasar')" class="btn btn-outline-primary">Quasar</button>
+                    <button type="button" onclick="setClassification('Star')" class="btn btn-outline-primary">Star</button>
+                    <button type="button" onclick="setClassification('Junk (Artifact)')" class="btn btn-outline-primary">Junk (Artifact)</button>
+                    <button type="button" onclick="setClassification('Unclear')" class="btn btn-outline-primary">Unclear</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapse" id="supernova-subtypes">
+            <div class="card card-body">
+                <h5>Supernova Subtypes</h5>
+                <div class="btn-group mb-2" role="group" aria-label="Supernova subtypes">
+                    <button type="button" onclick="setSubtype('Type Ia')" class="btn btn-outline-warning">Type Ia</button>
+                    <button type="button" onclick="setSubtype('Type Ib')" class="btn btn-outline-warning">Type Ib</button>
+                    <button type="button" onclick="setSubtype('Type Ic')" class="btn btn-outline-warning">Type Ic</button>
+                    <button type="button" onclick="setSubtype('Type II-P')" class="btn btn-outline-warning">Type II-P</button>
+                    <button type="button" onclick="setSubtype('Type II-L')" class="btn btn-outline-warning">Type II-L</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
+            <div class="input-group">
+                <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
+                    <button type="button" onclick="setConfidence('Not confident')" class="btn btn-outline-secondary">Not confident</button>
+                    <button type="button" onclick="setConfidence('Confident')" class="btn btn-outline-secondary">Confident</button>
+                    <button type="button" onclick="setConfidence('Certain')" class="btn btn-outline-secondary">Certain</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
+            <button type="submit" class="btn btn-primary mt-3">Submit</button>
+        </div>
+    </form>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+        function setClassification(value) {
+            document.getElementById('classification').value = value;
+        }
+
+        function setSubtype(value) {
+            const classification = document.getElementById('classification').value;
+            document.getElementById('classification').value = classification + ' ' + value;
+        }
+
+        function setConfidence(value) {
+            document.getElementById('confidence').value = value;
+        }
+
+        document.getElementById('toggle-images').addEventListener('click', function() {
+            var imageSection = document.getElementById('image-section');
+            if (imageSection.style.display === 'none') {
+                imageSection.style.display = 'block';
+                this.textContent = 'Hide VLASS Images';
+            } else {
+                imageSection.style.display = 'none';
+                this.textContent = 'Show VLASS Images';
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Transients{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <h2>List of Transients</h2>
+    {{ pagination.info }}
+    {{ pagination.links }}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Source ID</th>
+                <th>Classified By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in transients_with_classifications %}
+            <tr>
+                <td>{{ loop.index + (pagination.page - 1) * pagination.per_page }}</td>
+                <td><a href="{{ url_for('classify_source', source_id=item.transient.source_id) }}">{{ item.transient.source_id }}</a></td>
+                <td>
+                    {% if item.classified_by_users %}
+                        {% for username in item.classified_by_users %}
+                            {{ username }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        No classifications yet
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {{ pagination.links }}
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}
+
+

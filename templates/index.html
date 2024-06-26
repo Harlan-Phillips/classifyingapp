@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Home Page{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="background-container">
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+    <!-- <div class="clouds"></div> -->
+</div>
+<div class="container">
+
+    <div class="text-container">
+        <h1>ZTF Transient Survey</h1>
+        
+        <p></p>
+
+        <h4> Classifying App </h4>
+
+        <p></p>
+
+        <p>Start classifying transients <a href="{{ url_for('list_transients') }}">here</a>.</p>
+
+        {% if current_user.is_authenticated %}
+            <!-- <form method="POST" action="{{ url_for('index') }}">
+                {{ form.hidden_tag() }}
+                {{ form.source_id.label }} {{ form.source_id() }}
+                {{ form.submit() }}
+            </form> -->
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+        
+    </div>
+        
+</div>
+{% endblock %}

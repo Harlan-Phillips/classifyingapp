@@ -1,0 +1,16 @@
+Flask
+Flask-SQLAlchemy
+Flask-Marshmallow
+Flask-Login
+Flask-WTF
+Werkzeug
+WTForms
+requests
+pandas
+numpy
+matplotlib
+astropy
+gunicorn
+penquins
+ztfquery
+email_validator

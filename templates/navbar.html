@@ -1,0 +1,46 @@
+
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Home</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto mb-2 mb-lg-0">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('list_transients')}}">Transients</a>
+                </li>
+                <li class="nav-item">
+                    <form class="d-flex position-relative" method="POST" action="{{ url_for('index') }}">
+                        {{ search_form.hidden_tag() }}
+                        <input class="form-control me-2" id="search-bar" type="search" placeholder="Search" aria-label="Search" name="source_id">
+                    </form>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav ml-auto">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item">
+                    <span class="navbar-text">{{ current_user.username }}</span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout')}}">Logout</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{{ url_for('login') }}">Login</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
