@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}My App{% endblock %}</title>
+    <title>{% block title %}ZTF Classifying{% endblock %}</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     {% block extra_head %}{% endblock %}
 </head>
+<!-- Setting up Pop-ups/Alerts -->
 <body>
     {% include 'navbar.html' %}
     <div class="container">
@@ -26,6 +27,7 @@
         
         {% block content %}{% endblock %}
     </div>
+    <!-- Importing different scripts for widget/pop-up functionality -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>

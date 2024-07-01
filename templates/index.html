@@ -1,42 +1,36 @@
+<!-- Build off of Base html -->
 {% extends "base.html" %}
 
+<!-- Set own title -->
 {% block title %}Home Page{% endblock %}
 
+<!-- Import styles for animated background -->
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 {% endblock %}
 
 {% block content %}
+<!-- Setting animated background -->
 <div class="background-container">
     <div class="stars"></div>
     <div class="twinkling"></div>
-    <!-- <div class="clouds"></div> -->
 </div>
-<div class="container">
 
+<!-- Container for Page Content -->
+<div class="container">
     <div class="text-container">
         <h1>ZTF Transient Survey</h1>
-        
         <p></p>
-
         <h4> Classifying App </h4>
-
         <p></p>
-
+        <!-- Link to list of Transients -->
         <p>Start classifying transients <a href="{{ url_for('list_transients') }}">here</a>.</p>
-
-        {% if current_user.is_authenticated %}
-            <!-- <form method="POST" action="{{ url_for('index') }}">
-                {{ form.hidden_tag() }}
-                {{ form.source_id.label }} {{ form.source_id() }}
-                {{ form.submit() }}
-            </form> -->
+        <!-- Display Login/Register if User not Logged in -->
+        {% if current_user.is_authenticated %}  
         {% else %}
             <a href="{{ url_for('login') }}">Login</a>
             <a href="{{ url_for('register') }}">Register</a>
         {% endif %}
-        
-    </div>
-        
+    </div> 
 </div>
 {% endblock %}

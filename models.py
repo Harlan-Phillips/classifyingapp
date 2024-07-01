@@ -40,12 +40,13 @@ class User(UserMixin, db.Model):
     def get_id(self):
         return str(self.id)
 
+# Each Transient tied to classifications
 class Transient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     source_id = db.Column(db.String(64), unique=True, nullable=False)
-    classified_by = db.Column(db.String(150))
     classified_by = db.relationship('Classification', backref='transient', lazy=True)
 
+# Each Classification tied to a user and a transient
 class Classification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     source_id = db.Column(db.String(50), db.ForeignKey('transient.source_id'), nullable=False)

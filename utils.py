@@ -1,15 +1,30 @@
+# Astropy modules
 from astropy.coordinates import SkyCoord
-from penquins import Kowalski
+from astropy.io import fits
+
+# Data handling modules
 import pandas as pd
 import numpy as np
+
+# Compression and file handling modules
 import gzip
 import io
-from astropy.io import fits
-from PIL import Image
-import requests
-import matplotlib.pyplot as plt
 import os
+
+# Image handling modules
+from PIL import Image
+import matplotlib.pyplot as plt
+
+# Network and API modules
+import requests
+from penquins import Kowalski
+from dl import queryClient as qc
+from dl.helpers.utils import convert
+
+# JSON handling
 import json
+
+# External utility modules
 from ztfquery.utils import stamps
 
 def logon():
@@ -55,10 +70,7 @@ def get_dets(s, name):
         return out
     except:
         return []
-    # if query_result and 'default' in query_result and 'data' in query_result['default']:
-    #     return query_result['default']['data']
-    # return []
-
+   
 def get_pos(s,name):
     """ Calculate the median position from alerts, and the scatter """
     det_alerts = get_dets(s, name)
@@ -235,6 +247,17 @@ def get_lc(s, name):
 
 
 def get_prv_dets(s, name):
+    """
+    Query previous detections of a given source from the ZTF_alerts_aux catalog.
+
+    Parameters:
+    s (object): The Kowalski session object used to query the catalog.
+    name (str): The name of the source to query.
+
+    Returns:
+    list or None: A list of previous candidates if found, None otherwise.
+    """
+
     q = {"query_type": "find",
          "query": {
              "catalog": "ZTF_alerts_aux",
@@ -255,6 +278,17 @@ def get_prv_dets(s, name):
 
 
 def get_prv_dets_forced(s, name):
+    """
+    Query forced photometry history of a given source from the ZTF_alerts_aux catalog.
+
+    Parameters:
+    s (object): The Kowalski session object used to query the catalog.
+    name (str): The name of the source to query.
+
+    Returns:
+    list or None: A list of forced photometry histories if found, None otherwise.
+    """
+
     q = {"query_type": "find",
          "query": {
              "catalog": "ZTF_alerts_aux",
@@ -400,12 +434,24 @@ matplotlib.use('Agg')  # Use a non-interactive backend
 import matplotlib.pyplot as plt
 
 def plot_light_curve(lc, source_id):
+    """
+    Plots the light curve of a given source and saves the plot as a PNG file.
+
+    Parameters:
+    lc (DataFrame): A DataFrame containing light curve data with columns 'fid', 'jd', 'mag_final', and 'emag_final'.
+    source_id (str): The identifier of the source whose light curve is being plotted.
+
+    Returns:
+    str: The filename of the saved plot.
+    """
+
     fig, ax = plt.subplots(figsize=(10, 6))
     
     # Define colors and symbols
     color_map = {'g': 'aquamarine', 'r': 'crimson', 'i': 'goldenrod'}
     marker_map = {'g': 's', 'r': 'o', 'i': '^'}
     
+    # Associating ID to color
     for band in lc['fid'].unique():
         if band == 1:
             filter_name = 'g'
@@ -415,9 +461,11 @@ def plot_light_curve(lc, source_id):
             filter_name = 'i'
         
         band_data = lc[lc['fid'] == band]
+        #Creating error bar for magnitude
         ax.errorbar(band_data['jd'], band_data['mag_final'], yerr=band_data['emag_final'],
                     fmt=marker_map[filter_name], color=color_map[filter_name], label=f'{filter_name}-band', linestyle='None')
 
+    # Creating plot 
     ax.invert_yaxis()
     ax.set_xlabel('Julian Date')
     ax.set_ylabel('Magnitude')
@@ -433,10 +481,8 @@ def plot_light_curve(lc, source_id):
     
     return plot_filename
 
-def convert(result):
-    return pd.DataFrame(result)
 
-def xmatch_ls(ra, dec, radius = 5):
+def xmatch_ls(ra, dec, radius=5):
     """ Query Legacy Survey """
     # Run the query
     columns = "ra,dec,type,ls_id"
@@ -444,24 +490,23 @@ def xmatch_ls(ra, dec, radius = 5):
     SELECT %s
     FROM ls_dr9.tractor
     WHERE q3c_radial_query(ra, dec, %.6f, %.6f, %.2f/3600)
-    """%(columns, ra, dec, radius)
-
+    """ % (columns, ra, dec, radius)
     try:
         result = qc.query(sql=query)
         df = convert(result)
 
         nmatch = len(df)
-        if nmatch>=1:
+        if nmatch >= 1:
             # Create table of values sorted by separation
             c = SkyCoord(ra, dec, frame='icrs', unit='deg')
             coos = SkyCoord(df["ra"].values, df["dec"].values, frame='icrs', unit='deg')
             sep = c.separation(coos)
-            sep_arcsec = sep.arcsec # in arcsec
-            pa = c.position_angle(coos) # positive angles East of North (match wrt science)
+            sep_arcsec = sep.arcsec  # in arcsec
+            pa = c.position_angle(coos)  # positive angles East of North (match wrt science)
             pa_degree = pa.deg
             df["sep_arcsec"] = sep_arcsec
             df["pa_degree"] = pa_degree
-            df = df.sort_values(by = ["sep_arcsec"])
+            df = df.sort_values(by=["sep_arcsec"])
 
             # Get photo-z info
             my_ls_id = df["ls_id"].values[0]
@@ -470,11 +515,12 @@ def xmatch_ls(ra, dec, radius = 5):
                     SELECT %s
                     FROM ls_dr9.photo_z
                     WHERE ls_id=%d
-                    """%(columns, my_ls_id)
+                    """ % (columns, my_ls_id)
             result = qc.query(sql=query)
             df2 = convert(result)
             out = df.merge(df2)
             return out
-    except:
+    except Exception as e:
+        print(f"Error in xmatch_ls: {e}")
         return pd.DataFrame()
     return pd.DataFrame()

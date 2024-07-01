@@ -96,9 +96,9 @@ class TestTimeQuantity:
         """Check that comparisons of Time with quantities does not work
         (even for time-like, since we cannot compare Time to TimeDelta)"""
         with pytest.raises(TypeError):
-            Time(100000.0, format="cxcsec") > 10.0 * u.m  # noqa: B015
+            Time(100000.0, format="cxcsec") > 10.0 * u.m
         with pytest.raises(TypeError):
-            Time(100000.0, format="cxcsec") > 10.0 * u.second  # noqa: B015
+            Time(100000.0, format="cxcsec") > 10.0 * u.second
 
 
 class TestTimeDeltaQuantity:
@@ -122,7 +122,7 @@ class TestTimeDeltaQuantity:
             Time(2450000.0 * u.dimensionless_unscaled, format="jd", scale="utc")
 
         with pytest.raises(TypeError):
-            TimeDelta(100, format="sec") > 10.0 * u.m  # noqa: B015
+            TimeDelta(100, format="sec") > 10.0 * u.m
 
     def test_quantity_output(self):
         q = 500.25 * u.day
@@ -151,10 +151,8 @@ class TestTimeDeltaQuantity:
             dt.to_value("parrot")
         with pytest.raises(TypeError):
             dt.to_value("sec", unit=u.s)
-        with pytest.raises(
-            ValueError,
-            match=r"cannot specify 'subfmt' and positional arg.*not a valid format",
-        ):
+        with pytest.raises(TypeError):
+            # TODO: would be nice to make this work!
             dt.to_value(u.s, subfmt="str")
 
     def test_valid_quantity_operations1(self):
@@ -267,7 +265,7 @@ class TestTimeDeltaQuantity:
     def test_invalid_quantity_operations(self):
         """Check comparisons of TimeDelta with non-time quantities fails."""
         with pytest.raises(TypeError):
-            TimeDelta(100000.0, format="sec") > 10.0 * u.m  # noqa: B015
+            TimeDelta(100000.0, format="sec") > 10.0 * u.m
 
     def test_invalid_quantity_operations2(self):
         """Check that operations with non-time/quantity fail."""

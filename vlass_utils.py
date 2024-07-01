@@ -1,40 +1,53 @@
-import numpy as np
-import subprocess
 import os
 import sys
-import argparse
 import glob
-from astropy.io import fits as pyfits
-import matplotlib.pyplot as plt
+import ssl
+import csv
+import io
+import subprocess
+import argparse
+import logging
 from urllib.request import urlopen, urlretrieve
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import requests
+from PIL import Image
+
+from astropy.io import fits as pyfits
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from astropy.time import Time
-import ssl
+
 from ztfquery.utils import stamps
-import requests
-from PIL import Image
-import io
-import pandas as pd
-import csv
-import logging
 
-
+# Naming the VLASS data file
 fname = "VLASS_dyn_summary.php"
+# Creating the directory for VLASS Image Plots
 basedir = os.path.abspath(os.path.dirname(__file__))
 save_directory = os.path.join(basedir, 'static', 'vlass_images')
 
 def get_vlass_data():
+    """
+    Downloading updated VLASS Data
+    """
+    # Set SSL context to unverified (bypassing SSL verification)
     ssl._create_default_https_context = ssl._create_unverified_context
+    
     import urllib.request
     url = 'https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php'
     output_file = 'VLASS_dyn_summary.php'
-
+    
+    # Download the file from the URL and save it locally
     urllib.request.urlretrieve(url, output_file)
     print(f'File downloaded to: {output_file}')
 
 def ensure_vlass_data():
+    """
+    Check if the VLASS data file exists locally
+    """
     if not os.path.exists(os.path.join(basedir, fname)):
         get_vlass_data()
 
@@ -45,14 +58,16 @@ def get_tiles():
     I ran wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php
     """
 
+    # Read all lines in the file
     inputf = open(fname, "r")
     lines = inputf.readlines()
     inputf.close()
 
+    # Extract header form the first line and clean it
     header = list(filter(None, lines[0].split("  ")))
-
     header = np.array([val.strip() for val in header])
 
+    # Initialize lists to store the tile info
     names = []
     dec_min = []
     dec_max = []
@@ -61,18 +76,19 @@ def get_tiles():
     obsdate = []
     epoch = []
 
-
+    # Process each line in the file 
     for line in lines[3:]:
         dat = list(filter(None, line.split("  ")))
         dat = np.array([val.strip() for val in dat])
-        names.append(dat[0])
-        dec_min.append(float(dat[1]))
-        dec_max.append(float(dat[2]))
-        ra_min.append(float(dat[3]))
-        ra_max.append(float(dat[4]))
-        obsdate.append(dat[6])
-        epoch.append(dat[5])
+        names.append(dat[0])  # Tile name
+        dec_min.append(float(dat[1]))  # Minimum declination
+        dec_max.append(float(dat[2]))  # Maximum declination
+        ra_min.append(float(dat[3]))  # Minimum right ascension
+        ra_max.append(float(dat[4]))  # Maximum right ascension
+        obsdate.append(dat[6])  # Observation date
+        epoch.append(dat[5])  # Epoch
 
+    # Convert lists to numpy arrays
     names = np.array(names)
     dec_min = np.array(dec_min)
     dec_max = np.array(dec_max)
@@ -81,6 +97,7 @@ def get_tiles():
     obsdate = np.array(obsdate)
     epoch = np.array(epoch)
 
+    # Return as tuple of arrays
     return (names, dec_min, dec_max, ra_min, ra_max, epoch, obsdate)
 
 
@@ -113,26 +130,28 @@ def get_subtiles(tilename, epoch):
     Parse those filenames and return a list of subtile RA and Dec.
     RA and Dec returned as a SkyCoord object
     """
+    # Adjust epoch for different versions
     if epoch == 'VLASS1.2':
         epoch = 'VLASS1.2v2'
     elif epoch == 'VLASS1.1':
         epoch = 'VLASS1.1v2'
+
+    # URL for VLASS Directory
     url_full = 'https://archive-new.nrao.edu/vlass/quicklook/%s/%s/' % (epoch, tilename)
     print(url_full)
     urlpath = urlopen(url_full)
 
-    string = (urlpath.read().decode('utf-8')).split("\n")
+    string = (urlpath.read().decode('utf-8')).split("\n")   # Read and decode the content of the URL
+    vals = np.array([val.strip() for val in string])    # Clean up the string values
 
-    vals = np.array([val.strip() for val in string])
-
+    # Identify links and names within the html
     keep_link = np.array(["href" in val.strip() for val in string])
+    keep_name = np.array([tilename in val.strip() for val in string])  
 
-    keep_name = np.array([tilename in val.strip() for val in string])
+    string_keep = vals[np.logical_and(keep_link, keep_name)]    # Filter the revelant strings
+    fname = np.array([val.split("\"")[7] for val in string_keep])   # Extract filenames
 
-    string_keep = vals[np.logical_and(keep_link, keep_name)]
-
-    fname = np.array([val.split("\"")[7] for val in string_keep])
-
+    # Extract RA and Dec values from filenames
     pos_raw = np.array([val.split(".")[4] for val in fname])
     if '-' in pos_raw[0]:
         # dec < 0
@@ -144,6 +163,7 @@ def get_subtiles(tilename, epoch):
         dec_raw = np.array([val.split("+")[1] for val in pos_raw])
     ra = []
     dec = []
+    # Convert RA and Dec to appropriate formats
     for ii, val in enumerate(ra_raw):
         # 24 hours is the same as hour 0
         if val[1:3] == '24':
@@ -204,6 +224,10 @@ def get_cutout(imname, name, c, epoch):
         vmax = 1e-3
 
         im_plot_raw = im[int(y - dside1):int(y + dside1), int(x - dside2):int(x + dside2)]
+        # Check if the sliced array is empty
+        if im_plot_raw.size == 0:
+            print("The cutout image is empty.")
+            return None
         im_plot = np.ma.masked_invalid(im_plot_raw)
 
         # 3-sigma clipping (find root mean square of values that are not above 3 standard deviations)
@@ -215,7 +239,8 @@ def get_cutout(imname, name, c, epoch):
         peak_flux = np.ma.max(im_plot.flatten())
 
         save_path = os.path.join(save_directory, f"{name}_{epoch}.png")
-
+        
+        plt.figure(figsize=(6, 6))
         plt.imshow(
             np.flipud(im_plot),
             extent=[-0.5 * cutout_size * 3600., 0.5 * cutout_size * 3600.,
@@ -236,7 +261,6 @@ def get_cutout(imname, name, c, epoch):
         return peak_flux, rms
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-ddir = "static/vlass_images"
 
 def run_search(name, c, date=None):
     global fname
@@ -326,12 +350,3 @@ def run_search(name, c, date=None):
                 # Remove FITS file
                 os.remove(imname)
 
-
-if __name__ == "__main__":
-    get_vlass_data()
-    name = 'ZTF24aapopmt'
-    ra = 72.1476216
-    dec = -4.8221547
-    c = SkyCoord(ra, dec, unit='deg')
-
-    run_search(name, c)

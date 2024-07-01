@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Source Data</title>
+    <title>Transient Data</title>
+    <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <style>
-
+    /* Creates a container to split the page in two sections */
     .flex-container {
     display: flex;
     flex-direction: row;
@@ -16,39 +17,64 @@
     margin: 20px;
     }
 
+    /* Items in the left section */
     .left-container {
         flex: 1;
     }
 
+    /* Items in the right section */
     .right-container {
         margin-left: 20px;
     }
 
+    /* Hides VLASS Images before button is clicked  */
     #image-section {
             display: none;
         }
-
+    
+    /* Creating consistent style for Classification/VLASS Buttons */
     .classification-buttons .btn,
     .vlass-button {
         margin-bottom: 25px;
         margin-right: 5px;
         margin-left: 15px;
     }
-
-    .custom-btn {
-        background-color: #4CAF50; /* Green background */
-        color: white; /* White text */
-        border: none; /* Remove border */
+    
+    /* Alligning Classify Text */
+    .classify-text {
+        margin-right: 5px;
+        margin-left: 15px;
     }
 
-    .custom-btn:hover {
-        background-color: #45a049; /* Darker green background on hover */
+    /* Formating for PS1 and LS Cutouts side by side */
+    .cutout-images {
+        display: flex;
+        justify-content: space-between;
+        align-items: right;
+    }
+    .cutout-images img {
+        max-width: 45%;
+        margin: 0px;
     }
 
+    /* Formatting VLASS Images to be consistent */
+    .vlass-images {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 20px;
+    }
+    .vlass-images img {
+        flex: 1 1 calc(33.333% - 20px);
+        max-width: calc(33.333% - 20px);
+        margin: 0px;
+        object-fit: contain;
+    }
 </style>
 
 <body>
     {% include 'navbar.html' %}
+    <!-- Container for Pop-ups/Alerts -->
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -67,8 +93,12 @@
         
         {% block content %}{% endblock %}
     </div>
+
+    <!-- Main content container -->
     <div class="flex-container">
+        <!-- Left section with primary data and Light Curve -->
         <div class="left-container">
+            <!-- Name and Location -->
             <h1>{{ source_id }}</h1>
             <p><div class="btn-group" role="group" aria-label="Basic example">
                 <a class="btn btn-outline-secondary" href="https://fritz.science/source/{{ source_id }}" target="_blank">Fritz</a>
@@ -77,24 +107,16 @@
             <p><strong>Dec:</strong> {{ dec }}</p>
             <p><strong>Scatter Separation:</strong> {{ scat_sep }}</p>
             <p><strong>Galactic Latitude:</strong> {{ galactic_lat }}</p>
-            <!-- Display Legacy Survey Data -->
-            {% if legacy_survey_info %}
-                <h3>Legacy Survey Data</h3>
-                <p><strong>Number of Sources in 5 arcsec:</strong> {{ legacy_survey_info.num_sources }}</p>
-                <p><strong>Closest Source Distance:</strong> {{ legacy_survey_info.closest_distance }} arcsec</p>
-                <p><strong>Closest Source Position Angle:</strong> {{ legacy_survey_info.closest_position_angle }} degrees (east of north)</p>
-                <p><strong>Photometric Redshift:</strong> {{ legacy_survey_info.photoz_median }} (68% bounds: {{ legacy_survey_info.photoz_l68 }}, {{ legacy_survey_info.photoz_u68 }})</p>
-                <p><strong>Type:</strong> {{ legacy_survey_info.type }}</p>
-            {% else %}
-                <p>No Legacy Survey data available.</p>
-            {% endif %}
-
+             
+            <!-- Light Curve Image -->
             <h2>Light Curve</h2>
             <img src="{{ url_for('static', filename=plot_filename.split('/')[-1]) }}" alt="Light Curve for {{ source_id }}">
 
         </div>
 
+        <!-- Right section with current classification, nearby sources, and cutouts -->
         <div class="right-container">
+            <!-- Current Classification -->
             <h3>Current Classification</h3>
             {% if most_confident_classification %}
             <p><strong>{{ most_confident_classification }}</strong> by {{ classified_by_users | length }} users:</p>
@@ -106,41 +128,77 @@
             {% else %}
             <p>No classifications yet.</p>
             {% endif %}
+
+            <!-- Data of Nearby Sources from PS1/LS/SDSS -->
+            <h3>Crossmatch Data</h3>
+            <!-- Legacy Survey Data -->
+            {% if legacy_survey_data.empty %}
+                <p><strong>LegacySurvey:</strong> 0 sources in 3 arcsec</p>
+            {% else %}
+                {% set closest = legacy_survey_data.iloc[0] %}
+                <p><strong>LegacySurvey:</strong> {{ legacy_survey_data.shape[0] }} sources in 3 arcsec</p>
+                <p>Closest: d = {{ closest.sep_arcsec|round(2) }} arcsec, {{ closest.pa_degree|round(1) }} deg (east of north)</p>
+                <p>photoz={{ closest.z_phot_median|round(2) }} (68% bounds {{ closest.z_phot_l68|round(2) }}, {{ closest.z_phot_u68|round(2) }}), type={{ closest.type }}</p>
+            {% endif %}
+            <!-- SDSS Data -->
+            {% if sdss_data %}
+                <p><strong>SDSS (10 arcsec):</strong> Found SDSS spec-z: z={{ sdss_data.ssmagnr|round(2) }}; peak abs mag = {{ sdss_data.ssdistnr|round(2) }}</p>
+            {% else %}
+                <p><strong>SDSS (10 arcsec):</strong> No data found</p>
+            {% endif %}
+            <!-- PS1 Data -->
+            {% if not pan_starrs_df.empty %}
+                <p><strong>PS1:</strong> {{ pan_starrs_df.shape[0] }} source{{ pan_starrs_df.shape[0] > 1 and 's' or '' }} in 3 arcsec</p>
+                {% for index, row in pan_starrs_df.iterrows() %}
+                    <p>Source {{ loop.index }}: d = {{ row.distpsnr1|round(2) }} arcsec, sgscore1={{ row.sgscore1 }}</p>
+                {% endfor %}
+            {% else %}
+                <p><strong>PS1:</strong> No data found</p>
+            {% endif %}
+            
+            <!-- Display ZTF, PS1, and LS Cutouts -->
             <div>
                 {% if ztf_cutout %}
                     <img src="{{ url_for('static', filename=ztf_cutout) }}" alt="ZTF Cutout for {{ source_id }}">
                 {% else %}
                 {% endif %}
             </div>
-            <div>
+            <div class="cutout-images">
                 {% if ps1_cutout %}
                     <img src="{{ url_for('static', filename=ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}">
-                {% else %}
                 {% endif %}
-            </div>
-            <div>
+            
                 {% if ls_cutout %}
                     <img src="{{ url_for('static', filename=ls_cutout) }}" alt="LS Cutout for {{ source_id }}">
-                {% else %}
                 {% endif %}
             </div>
-            
         </div>
-        
     </div>
     
+    
+    <!-- Buttons for fetching/displaying VLASS Data -->
+    <div>
+        <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
+            <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
+        </form>
+    </div>
     <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
-    <div id="image-section">
-        {% for image in search_images %}
+    <div id="image-section" class="vlass-images">
+        {% for image in vlass_images %}
             <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
         {% endfor %}
     </div>
 
-    <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
-        <input type="hidden" name="classification" id="classification">
-        <input type="hidden" name="confidence" id="confidence">
+    
 
-        
+    <!-- Form for setting the classification for each transient -->
+    <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
+    <input type="hidden" name="classification" id="classification">
+    <input type="hidden" name="confidence" id="confidence">  
+        <div class="classify-text">
+            <h3>Classify</h3>
+        </div> 
+        <!-- Transient Classification buttons -->
         <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
             <div class="input-group">
                 <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
@@ -155,6 +213,7 @@
             </div>
         </div>
 
+        <!-- Supernova Subclass Buttons -->
         <div class="collapse" id="supernova-subtypes">
             <div class="card card-body">
                 <h5>Supernova Subtypes</h5>
@@ -168,6 +227,7 @@
             </div>
         </div>
 
+        <!-- Confidence Level Buttons -->
         <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
             <div class="input-group">
                 <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
@@ -182,11 +242,13 @@
             <button type="submit" class="btn btn-primary mt-3">Submit</button>
         </div>
     </form>
-    
+
+    <!-- Bootstrap JS, Popper.js, and jQuery -->    
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script>
+    <script> 
+        // Scripts for setting classifications/confidence levels 
         function setClassification(value) {
             document.getElementById('classification').value = value;
         }
@@ -200,6 +262,7 @@
             document.getElementById('confidence').value = value;
         }
 
+        // Logic for revealing and hiding VLASS Images 
         document.getElementById('toggle-images').addEventListener('click', function() {
             var imageSection = document.getElementById('image-section');
             if (imageSection.style.display === 'none') {

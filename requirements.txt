@@ -1,16 +1,34 @@
+# Flask and extensions
 Flask
 Flask-SQLAlchemy
-Flask-Marshmallow
 Flask-Login
 Flask-WTF
+
+# Marshmallow (optional, remove if not used)
+Flask-Marshmallow
+
+# Werkzeug and WTForms
 Werkzeug
 WTForms
+email_validator
+
+# Requests library for HTTP requests
 requests
+
+# Data processing libraries
 pandas
 numpy
+
+# Plotting and visualization
 matplotlib
+
+# Astronomy specific libraries
 astropy
-gunicorn
 penquins
 ztfquery
-email_validator
+
+# Web server
+gunicorn
+
+# Datalab
+datalab
