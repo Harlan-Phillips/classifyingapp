@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Transients{% endblock %}
+
+{% block content %}
+
+<!-- Container for List of Transients -->
+<div class="container">
+    <!-- Flex container for title and export button -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Test Transient Set</h2>
+        <a href="{{ url_for('export_test_transients') }}" class="btn btn-primary">Export Data</a>
+    </div>
+    <!-- Display item info and page numbers -->
+    {{ pagination.info }}
+    {{ pagination.links }}
+    <!-- Creating Display Table -->
+    <table class="table table-striped">
+        <!-- Columns in Table -->
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Source ID</th>
+                <th>Classified By</th>
+            </tr>
+        </thead>
+        <!-- Setting values in the table -->
+        <tbody>
+            <!-- Creating a cell for every transient in the csv -->
+            {% for item in transients_with_classifications %}
+            <tr>
+                <td>{{ loop.index + (pagination.page - 1) * pagination.per_page }}</td>
+                <!-- Hyperlinking to classification page by clicking on the transient name -->
+                <td><a href="{{ url_for('classify_source', source_id=item.transient.source_id) }}">{{ item.transient.source_id }}</a></td>
+                <td>
+                    <!-- Check if Classified and Display the User who Classified -->
+                    {% if item.classified_by_users %}
+                        {% for username in item.classified_by_users %}
+                            {{ username }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        No classifications yet
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- Display page numbers -->
+    {{ pagination.links }}
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}
+
+

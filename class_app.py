@@ -3,10 +3,11 @@ import json
 import csv
 from collections import Counter, defaultdict
 from datetime import datetime
+from io import BytesIO
 
 import pandas as pd
 from astropy.coordinates import SkyCoord
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 from flask_sqlalchemy import SQLAlchemy
@@ -21,7 +22,7 @@ from models import db, User, Transient, Classification
 from utils import (
     get_pos, get_galactic, get_lc, logon, plot_ztf_cutout, 
     plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
-    xmatch_ls, get_dets
+    xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification
 )
 from vlass_utils import get_vlass_data, run_search
 
@@ -190,15 +191,16 @@ def classify_source(source_id):
         ra, dec, scat_sep = get_pos(kowalski_session, source_id)
         galactic_lat = get_galactic(ra, dec)
         
-        cutout_dir = os.path.join(basedir, 'static')
-        light_curve_path = os.path.join(cutout_dir, f"{source_id}_light_curve.png")
+        cutout_dir = os.path.join(basedir, 'static', 'cutouts')
+        light_cur = os.path.join(basedir, 'static', 'light_curves')
+        light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
         ztf_cutout_path = os.path.join(cutout_dir, f"{source_id}_triplet.png")
         ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
         ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
 
         # Checking if cutouts exist reducing processing time
         if os.path.exists(light_curve_path):
-            plot_filename = f"static/{source_id}_light_curve.png"
+            plot_filename = f"static/light_curves/{source_id}_light_curve.html"
         else:
             light_curve = get_lc(kowalski_session, source_id)
             plot_filename = plot_light_curve(light_curve, source_id)
@@ -247,7 +249,15 @@ def classify_source(source_id):
                     seen_sgscore1.add(candidate['sgscore1'])
         pan_starrs_df = pd.DataFrame(pan_starrs_data)
         
-        vlass_images = session.pop('vlass_images', []) # Retrieve VLASS images
+        # Retrieve VLASS images
+        vlass_images = session.pop('vlass_images', []) 
+
+        # Create the polar plot
+        # polar_plot_path = os.path.join(cutout_dir, f"{source_id}_polar_plot.html")
+        ztf_alerts = pd.DataFrame([det['candidate'] for det in dets])
+        # plot_polar_coordinates(ztf_alerts, legacy_survey_data, ra, dec, polar_plot_path)
+        polar_plot_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
+        plot_polar_coordinates(ztf_alerts, legacy_survey_data, ra, dec, polar_plot_path)
 
     except ValueError as e:
         flash('Source does not exist or data could not be retrieved.')
@@ -293,7 +303,8 @@ def classify_source(source_id):
                             vlass_images=vlass_images,
                            legacy_survey_data=legacy_survey_data,
                            sdss_data=sdss_data,
-                            pan_starrs_df=pan_starrs_df
+                            pan_starrs_df=pan_starrs_df,
+                            polar_plot=polar_plot_path
                            )
     
 @class_app.route('/retrieve_vlass_data/<source_id>', methods=['POST'])
@@ -327,6 +338,11 @@ def load_transients():
                     db.session.add(transient)
                 db.session.commit()
 
+def load_test_transients_ids():
+    """Load source_id values from test_transients.csv"""
+    df = pd.read_csv('test_transients.csv')
+    return df['source_id'].tolist()
+
 @class_app.route('/transients', methods=['GET'])
 @login_required
 def list_transients():
@@ -353,6 +369,97 @@ def list_transients():
                             css_framework='bootstrap5')
 
     return render_template('transients.html', transients_with_classifications=transients_with_classifications, page=page, per_page=per_page, pagination=pagination)
+
+@class_app.route('/test_transients')
+def list_test_transients():
+    """List transients from test_transients.csv with pagination."""
+    test_transients_ids = load_test_transients_ids()
+    
+    page, per_page, offset = get_page_args(
+        page_parameter='page', 
+        per_page=50  
+    )
+    
+    # Query only the transients that are in the test_transients.csv
+    transients = Transient.query.filter(Transient.source_id.in_(test_transients_ids)).offset(offset).limit(per_page).all()
+    total = Transient.query.filter(Transient.source_id.in_(test_transients_ids)).count()
+    
+    # Fetch classifications and associated users for each transient
+    transients_with_classifications = []
+    for transient in transients:
+        classifications = Classification.query.filter_by(source_id=transient.source_id).all()
+        classified_by_users = [User.query.get(classification.user_id).username for classification in classifications] if classifications else []
+        transients_with_classifications.append({
+            'transient': transient,
+            'classified_by_users': classified_by_users
+        })
+    
+    pagination = Pagination(page=page, per_page=per_page, total=total, css_framework='bootstrap4')
+    
+    return render_template('test_transients.html', transients_with_classifications=transients_with_classifications, page=page, per_page=per_page, pagination=pagination)
+
+# @class_app.route('/export_test_transients', methods=['GET'])
+# @login_required
+# def export_test_transients():
+#     """Export test transients data to CSV."""
+#     test_transients_ids = load_test_transients_ids()
+    
+#     # Query the transients and their classifications
+#     transients = Transient.query.filter(Transient.source_id.in_(test_transients_ids)).all()
+    
+#     data = []
+#     for transient in transients:
+#         classifications = Classification.query.filter_by(source_id=transient.source_id).all()
+#         for classification in classifications:
+#             user = User.query.get(classification.user_id)
+#             data.append({
+#                 'source_id': transient.source_id,
+#                 'classified_by': user.username,
+#                 'classification': classification.classification
+#             })
+
+#     # Convert to DataFrame
+#     df = pd.DataFrame(data)
+    
+#     # Create CSV response
+#     response = make_response(df.to_csv(index=False))
+#     response.headers["Content-Disposition"] = "attachment; filename=test_transients.csv"
+#     response.headers["Content-Type"] = "text/csv"
+#     return response
+
+@class_app.route('/export_test_transients', methods=['GET'])
+@login_required
+def export_test_transients():
+    """Export test transients data to Excel."""
+    test_transients_ids = load_test_transients_ids()
+    
+    # Query the transients and their classifications
+    transients = Transient.query.filter(Transient.source_id.in_(test_transients_ids)).all()
+    
+    data = []
+    for transient in transients:
+        classifications = Classification.query.filter_by(source_id=transient.source_id).all()
+        classified_by_users = [User.query.get(classification.user_id).username for classification in classifications]
+        most_confident_classification = get_most_confident_classification(classifications)
+        
+        data.append({
+            'source_id': transient.source_id,
+            'classified_by': ', '.join(classified_by_users),
+            'classification': most_confident_classification
+        })
+
+    # Convert to DataFrame
+    df = pd.DataFrame(data)
+    
+    # Create a BytesIO buffer to save the Excel file
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Transients')
+    
+    # Seek to the beginning of the stream
+    output.seek(0)
+
+    return send_file(output, as_attachment=True, download_name='test_transients.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 if __name__ == '__main__':
     # Initialize databases and load transients from csv

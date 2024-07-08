@@ -1,6 +1,7 @@
 # Astropy modules
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+from astropy import units as u
 
 # Data handling modules
 import pandas as pd
@@ -10,10 +11,13 @@ import numpy as np
 import gzip
 import io
 import os
+from collections import Counter, defaultdict
 
 # Image handling modules
 from PIL import Image
 import matplotlib.pyplot as plt
+import mpld3
+from mpld3 import fig_to_html, plugins
 
 # Network and API modules
 import requests
@@ -444,6 +448,9 @@ def plot_light_curve(lc, source_id):
     Returns:
     str: The filename of the saved plot.
     """
+    if lc['mag_final'].isna().sum() > 0:
+        print("NaN values found in 'mag_final'. Dropping NaN values.")
+        lc = lc.dropna(subset=['mag_final'])
 
     fig, ax = plt.subplots(figsize=(10, 6))
     
@@ -451,6 +458,9 @@ def plot_light_curve(lc, source_id):
     color_map = {'g': 'aquamarine', 'r': 'crimson', 'i': 'goldenrod'}
     marker_map = {'g': 's', 'r': 'o', 'i': '^'}
     
+    # Creating a dictionary to store scatter plot references
+    scatter_dict = {}
+
     # Associating ID to color
     for band in lc['fid'].unique():
         if band == 1:
@@ -461,24 +471,41 @@ def plot_light_curve(lc, source_id):
             filter_name = 'i'
         
         band_data = lc[lc['fid'] == band]
-        #Creating error bar for magnitude
+        
+        scatter = ax.scatter(band_data['jd'], band_data['mag_final'],
+                             color=color_map[filter_name], label=f'{filter_name}-band', marker=marker_map[filter_name])
+        
         ax.errorbar(band_data['jd'], band_data['mag_final'], yerr=band_data['emag_final'],
-                    fmt=marker_map[filter_name], color=color_map[filter_name], label=f'{filter_name}-band', linestyle='None')
+                             fmt='none', color=color_map[filter_name], alpha=0.5)
+        
+        # Storing scatter plot references and labels
+        labels = [f'JD: {jd} Mag: {mag}' for jd, mag in zip(band_data['jd'], band_data['mag_final'])]
+        scatter_dict[scatter] = labels
 
-    # Creating plot 
+    # Adding tooltip
+    for scatter, labels in scatter_dict.items():
+        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: white;")
+        plugins.connect(fig, tooltip)
+
+    # Finalize the plot
     ax.invert_yaxis()
     ax.set_xlabel('Julian Date')
     ax.set_ylabel('Magnitude')
     ax.set_title(f'Light Curve for {source_id}')
-    ax.legend()
+    ax.legend(framealpha=1, facecolor='white')
     ax.grid(True)
     plt.tight_layout()
+
+    # Convert the plot to HTML with mpld3
+    html_str = mpld3.fig_to_html(fig)
+
+    # Save the HTML to a file
+    plot_filename = f'static/light_curves/{source_id}_light_curve.html'
+    with open(plot_filename, 'w') as f:
+        f.write(html_str)
+
     
-    # Save the plot to a static file
-    plot_filename = f'static/{source_id}_light_curve.png'
-    plt.savefig(plot_filename)
-    plt.close()
-    
+
     return plot_filename
 
 
@@ -524,3 +551,112 @@ def xmatch_ls(ra, dec, radius=5):
         print(f"Error in xmatch_ls: {e}")
         return pd.DataFrame()
     return pd.DataFrame()
+
+
+def filter_ztf_alerts(ztf_alerts):
+    filtered_data = []
+    seen_sgscore1 = set()
+    for _, row in ztf_alerts.iterrows():
+        if 'distpsnr1' in row and row['distpsnr1'] != -999.0 and 'sgscore1' in row and row['sgscore1'] != -999.0:
+            if row['sgscore1'] not in seen_sgscore1:
+                filtered_data.append(row)
+                seen_sgscore1.add(row['sgscore1'])
+    return pd.DataFrame(filtered_data)
+
+def plot_polar_coordinates(ztf_alerts, legacy_survey_data, source_ra, source_dec, output_path):
+    """
+    Plots the polar coordinates of nearby sources with the transient at the center.
+
+    Parameters:
+    - ztf_alerts (pd.DataFrame): DataFrame containing ZTF alert data with columns 'ra', 'dec', 'fid', and other relevant data.
+    - legacy_survey_data (pd.DataFrame): DataFrame containing Legacy Survey data with columns 'ra', 'dec', and other relevant data.
+    - source_ra (float): Right Ascension of the transient source.
+    - source_dec (float): Declination of the transient source.
+    - output_path (str): Path to save the output plot.
+    """
+    
+    
+    # Filter ZTF alerts
+    ztf_alerts = filter_ztf_alerts(ztf_alerts)
+
+    # Create a SkyCoord object for the transient source
+    central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit='deg')
+
+    # Process ZTF alerts
+    ztf_coords = SkyCoord(ra=ztf_alerts['ra'], dec=ztf_alerts['dec'], unit='deg')
+
+    # Calculate offsets in arcseconds
+    ztf_ra_offset = (ztf_coords.ra - central_coord.ra).arcsec
+    ztf_dec_offset = (ztf_coords.dec - central_coord.dec).arcsec
+
+    # Plotting
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.set_aspect('equal')
+
+    # Plot ZTF alerts
+    filters = {1: 'green', 2: 'red'}
+    for fid, color in filters.items():
+        mask = ztf_alerts['fid'] == fid
+        #if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
+        scatter = ax.scatter(ztf_ra_offset[mask], ztf_dec_offset[mask], color=color, label=f'ztf{color[0]}', s=50)  # Reduce marker size to 50
+        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(ztf_alerts['ra'], ztf_alerts['dec'])]
+        plugins.connect(fig, plugins.PointHTMLTooltip(scatter, labels=labels))
+
+    # Plot Legacy Survey data if available
+    if not legacy_survey_data.empty:
+        legacy_coords = SkyCoord(ra=legacy_survey_data['ra'], dec=legacy_survey_data['dec'], unit='deg')
+        legacy_ra_offset = (legacy_coords.ra - central_coord.ra).arcsec
+        legacy_dec_offset = (legacy_coords.dec - central_coord.dec).arcsec
+        legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=50, label='Legacy Survey')
+        
+        # Simplify HTML Tooltip content
+        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
+        plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
+
+    # Central source
+    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=100, label='Transient')  # Reduce marker size to 100
+    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient']))
+
+    # Add concentric circles
+    circle1 = plt.Circle((0, 0), 3, color='blue', fill=False, alpha=0.1)  # Increase radius to 3 arcseconds
+    circle2 = plt.Circle((0, 0), 1.5, color='blue', fill=False, alpha=0.3)  # Increase radius to 1.5 arcseconds
+    ax.add_artist(circle1)
+    ax.add_artist(circle2)
+
+    ax.set_xlabel('RA (arcsec)')
+    ax.set_ylabel(r'Dec (arcsec)')
+    ax.legend(title='Filter/Catalog')
+    ax.set_title('Coordinates of Nearby Sources')
+    ax.legend(loc='upper right')
+    ax.grid(True)
+
+    ax.set_xlim(-5, 5)
+    ax.set_ylim(-5, 5)
+
+    plt.tight_layout()
+
+    # Save as HTML
+    html_str = mpld3.fig_to_html(fig)
+    with open(output_path, 'w') as f:
+        f.write(html_str)
+
+    plt.close(fig)
+
+def get_most_confident_classification(classifications):
+    """Determine the most confident classification."""
+    classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
+    for classification in classifications:
+        classification_counts[classification.classification]['count'] += 1
+        if classification.confidence == 'Not confident':
+            classification_counts[classification.classification]['confidence'] += 1
+        elif classification.confidence == 'Confident':
+            classification_counts[classification.classification]['confidence'] += 2
+        elif classification.confidence == 'Certain':
+            classification_counts[classification.classification]['confidence'] += 3
+
+    if classification_counts:
+        return max(
+            classification_counts.items(),
+            key=lambda x: (x[1]['confidence'], x[1]['count'])
+        )[0]
+    return None

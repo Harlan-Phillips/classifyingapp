@@ -18,6 +18,7 @@ requests
 # Data processing libraries
 pandas
 numpy
+openpyxl
 
 # Plotting and visualization
 matplotlib

@@ -108,10 +108,108 @@
             <p><strong>Scatter Separation:</strong> {{ scat_sep }}</p>
             <p><strong>Galactic Latitude:</strong> {{ galactic_lat }}</p>
              
-            <!-- Light Curve Image -->
+            <!-- Light Curve Plot -->
             <h2>Light Curve</h2>
-            <img src="{{ url_for('static', filename=plot_filename.split('/')[-1]) }}" alt="Light Curve for {{ source_id }}">
+            <iframe src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="100%" height="600"></iframe>
 
+            <div class = "vlass-button"></div>
+            <div>
+                <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
+                    <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
+                </form>
+            </div>
+            <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
+
+            <!-- Form for setting the classification for each transient -->
+            <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
+                <input type="hidden" name="classification" id="classification">
+                <input type="hidden" name="confidence" id="confidence">  
+                    <div class="classify-text">
+                        <h3>Classify</h3>
+                    </div> 
+                    <!-- Transient Classification buttons -->
+                    <!-- <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
+                        <div class="input-group">
+                            <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
+                                <button type="button" onclick="setClassification('FBOT')" class="btn btn-outline-primary">FBOT</button>
+                                <button type="button" onclick="setClassification('Afterglow')" class="btn btn-outline-primary">Afterglow</button>
+                                <button type="button" data-toggle="collapse" data-target="#supernova-subtypes" onclick="setClassification('Supernova')" class="btn btn-outline-primary">Supernova</button>
+                                <button type="button" onclick="setClassification('Quasar')" class="btn btn-outline-primary">Quasar</button>
+                                <button type="button" onclick="setClassification('Star')" class="btn btn-outline-primary">Star</button>
+                                <button type="button" onclick="setClassification('Junk (Artifact)')" class="btn btn-outline-primary">Junk (Artifact)</button>
+                                <button type="button" onclick="setClassification('Unclear')" class="btn btn-outline-primary">Unclear</button>
+                            </div>
+                        </div>
+                    </div> -->
+            
+                    <!-- Transient Classification buttons -->
+                    <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
+                        <div class="input-group">
+                            <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
+                                <button type="button" onclick="setClassification('SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
+                                <button type="button" onclick="setClassification('AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
+                                <button type="button" onclick="setClassification('CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
+                                <button type="button" onclick="setClassification('Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
+                                <button type="button" onclick="setClassification('Fast')" class="btn btn-outline-primary" title="Very fast candidate transient">Fast</button>
+                                <button type="button" onclick="setClassification('Slow')" class="btn btn-outline-primary" title="Very slow candidate transient">Slow</button>
+                                <button type="button" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Other Buttons -->
+                    <div class="collapse" id="other-types">
+                        <div class="dropdown container-fluid">
+                            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                                Other Types
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Star: bad subtraction')">Star: bad subtraction</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Star: high proper motion')">Star: high proper motion</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Star: slow variable')">Star: slow variable</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('QSO')">QSO</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Other: bad subtraction')">Other: bad subtraction</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Hot pixel')">Hot pixel</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Cosmic ray')">Cosmic ray</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Reference artifact')">Reference artifact</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Reflection/ghost')">Reflection/ghost</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Artificial satellite')">Artificial satellite</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Other artifact')">Other artifact</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="setClassification('Unclear')">Unclear</button></li>
+                            </ul>
+                        </div>
+                    </div>
+            
+                    <!-- Supernova Subclass Buttons -->
+                    <!-- <div class="collapse" id="supernova-subtypes">
+                        <div class="card card-body">
+                            <h5>Supernova Subtypes</h5>
+                            <div class="btn-group mb-2" role="group" aria-label="Supernova subtypes">
+                                <button type="button" onclick="setSubtype('Type Ia')" class="btn btn-outline-warning">Type Ia</button>
+                                <button type="button" onclick="setSubtype('Type Ib')" class="btn btn-outline-warning">Type Ib</button>
+                                <button type="button" onclick="setSubtype('Type Ic')" class="btn btn-outline-warning">Type Ic</button>
+                                <button type="button" onclick="setSubtype('Type II-P')" class="btn btn-outline-warning">Type II-P</button>
+                                <button type="button" onclick="setSubtype('Type II-L')" class="btn btn-outline-warning">Type II-L</button>
+                            </div>
+                        </div>
+                    </div> -->
+            
+                    <!-- Confidence Level Buttons -->
+                    <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
+                        <div class="input-group">
+                            <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
+                                <button type="button" onclick="setConfidence('Not confident')" class="btn btn-outline-secondary">Not confident</button>
+                                <button type="button" onclick="setConfidence('Confident')" class="btn btn-outline-secondary">Confident</button>
+                                <button type="button" onclick="setConfidence('Certain')" class="btn btn-outline-secondary">Certain</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
+                        <button type="submit" class="btn btn-primary mt-3">Submit</button>
+                    </div>
+                </form>
         </div>
 
         <!-- Right section with current classification, nearby sources, and cutouts -->
@@ -159,89 +257,34 @@
             <!-- Display ZTF, PS1, and LS Cutouts -->
             <div>
                 {% if ztf_cutout %}
-                    <img src="{{ url_for('static', filename=ztf_cutout) }}" alt="ZTF Cutout for {{ source_id }}">
+                    <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout) }}" alt="ZTF Cutout for {{ source_id }}">
                 {% else %}
                 {% endif %}
             </div>
             <div class="cutout-images">
                 {% if ps1_cutout %}
-                    <img src="{{ url_for('static', filename=ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}">
+                    <img src="{{ url_for('static', filename='cutouts/' + ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}">
                 {% endif %}
             
                 {% if ls_cutout %}
-                    <img src="{{ url_for('static', filename=ls_cutout) }}" alt="LS Cutout for {{ source_id }}">
+                    <img src="{{ url_for('static', filename='cutouts/' + ls_cutout) }}" alt="LS Cutout for {{ source_id }}">
                 {% endif %}
             </div>
+            {% if polar_plot %}
+                <h3>Centroid Plot</h3>
+                <iframe src="{{ url_for('static', filename='light_curves/' + polar_plot.split('/')[-1]) }}" width="100%" height="500px"></iframe>
+            {% endif %}
         </div>
     </div>
     
     
-    <!-- Buttons for fetching/displaying VLASS Data -->
-    <div>
-        <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
-            <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
-        </form>
-    </div>
-    <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
+    
     <div id="image-section" class="vlass-images">
         {% for image in vlass_images %}
             <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
         {% endfor %}
     </div>
 
-    
-
-    <!-- Form for setting the classification for each transient -->
-    <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
-    <input type="hidden" name="classification" id="classification">
-    <input type="hidden" name="confidence" id="confidence">  
-        <div class="classify-text">
-            <h3>Classify</h3>
-        </div> 
-        <!-- Transient Classification buttons -->
-        <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="input-group">
-                <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
-                    <button type="button" onclick="setClassification('FBOT')" class="btn btn-outline-primary">FBOT</button>
-                    <button type="button" onclick="setClassification('Afterglow')" class="btn btn-outline-primary">Afterglow</button>
-                    <button type="button" data-toggle="collapse" data-target="#supernova-subtypes" onclick="setClassification('Supernova')" class="btn btn-outline-primary">Supernova</button>
-                    <button type="button" onclick="setClassification('Quasar')" class="btn btn-outline-primary">Quasar</button>
-                    <button type="button" onclick="setClassification('Star')" class="btn btn-outline-primary">Star</button>
-                    <button type="button" onclick="setClassification('Junk (Artifact)')" class="btn btn-outline-primary">Junk (Artifact)</button>
-                    <button type="button" onclick="setClassification('Unclear')" class="btn btn-outline-primary">Unclear</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Supernova Subclass Buttons -->
-        <div class="collapse" id="supernova-subtypes">
-            <div class="card card-body">
-                <h5>Supernova Subtypes</h5>
-                <div class="btn-group mb-2" role="group" aria-label="Supernova subtypes">
-                    <button type="button" onclick="setSubtype('Type Ia')" class="btn btn-outline-warning">Type Ia</button>
-                    <button type="button" onclick="setSubtype('Type Ib')" class="btn btn-outline-warning">Type Ib</button>
-                    <button type="button" onclick="setSubtype('Type Ic')" class="btn btn-outline-warning">Type Ic</button>
-                    <button type="button" onclick="setSubtype('Type II-P')" class="btn btn-outline-warning">Type II-P</button>
-                    <button type="button" onclick="setSubtype('Type II-L')" class="btn btn-outline-warning">Type II-L</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Confidence Level Buttons -->
-        <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
-            <div class="input-group">
-                <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
-                    <button type="button" onclick="setConfidence('Not confident')" class="btn btn-outline-secondary">Not confident</button>
-                    <button type="button" onclick="setConfidence('Confident')" class="btn btn-outline-secondary">Confident</button>
-                    <button type="button" onclick="setConfidence('Certain')" class="btn btn-outline-secondary">Certain</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-            <button type="submit" class="btn btn-primary mt-3">Submit</button>
-        </div>
-    </form>
 
     <!-- Bootstrap JS, Popper.js, and jQuery -->    
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
