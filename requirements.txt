@@ -32,4 +32,8 @@ ztfquery
 gunicorn
 
 # Datalab
-datalab
+astro-datalab
+
+
+flask-paginate
+mpld3

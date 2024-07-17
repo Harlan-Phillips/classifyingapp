@@ -1,0 +1,1013 @@
+
+    <style>
+    body {font-size: 16px;}
+    .mpld3-legend text { 
+        font-size: 14px; 
+        fill: #000000; 
+    }
+    .mpld3-legend rect { 
+        fill: #FFFFE0; 
+        stroke: #000000; 
+        opacity: 0.8; 
+    }
+    .mpld3-tooltip {
+        background-color: white;
+        color: black;
+        font-size: 16px;
+    }
+    </style>
+    
+
+<style>
+background-color: white; color: black; font-size: 16px;background-color: white; color: black; font-size: 16px;background-color: white; color: black; font-size: 16px;background-color: white; color: black; font-size: 16px;
+    .legend-box {
+      cursor: pointer;
+    }
+    
+</style>
+
+<div id="fig_el1768951951822885059700933"></div>
+<script>
+function mpld3_load_lib(url, callback){
+  var s = document.createElement('script');
+  s.src = url;
+  s.async = true;
+  s.onreadystatechange = s.onload = callback;
+  s.onerror = function(){console.warn("failed to load library " + url);};
+  document.getElementsByTagName("head")[0].appendChild(s);
+}
+
+if(typeof(mpld3) !== "undefined" && mpld3._mpld3IsLoaded){
+   // already loaded: just create the figure
+   !function(mpld3){
+       
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("interactive_legend", InteractiveLegend);
+    InteractiveLegend.prototype = Object.create(mpld3.Plugin.prototype);
+    InteractiveLegend.prototype.constructor = InteractiveLegend;
+    InteractiveLegend.prototype.requiredProps = ["element_ids", "labels"];
+    InteractiveLegend.prototype.defaultProps = {"ax":null,
+                                                "alpha_unsel":0.2,
+                                                "alpha_over":1.0,
+                                                "start_visible":true,
+                                                "font_size": 10,
+                                                "legend_offset": [0,0]}
+    function InteractiveLegend(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    InteractiveLegend.prototype.draw = function(){
+        var alpha_unsel = this.props.alpha_unsel;
+        var alpha_over = this.props.alpha_over;
+        var font_size = this.props.font_size;
+        var legend_offset = this.props.legend_offset;
+
+        var legendItems = new Array();
+        for(var i=0; i<this.props.labels.length; i++){
+            var obj = {};
+            obj.label = this.props.labels[i];
+
+            var element_id = this.props.element_ids[i];
+            mpld3_elements = [];
+            for(var j=0; j<element_id.length; j++){
+                var mpld3_element = mpld3.get_element(element_id[j], this.fig);
+
+                // mpld3_element might be null in case of Line2D instances
+                // for we pass the id for both the line and the markers. Either
+                // one might not exist on the D3 side
+                if(mpld3_element){
+                    mpld3_elements.push(mpld3_element);
+                }
+            }
+
+            obj.mpld3_elements = mpld3_elements;
+            obj.visible = this.props.start_visible[i]; // should become be setable from python side
+            legendItems.push(obj);
+            set_alphas(obj, false);
+        }
+
+        // determine the axes with which this legend is associated
+        var ax = this.props.ax
+        if(!ax){
+            ax = this.fig.axes[0];
+        } else{
+            ax = mpld3.get_element(ax, this.fig);
+        }
+
+        // add a legend group to the canvas of the figure
+        var legend = this.fig.canvas.append("svg:g")
+                               .attr("class", "legend");
+
+        // add the rectangles
+        legend.selectAll("rect")
+                .data(legendItems)
+                .enter().append("rect")
+                .attr("height", 0.7*font_size)
+                .attr("width", 1.6*font_size)
+                .attr("x", ax.width + ax.position[0] + 15 + legend_offset[0])
+                .attr("y",function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + legend_offset[1];})
+                .attr("stroke", get_color)
+                .attr("class", "legend-box")
+                .style("fill", function(d, i) {
+                           return d.visible ? get_color(d) : "white";})
+                .on("click", click).on('mouseover', over).on('mouseout', out);
+
+        // add the labels
+        legend.selectAll("text")
+              .data(legendItems)
+              .enter().append("text")
+              .attr("font-size", font_size)
+              .attr("x", function (d) {
+                           return ax.width + ax.position[0] + (1.9*font_size+15) + legend_offset[0];})
+              .attr("y", function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + (0.72*font_size-1) + legend_offset[1];})
+              .text(function(d) { return d.label })
+              .on('mouseover', over).on('mouseout', out);
+
+
+        // specify the action on click
+        function click(d,i){
+            d.visible = !d.visible;
+            d3.select(this)
+              .style("fill",function(d, i) {
+                return d.visible ? get_color(d) : "white";
+              })
+            set_alphas(d, false);
+
+        };
+
+        // specify the action on legend overlay 
+        function over(d,i){
+             set_alphas(d, true);
+        };
+
+        // specify the action on legend overlay 
+        function out(d,i){
+             set_alphas(d, false);
+        };
+
+        // helper function for setting alphas
+        function set_alphas(d, is_over){
+            for(var i=0; i<d.mpld3_elements.length; i++){
+                var type = d.mpld3_elements[i].constructor.name;
+
+                if(type =="mpld3_Line"){
+                    var current_alpha = d.mpld3_elements[i].props.alpha;
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d3.select(d.mpld3_elements[i].path.nodes()[0])
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("stroke-width", is_over ?
+                                alpha_over * d.mpld3_elements[i].props.edgewidth : d.mpld3_elements[i].props.edgewidth);
+                } else if((type=="mpld3_PathCollection")||
+                         (type=="mpld3_Markers")){
+                    var current_alpha = d.mpld3_elements[i].props.alphas[0];
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d.mpld3_elements[i].pathsobj
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("fill-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel));
+                } else{
+                    console.log(type + " not yet supported");
+                }
+            }
+        };
+
+
+        // helper function for determining the color of the rectangles
+        function get_color(d){
+            var type = d.mpld3_elements[0].constructor.name;
+            var color = "black";
+            if(type =="mpld3_Line"){
+                color = d.mpld3_elements[0].props.edgecolor;
+            } else if((type=="mpld3_PathCollection")||
+                      (type=="mpld3_Markers")){
+                color = d.mpld3_elements[0].props.facecolors[0];
+            } else{
+                console.log(type + " not yet supported");
+            }
+            return color;
+        };
+    };
+    
+       mpld3.draw_figure("fig_el1768951951822885059700933", {"width": 716.6666666666667, "height": 400.0, "axes": [{"bbox": [0.11323643410852714, 0.16069444444444447, 0.7867635658914729, 0.7334722222222223], "xlim": [341.6056377748726, 375.7715613249922], "ylim": [21.761879751086234, 19.415967813134195], "xdomain": [341.6056377748726, 375.7715613249922], "ydomain": [21.761879751086234, 19.415967813134195], "xscale": "linear", "yscale": "linear", "axes": [{"position": "bottom", "nticks": 9, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 1.0}, "visible": true}, {"position": "left", "nticks": 7, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 1.0}, "visible": true}], "axesbg": "#FFFFFF", "axesbgalpha": null, "zoomable": true, "id": "el176895194141712", "lines": [], "paths": [{"data": "data07", "xindex": 0, "yindex": 1, "coordinates": "axes", "pathcodes": ["M", "L", "S", "L", "S", "L", "S", "L", "S", "Z"], "id": "el176895195181456", "dasharray": "none", "alpha": 1, "facecolor": "#FFFFFF", "edgecolor": "#CCCCCC", "edgewidth": 1.0, "zorder": 1000000.0}], "markers": [], "texts": [{"text": "MJD - 58000", "position": [0.5, -0.09979170611626587], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "hanging", "rotation": -0.0, "fontsize": 16.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895195241936"}, {"text": "Magnitude", "position": [-0.08185333891666874, 0.5], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -90.0, "fontsize": 16.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895177838416"}, {"text": "Light Curve for ZTF18aburtku", "position": [0.5, 1.028403711418292], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -0.0, "fontsize": 18.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895195326416"}, {"text": "g-band", "position": [0.09113973938961006, 0.26699488733194465], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895195355984"}, {"text": "r-band", "position": [0.09113973938961006, 0.1956068926339708], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201502928"}, {"text": "Upper Limit r-band", "position": [0.09113973938961006, 0.12421889793599694], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201507664"}, {"text": "Upper Limit g-band", "position": [0.09113973938961006, 0.052830903238023086], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201545168"}], "collections": [{"offsets": "data01", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895195539344"}, {"offsets": "data02", "xindex": 0, "yindex": 1, "paths": [[[[361.16574069997296, 20.797401517629623], [361.16574069997296, 21.47019949555397]], ["M", "L"]], [[[361.1705670999363, 20.8792587518692], [361.1705670999363, 21.64434278011322]], ["M", "L"]], [[[362.19502309989184, 20.62980529665947], [362.19502309989184, 21.22879531979561]], ["M", "L"]], [[[362.20171299995854, 20.80166321992874], [362.20171299995854, 21.469737231731415]], ["M", "L"]], [[[364.1944213001989, 20.63088631629944], [364.1944213001989, 21.438312292099]], ["M", "L"]], [[[365.2226736000739, 20.75337463617325], [365.2226736000739, 21.454026639461517]], ["M", "L"]], [[[366.2044676002115, 20.88035136461258], [366.2044676002115, 21.655247390270233]], ["M", "L"]], [[[366.2380786999129, 20.79756984114647], [366.2380786999129, 21.40442982316017]], ["M", "L"]], [[[368.20057869981974, 20.338847905397415], [368.20057869981974, 20.875953882932663]], ["M", "L"]], [[[368.23548609996215, 20.43832778930664], [368.23548609996215, 21.034671783447266]], ["M", "L"]], [[[369.2230786997825, 20.20510768890381], [369.2230786997825, 20.85629367828369]], ["M", "L"]], [[[369.25372690008953, 20.27815169095993], [369.25372690008953, 20.779049694538116]], ["M", "L"]], [[[370.1780324000865, 20.260887384414673], [370.1780324000865, 20.815513372421265]], ["M", "L"]], [[[370.19898150023073, 20.14231400191784], [370.19898150023073, 20.609085991978645]], ["M", "L"]], [[[370.21959490003064, 20.00628450512886], [370.21959490003064, 20.512716501951218]], ["M", "L"]], [[[371.1993170999922, 20.12919157743454], [371.1993170999922, 20.564007580280304]], ["M", "L"]], [[[371.1993170999922, 20.12919157743454], [371.1993170999922, 20.564007580280304]], ["M", "L"]], [[[371.21341439988464, 20.037840574979782], [371.21341439988464, 20.415406495332718]], ["M", "L"]], [[[371.21341439988464, 20.037840574979782], [371.21341439988464, 20.415406495332718]], ["M", "L"]], [[[371.2143287002109, 20.013223484158516], [371.2143287002109, 20.38740746676922]], ["M", "L"]], [[[371.2363657001406, 20.00031453371048], [371.2363657001406, 20.508886516094208]], ["M", "L"]], [[[372.20599539997056, 20.055654853582382], [372.20599539997056, 20.372735649347305]], ["M", "L"]], [[[372.20599539997056, 20.055654853582382], [372.20599539997056, 20.372735649347305]], ["M", "L"]], [[[372.2138772998005, 20.00573195517063], [372.2138772998005, 20.387067422270775]], ["M", "L"]], [[[372.2138772998005, 20.00573195517063], [372.2138772998005, 20.387067422270775]], ["M", "L"]], [[[372.2628704002127, 20.052811294794083], [372.2628704002127, 20.44922575354576]], ["M", "L"]], [[[373.20215279981494, 19.971155926585197], [373.20215279981494, 20.436043933033943]], ["M", "L"]], [[[373.221747700125, 20.25612559914589], [373.221747700125, 21.1828735768795]], ["M", "L"]], [[[373.2365624997765, 19.906073659658432], [373.2365624997765, 20.40952768921852]], ["M", "L"]], [[[374.19903940008953, 20.03294077515602], [374.19903940008953, 20.60866078734398]], ["M", "L"]], [[[374.19995369995013, 20.293340906500816], [374.19995369995013, 20.689046636223793]], ["M", "L"]], [[[374.2185647999868, 20.300089478492737], [374.2185647999868, 20.935109496116638]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(46, 139, 87, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el176895195178704"}, {"offsets": "data03", "xindex": 0, "yindex": 1, "paths": [[[[0.0, -0.5], [0.13260155, -0.5], [0.25978993539242673, -0.44731684579412084], [0.3535533905932738, -0.3535533905932738], [0.44731684579412084, -0.25978993539242673], [0.5, -0.13260155], [0.5, 0.0], [0.5, 0.13260155], [0.44731684579412084, 0.25978993539242673], [0.3535533905932738, 0.3535533905932738], [0.25978993539242673, 0.44731684579412084], [0.13260155, 0.5], [0.0, 0.5], [-0.13260155, 0.5], [-0.25978993539242673, 0.44731684579412084], [-0.3535533905932738, 0.3535533905932738], [-0.44731684579412084, 0.25978993539242673], [-0.5, 0.13260155], [-0.5, 0.0], [-0.5, -0.13260155], [-0.44731684579412084, -0.25978993539242673], [-0.3535533905932738, -0.3535533905932738], [-0.25978993539242673, -0.44731684579412084], [-0.13260155, -0.5], [0.0, -0.5]], ["M", "C", "C", "C", "C", "C", "C", "C", "C", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895195788880"}, {"offsets": "data02", "xindex": 0, "yindex": 0, "paths": [[[[362.1749305999838, 20.627051383256912], [362.1749305999838, 21.277947396039963]], ["M", "L"]], [[[364.15430560009554, 20.21750110387802], [364.15430560009554, 20.8176971077919]], ["M", "L"]], [[[368.1380902999081, 20.43616759777069], [368.1380902999081, 20.91723358631134]], ["M", "L"]], [[[368.15726849995553, 20.536487072706223], [368.15726849995553, 21.13631108403206]], ["M", "L"]], [[[368.18412039987743, 20.359205812215805], [368.18412039987743, 20.980393797159195]], ["M", "L"]], [[[369.1796991000883, 20.317154988646507], [369.1796991000883, 20.81064499914646]], ["M", "L"]], [[[370.1436343002133, 20.38387554883957], [370.1436343002133, 20.949723541736603]], ["M", "L"]], [[[370.1564814997837, 20.150433719158173], [370.1564814997837, 20.644167721271515]], ["M", "L"]], [[[371.1383449002169, 20.39924782514572], [371.1383449002169, 20.850553810596466]], ["M", "L"]], [[[371.1383449002169, 20.39924782514572], [371.1383449002169, 20.850553810596466]], ["M", "L"]], [[[371.15899309981614, 20.348645746707916], [371.15899309981614, 20.805555760860443]], ["M", "L"]], [[[371.15899309981614, 20.348645746707916], [371.15899309981614, 20.805555760860443]], ["M", "L"]], [[[371.18100690003484, 20.251327335834503], [371.18100690003484, 20.67255800962448]], ["M", "L"]], [[[371.18100690003484, 20.251327335834503], [371.18100690003484, 20.67255800962448]], ["M", "L"]], [[[372.1558333002031, 20.27828261256218], [372.1558333002031, 20.77591660618782]], ["M", "L"]], [[[372.1558333002031, 20.27828261256218], [372.1558333002031, 20.77591660618782]], ["M", "L"]], [[[372.1819791998714, 20.241839736700058], [372.1819791998714, 20.788761764764786]], ["M", "L"]], [[[372.1819791998714, 20.241839736700058], [372.1819791998714, 20.788761764764786]], ["M", "L"]], [[[373.1285764002241, 20.272034376859665], [373.1285764002241, 20.8927643597126]], ["M", "L"]], [[[373.15287039987743, 20.18783575296402], [373.15287039987743, 20.712165772914886]], ["M", "L"]], [[[373.1817939998582, 20.131390810012817], [373.1817939998582, 20.705408811569214]], ["M", "L"]], [[[374.1593519002199, 20.0762657225132], [374.1593519002199, 20.71273574233055]], ["M", "L"]], [[[374.1841434999369, 20.078086882829666], [374.1841434999369, 20.492214173078537]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(220, 20, 60, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el176895195899984"}, {"offsets": "data04", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895201465744"}, {"offsets": "data05", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895201477456"}, {"offsets": "data06", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201462608"}, {"offsets": "data06", "xindex": 0, "yindex": 2, "paths": [[[[0.0, -0.5], [0.13260155, -0.5], [0.25978993539242673, -0.44731684579412084], [0.3535533905932738, -0.3535533905932738], [0.44731684579412084, -0.25978993539242673], [0.5, -0.13260155], [0.5, 0.0], [0.5, 0.13260155], [0.44731684579412084, 0.25978993539242673], [0.3535533905932738, 0.3535533905932738], [0.25978993539242673, 0.44731684579412084], [0.13260155, 0.5], [0.0, 0.5], [-0.13260155, 0.5], [-0.25978993539242673, 0.44731684579412084], [-0.3535533905932738, 0.3535533905932738], [-0.44731684579412084, 0.25978993539242673], [-0.5, 0.13260155], [-0.5, 0.0], [-0.5, -0.13260155], [-0.44731684579412084, -0.25978993539242673], [-0.3535533905932738, -0.3535533905932738], [-0.25978993539242673, -0.44731684579412084], [-0.13260155, -0.5], [0.0, -0.5]], ["M", "C", "C", "C", "C", "C", "C", "C", "C", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201504400"}, {"offsets": "data06", "xindex": 0, "yindex": 3, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201509072"}, {"offsets": "data06", "xindex": 0, "yindex": 4, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201546576"}], "images": [], "sharex": [], "sharey": []}], "data": {"data01": [[361.16574069997296, 21.133800506591797], [361.1705670999363, 21.26180076599121], [362.19502309989184, 20.92930030822754], [362.20171299995854, 21.135700225830078], [364.1944213001989, 21.03459930419922], [365.2226736000739, 21.103700637817383], [366.2044676002115, 21.267799377441406], [366.2380786999129, 21.10099983215332], [368.20057869981974, 20.60740089416504], [368.23548609996215, 20.736499786376953], [369.2230786997825, 20.53070068359375], [369.25372690008953, 20.528600692749023], [370.1780324000865, 20.53820037841797], [370.19898150023073, 20.375699996948242], [370.21959490003064, 20.25950050354004], [371.1993170999922, 20.346599578857422], [371.1993170999922, 20.346599578857422], [371.21341439988464, 20.22662353515625], [371.21341439988464, 20.22662353515625], [371.2143287002109, 20.200315475463867], [371.2363657001406, 20.254600524902344], [372.20599539997056, 20.214195251464844], [372.20599539997056, 20.214195251464844], [372.2138772998005, 20.196399688720703], [372.2138772998005, 20.196399688720703], [372.2628704002127, 20.251018524169922], [373.20215279981494, 20.20359992980957], [373.221747700125, 20.719499588012695], [373.2365624997765, 20.157800674438477], [374.19903940008953, 20.32080078125], [374.19995369995013, 20.491193771362305], [374.2185647999868, 20.617599487304688]], "data02": [[0.0, 0.0]], "data03": [[362.1749305999838, 20.952499389648438], [364.15430560009554, 20.51759910583496], [368.1380902999081, 20.676700592041016], [368.15726849995553, 20.83639907836914], [368.18412039987743, 20.6697998046875], [369.1796991000883, 20.563899993896484], [370.1436343002133, 20.666799545288086], [370.1564814997837, 20.397300720214844], [371.1383449002169, 20.624900817871094], [371.1383449002169, 20.624900817871094], [371.15899309981614, 20.57710075378418], [371.15899309981614, 20.57710075378418], [371.18100690003484, 20.461942672729492], [371.18100690003484, 20.461942672729492], [372.1558333002031, 20.527099609375], [372.1558333002031, 20.527099609375], [372.1819791998714, 20.515300750732422], [372.1819791998714, 20.515300750732422], [373.1285764002241, 20.582399368286133], [373.15287039987743, 20.450000762939453], [373.1817939998582, 20.418399810791016], [374.1593519002199, 20.394500732421875], [374.1841434999369, 20.2851505279541]], "data04": [[343.15863429987803, 20.625699996948242], [346.1787731000222, 20.61720085144043], [349.24172449996695, 20.25279998779297], [349.2426388999447, 20.24650001525879], [349.2681249999441, 20.298799514770508], [349.2788542001508, 20.1299991607666], [350.16318289982155, 20.467500686645508], [350.1833101999946, 20.439599990844727], [350.19837959995493, 20.395700454711914], [351.1610880000517, 20.448999404907227], [351.17556709982455, 20.422700881958008], [351.2008680999279, 20.374300003051758], [352.2208795999177, 20.109399795532227], [352.2363888998516, 20.11520004272461], [352.2438773000613, 20.06450080871582], [352.2557176002301, 20.095800399780273], [353.1602545999922, 20.27739906311035], [353.1779281999916, 20.340299606323242], [353.1992361000739, 20.34469985961914], [353.2417939999141, 20.161100387573242], [353.2558101997711, 20.188800811767578], [353.2845139000565, 20.12190055847168], [354.1993865999393, 19.894399642944336], [354.21817129990086, 19.738100051879883], [354.2403472000733, 20.05120086669922], [355.24109950009733, 20.02829933166504], [355.2547569000162, 20.087400436401367], [356.2205440001562, 19.808799743652344], [356.2214583000168, 19.715700149536133], [356.2447684998624, 19.850500106811523], [356.2688889000565, 19.702999114990234], [357.1820948999375, 19.794200897216797], [357.23783560004085, 19.73390007019043], [357.25936339981854, 19.606000900268555], [357.28414350003004, 19.55419921875], [358.1945718000643, 19.935400009155273], [358.2202431000769, 19.845500946044922], [358.2421065000817, 19.78660011291504], [359.2171180997975, 19.827899932861328], [359.2180440002121, 19.759700775146484], [359.24600689997897, 19.922300338745117], [359.2679050997831, 19.895099639892578], [360.22613430023193, 20.11210060119629], [360.2463656999171, 20.132299423217773], [360.267546299845, 19.960800170898438], [361.2445370000787, 20.12809944152832], [361.2631597002037, 20.087600708007812], [362.1385416998528, 20.44499969482422], [362.15771989990026, 20.53339958190918], [362.15863429987803, 20.601900100708008], [363.2259953999892, 20.355899810791016], [363.2394559998065, 19.522600173950195], [363.2571991002187, 19.98189926147461], [364.14304400002584, 20.529699325561523], [364.17506940010935, 20.63159942626953], [365.1362268999219, 20.550800323486328], [365.15745369996876, 20.60740089416504], [365.15836809994653, 20.693899154663086], [365.1824190001935, 20.466100692749023], [367.15984949981794, 20.549299240112305], [367.17865739995614, 20.588899612426758], [367.1953587997705, 20.32229995727539], [368.1371758999303, 20.668100357055664], [369.1401852001436, 20.62339973449707], [369.15756940003484, 20.63759994506836], [370.26079860003665, 20.05459976196289], [371.1392593001947, 20.730199813842773], [372.1425578999333, 20.645200729370117], [374.1335300998762, 20.680299758911133], [374.1344444002025, 20.59149932861328]], "data05": [[343.17887730011716, 20.775800704956055], [346.1555093000643, 20.526100158691406], [349.1591667002067, 20.28510093688965], [349.1720023001544, 20.430599212646484], [349.17292820010334, 20.41659927368164], [349.19476850004867, 20.47279930114746], [350.24709489988163, 20.33880043029785], [350.26622689981014, 20.30419921875], [350.3231019000523, 20.242300033569336], [351.23975689988583, 20.235700607299805], [351.2671181000769, 20.19849967956543], [351.2851736000739, 19.972700119018555], [352.1617708001286, 19.980499267578125], [352.17984949983656, 20.003799438476562], [352.1835994999856, 20.07200050354004], [352.1972684999928, 20.066699981689453], [360.1446759002283, 20.302000045776367], [360.1546759000048, 20.520299911499023], [361.1989930998534, 20.834699630737305], [362.2159838001244, 20.742300033569336], [362.2361690001562, 20.56570053100586], [363.1617708001286, 20.637100219726562], [363.17127310018986, 20.56999969482422], [363.20406250003725, 20.637100219726562], [364.2184028001502, 20.902099609375], [364.2378472001292, 20.84469985961914], [365.22171299997717, 20.801700592041016], [365.23819439997897, 20.792499542236328], [365.2577893999405, 20.719200134277344], [366.21358799980953, 20.877700805664062], [367.2207059999928, 20.680099487304688], [367.24439809983596, 20.536800384521484], [367.2621758999303, 20.38610076904297], [368.2014930997975, 20.785499572753906], [368.22363429982215, 20.79199981689453], [369.24526620004326, 20.564899444580078]], "data06": [[0.04680148779466462, 0.2794215110774474, 0.20803351637947354, 0.13664552168149968, 0.06525752698352583]], "data07": [[0.017242653398034324, 0.023669759515243305], [0.3341626228539054, 0.023669759515243305], [0.33908909525334374, 0.023669759515243305], [0.33908909525334374, 0.033137663321340605], [0.33908909525334374, 0.31395569021018754], [0.33908909525334374, 0.32342359401628484], [0.3341626228539054, 0.32342359401628484], [0.017242653398034324, 0.32342359401628484], [0.012316180998595938, 0.32342359401628484], [0.012316180998595938, 0.31395569021018754], [0.012316180998595938, 0.033137663321340605], [0.012316180998595938, 0.023669759515243305], [0.017242653398034324, 0.023669759515243305]]}, "id": "el176895195182288", "plugins": [{"type": "reset"}, {"type": "zoom", "button": true, "enabled": false}, {"type": "boxzoom", "button": true, "enabled": false}, {"type": "htmltooltip", "id": "el176895201465744", "labels": ["MJD: 58343.15863429988<br>Maglim: 20.625699996948242", "MJD: 58346.17877310002<br>Maglim: 20.61720085144043", "MJD: 58349.24172449997<br>Maglim: 20.25279998779297", "MJD: 58349.242638899945<br>Maglim: 20.24650001525879", "MJD: 58349.268124999944<br>Maglim: 20.298799514770508", "MJD: 58349.27885420015<br>Maglim: 20.1299991607666", "MJD: 58350.16318289982<br>Maglim: 20.467500686645508", "MJD: 58350.183310199995<br>Maglim: 20.439599990844727", "MJD: 58350.198379599955<br>Maglim: 20.395700454711914", "MJD: 58351.16108800005<br>Maglim: 20.448999404907227", "MJD: 58351.175567099825<br>Maglim: 20.422700881958008", "MJD: 58351.20086809993<br>Maglim: 20.374300003051758", "MJD: 58352.22087959992<br>Maglim: 20.109399795532227", "MJD: 58352.23638889985<br>Maglim: 20.11520004272461", "MJD: 58352.24387730006<br>Maglim: 20.06450080871582", "MJD: 58352.25571760023<br>Maglim: 20.095800399780273", "MJD: 58353.16025459999<br>Maglim: 20.27739906311035", "MJD: 58353.17792819999<br>Maglim: 20.340299606323242", "MJD: 58353.199236100074<br>Maglim: 20.34469985961914", "MJD: 58353.241793999914<br>Maglim: 20.161100387573242", "MJD: 58353.25581019977<br>Maglim: 20.188800811767578", "MJD: 58353.28451390006<br>Maglim: 20.12190055847168", "MJD: 58354.19938659994<br>Maglim: 19.894399642944336", "MJD: 58354.2181712999<br>Maglim: 19.738100051879883", "MJD: 58354.24034720007<br>Maglim: 20.05120086669922", "MJD: 58355.2410995001<br>Maglim: 20.02829933166504", "MJD: 58355.254756900016<br>Maglim: 20.087400436401367", "MJD: 58356.220544000156<br>Maglim: 19.808799743652344", "MJD: 58356.22145830002<br>Maglim: 19.715700149536133", "MJD: 58356.24476849986<br>Maglim: 19.850500106811523", "MJD: 58356.26888890006<br>Maglim: 19.702999114990234", "MJD: 58357.18209489994<br>Maglim: 19.794200897216797", "MJD: 58357.23783560004<br>Maglim: 19.73390007019043", "MJD: 58357.25936339982<br>Maglim: 19.606000900268555", "MJD: 58357.28414350003<br>Maglim: 19.55419921875", "MJD: 58358.194571800064<br>Maglim: 19.935400009155273", "MJD: 58358.22024310008<br>Maglim: 19.845500946044922", "MJD: 58358.24210650008<br>Maglim: 19.78660011291504", "MJD: 58359.2171180998<br>Maglim: 19.827899932861328", "MJD: 58359.21804400021<br>Maglim: 19.759700775146484", "MJD: 58359.24600689998<br>Maglim: 19.922300338745117", "MJD: 58359.26790509978<br>Maglim: 19.895099639892578", "MJD: 58360.22613430023<br>Maglim: 20.11210060119629", "MJD: 58360.24636569992<br>Maglim: 20.132299423217773", "MJD: 58360.267546299845<br>Maglim: 19.960800170898438", "MJD: 58361.24453700008<br>Maglim: 20.12809944152832", "MJD: 58361.263159700204<br>Maglim: 20.087600708007812", "MJD: 58362.13854169985<br>Maglim: 20.44499969482422", "MJD: 58362.1577198999<br>Maglim: 20.53339958190918", "MJD: 58362.15863429988<br>Maglim: 20.601900100708008", "MJD: 58363.22599539999<br>Maglim: 20.355899810791016", "MJD: 58363.23945599981<br>Maglim: 19.522600173950195", "MJD: 58363.25719910022<br>Maglim: 19.98189926147461", "MJD: 58364.143044000026<br>Maglim: 20.529699325561523", "MJD: 58364.17506940011<br>Maglim: 20.63159942626953", "MJD: 58365.13622689992<br>Maglim: 20.550800323486328", "MJD: 58365.15745369997<br>Maglim: 20.60740089416504", "MJD: 58365.15836809995<br>Maglim: 20.693899154663086", "MJD: 58365.18241900019<br>Maglim: 20.466100692749023", "MJD: 58367.15984949982<br>Maglim: 20.549299240112305", "MJD: 58367.178657399956<br>Maglim: 20.588899612426758", "MJD: 58367.19535879977<br>Maglim: 20.32229995727539", "MJD: 58368.13717589993<br>Maglim: 20.668100357055664", "MJD: 58369.14018520014<br>Maglim: 20.62339973449707", "MJD: 58369.157569400035<br>Maglim: 20.63759994506836", "MJD: 58370.26079860004<br>Maglim: 20.05459976196289", "MJD: 58371.139259300195<br>Maglim: 20.730199813842773", "MJD: 58372.14255789993<br>Maglim: 20.645200729370117", "MJD: 58374.133530099876<br>Maglim: 20.680299758911133", "MJD: 58374.1344444002<br>Maglim: 20.59149932861328"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895201477456", "labels": ["MJD: 58343.17887730012<br>Maglim: 20.775800704956055", "MJD: 58346.155509300064<br>Maglim: 20.526100158691406", "MJD: 58349.15916670021<br>Maglim: 20.28510093688965", "MJD: 58349.172002300154<br>Maglim: 20.430599212646484", "MJD: 58349.1729282001<br>Maglim: 20.41659927368164", "MJD: 58349.19476850005<br>Maglim: 20.47279930114746", "MJD: 58350.24709489988<br>Maglim: 20.33880043029785", "MJD: 58350.26622689981<br>Maglim: 20.30419921875", "MJD: 58350.32310190005<br>Maglim: 20.242300033569336", "MJD: 58351.239756899886<br>Maglim: 20.235700607299805", "MJD: 58351.26711810008<br>Maglim: 20.19849967956543", "MJD: 58351.285173600074<br>Maglim: 19.972700119018555", "MJD: 58352.16177080013<br>Maglim: 19.980499267578125", "MJD: 58352.17984949984<br>Maglim: 20.003799438476562", "MJD: 58352.183599499986<br>Maglim: 20.07200050354004", "MJD: 58352.19726849999<br>Maglim: 20.066699981689453", "MJD: 58360.14467590023<br>Maglim: 20.302000045776367", "MJD: 58360.154675900005<br>Maglim: 20.520299911499023", "MJD: 58361.19899309985<br>Maglim: 20.834699630737305", "MJD: 58362.215983800124<br>Maglim: 20.742300033569336", "MJD: 58362.236169000156<br>Maglim: 20.56570053100586", "MJD: 58363.16177080013<br>Maglim: 20.637100219726562", "MJD: 58363.17127310019<br>Maglim: 20.56999969482422", "MJD: 58363.20406250004<br>Maglim: 20.637100219726562", "MJD: 58364.21840280015<br>Maglim: 20.902099609375", "MJD: 58364.23784720013<br>Maglim: 20.84469985961914", "MJD: 58365.22171299998<br>Maglim: 20.801700592041016", "MJD: 58365.23819439998<br>Maglim: 20.792499542236328", "MJD: 58365.25778939994<br>Maglim: 20.719200134277344", "MJD: 58366.21358799981<br>Maglim: 20.877700805664062", "MJD: 58367.22070599999<br>Maglim: 20.680099487304688", "MJD: 58367.244398099836<br>Maglim: 20.536800384521484", "MJD: 58367.26217589993<br>Maglim: 20.38610076904297", "MJD: 58368.2014930998<br>Maglim: 20.785499572753906", "MJD: 58368.22363429982<br>Maglim: 20.79199981689453", "MJD: 58369.24526620004<br>Maglim: 20.564899444580078"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895195539344", "labels": ["MJD: 58361.16574069997<br>Mag: 21.133800506591797", "MJD: 58361.170567099936<br>Mag: 21.26180076599121", "MJD: 58362.19502309989<br>Mag: 20.92930030822754", "MJD: 58362.20171299996<br>Mag: 21.135700225830078", "MJD: 58364.1944213002<br>Mag: 21.03459930419922", "MJD: 58365.222673600074<br>Mag: 21.103700637817383", "MJD: 58366.20446760021<br>Mag: 21.267799377441406", "MJD: 58366.23807869991<br>Mag: 21.10099983215332", "MJD: 58368.20057869982<br>Mag: 20.60740089416504", "MJD: 58368.23548609996<br>Mag: 20.736499786376953", "MJD: 58369.22307869978<br>Mag: 20.53070068359375", "MJD: 58369.25372690009<br>Mag: 20.528600692749023", "MJD: 58370.17803240009<br>Mag: 20.53820037841797", "MJD: 58370.19898150023<br>Mag: 20.375699996948242", "MJD: 58370.21959490003<br>Mag: 20.25950050354004", "MJD: 58371.19931709999<br>Mag: 20.346599578857422", "MJD: 58371.19931709999<br>Mag: 20.346599578857422", "MJD: 58371.213414399885<br>Mag: 20.22662353515625", "MJD: 58371.213414399885<br>Mag: 20.22662353515625", "MJD: 58371.21432870021<br>Mag: 20.200315475463867", "MJD: 58371.23636570014<br>Mag: 20.254600524902344", "MJD: 58372.20599539997<br>Mag: 20.214195251464844", "MJD: 58372.20599539997<br>Mag: 20.214195251464844", "MJD: 58372.2138772998<br>Mag: 20.196399688720703", "MJD: 58372.2138772998<br>Mag: 20.196399688720703", "MJD: 58372.26287040021<br>Mag: 20.251018524169922", "MJD: 58373.202152799815<br>Mag: 20.20359992980957", "MJD: 58373.221747700125<br>Mag: 20.719499588012695", "MJD: 58373.23656249978<br>Mag: 20.157800674438477", "MJD: 58374.19903940009<br>Mag: 20.32080078125", "MJD: 58374.19995369995<br>Mag: 20.491193771362305", "MJD: 58374.21856479999<br>Mag: 20.617599487304688"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895195788880", "labels": ["MJD: 58362.174930599984<br>Mag: 20.952499389648438", "MJD: 58364.154305600096<br>Mag: 20.51759910583496", "MJD: 58368.13809029991<br>Mag: 20.676700592041016", "MJD: 58368.157268499956<br>Mag: 20.83639907836914", "MJD: 58368.18412039988<br>Mag: 20.6697998046875", "MJD: 58369.17969910009<br>Mag: 20.563899993896484", "MJD: 58370.14363430021<br>Mag: 20.666799545288086", "MJD: 58370.156481499784<br>Mag: 20.397300720214844", "MJD: 58371.13834490022<br>Mag: 20.624900817871094", "MJD: 58371.13834490022<br>Mag: 20.624900817871094", "MJD: 58371.158993099816<br>Mag: 20.57710075378418", "MJD: 58371.158993099816<br>Mag: 20.57710075378418", "MJD: 58371.181006900035<br>Mag: 20.461942672729492", "MJD: 58371.181006900035<br>Mag: 20.461942672729492", "MJD: 58372.1558333002<br>Mag: 20.527099609375", "MJD: 58372.1558333002<br>Mag: 20.527099609375", "MJD: 58372.18197919987<br>Mag: 20.515300750732422", "MJD: 58372.18197919987<br>Mag: 20.515300750732422", "MJD: 58373.128576400224<br>Mag: 20.582399368286133", "MJD: 58373.15287039988<br>Mag: 20.450000762939453", "MJD: 58373.18179399986<br>Mag: 20.418399810791016", "MJD: 58374.15935190022<br>Mag: 20.394500732421875", "MJD: 58374.18414349994<br>Mag: 20.2851505279541"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "interactive_legend", "element_ids": [["el176895195539344", "el176895195788880"], ["el176895201465744", "el176895201477456"]], "labels": ["Alerts", "Limits"], "ax": null, "alpha_unsel": 0.2, "alpha_over": 1.0, "start_visible": [true, true], "font_size": 10, "legend_offset": [0, 0]}]});
+   }(mpld3);
+}else if(typeof define === "function" && define.amd){
+   // require.js is available: use it to load d3/mpld3
+   require.config({paths: {d3: "https://d3js.org/d3.v5"}});
+   require(["d3"], function(d3){
+      window.d3 = d3;
+      mpld3_load_lib("https://mpld3.github.io/js/mpld3.v0.5.10.js", function(){
+         
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("interactive_legend", InteractiveLegend);
+    InteractiveLegend.prototype = Object.create(mpld3.Plugin.prototype);
+    InteractiveLegend.prototype.constructor = InteractiveLegend;
+    InteractiveLegend.prototype.requiredProps = ["element_ids", "labels"];
+    InteractiveLegend.prototype.defaultProps = {"ax":null,
+                                                "alpha_unsel":0.2,
+                                                "alpha_over":1.0,
+                                                "start_visible":true,
+                                                "font_size": 10,
+                                                "legend_offset": [0,0]}
+    function InteractiveLegend(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    InteractiveLegend.prototype.draw = function(){
+        var alpha_unsel = this.props.alpha_unsel;
+        var alpha_over = this.props.alpha_over;
+        var font_size = this.props.font_size;
+        var legend_offset = this.props.legend_offset;
+
+        var legendItems = new Array();
+        for(var i=0; i<this.props.labels.length; i++){
+            var obj = {};
+            obj.label = this.props.labels[i];
+
+            var element_id = this.props.element_ids[i];
+            mpld3_elements = [];
+            for(var j=0; j<element_id.length; j++){
+                var mpld3_element = mpld3.get_element(element_id[j], this.fig);
+
+                // mpld3_element might be null in case of Line2D instances
+                // for we pass the id for both the line and the markers. Either
+                // one might not exist on the D3 side
+                if(mpld3_element){
+                    mpld3_elements.push(mpld3_element);
+                }
+            }
+
+            obj.mpld3_elements = mpld3_elements;
+            obj.visible = this.props.start_visible[i]; // should become be setable from python side
+            legendItems.push(obj);
+            set_alphas(obj, false);
+        }
+
+        // determine the axes with which this legend is associated
+        var ax = this.props.ax
+        if(!ax){
+            ax = this.fig.axes[0];
+        } else{
+            ax = mpld3.get_element(ax, this.fig);
+        }
+
+        // add a legend group to the canvas of the figure
+        var legend = this.fig.canvas.append("svg:g")
+                               .attr("class", "legend");
+
+        // add the rectangles
+        legend.selectAll("rect")
+                .data(legendItems)
+                .enter().append("rect")
+                .attr("height", 0.7*font_size)
+                .attr("width", 1.6*font_size)
+                .attr("x", ax.width + ax.position[0] + 15 + legend_offset[0])
+                .attr("y",function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + legend_offset[1];})
+                .attr("stroke", get_color)
+                .attr("class", "legend-box")
+                .style("fill", function(d, i) {
+                           return d.visible ? get_color(d) : "white";})
+                .on("click", click).on('mouseover', over).on('mouseout', out);
+
+        // add the labels
+        legend.selectAll("text")
+              .data(legendItems)
+              .enter().append("text")
+              .attr("font-size", font_size)
+              .attr("x", function (d) {
+                           return ax.width + ax.position[0] + (1.9*font_size+15) + legend_offset[0];})
+              .attr("y", function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + (0.72*font_size-1) + legend_offset[1];})
+              .text(function(d) { return d.label })
+              .on('mouseover', over).on('mouseout', out);
+
+
+        // specify the action on click
+        function click(d,i){
+            d.visible = !d.visible;
+            d3.select(this)
+              .style("fill",function(d, i) {
+                return d.visible ? get_color(d) : "white";
+              })
+            set_alphas(d, false);
+
+        };
+
+        // specify the action on legend overlay 
+        function over(d,i){
+             set_alphas(d, true);
+        };
+
+        // specify the action on legend overlay 
+        function out(d,i){
+             set_alphas(d, false);
+        };
+
+        // helper function for setting alphas
+        function set_alphas(d, is_over){
+            for(var i=0; i<d.mpld3_elements.length; i++){
+                var type = d.mpld3_elements[i].constructor.name;
+
+                if(type =="mpld3_Line"){
+                    var current_alpha = d.mpld3_elements[i].props.alpha;
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d3.select(d.mpld3_elements[i].path.nodes()[0])
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("stroke-width", is_over ?
+                                alpha_over * d.mpld3_elements[i].props.edgewidth : d.mpld3_elements[i].props.edgewidth);
+                } else if((type=="mpld3_PathCollection")||
+                         (type=="mpld3_Markers")){
+                    var current_alpha = d.mpld3_elements[i].props.alphas[0];
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d.mpld3_elements[i].pathsobj
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("fill-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel));
+                } else{
+                    console.log(type + " not yet supported");
+                }
+            }
+        };
+
+
+        // helper function for determining the color of the rectangles
+        function get_color(d){
+            var type = d.mpld3_elements[0].constructor.name;
+            var color = "black";
+            if(type =="mpld3_Line"){
+                color = d.mpld3_elements[0].props.edgecolor;
+            } else if((type=="mpld3_PathCollection")||
+                      (type=="mpld3_Markers")){
+                color = d.mpld3_elements[0].props.facecolors[0];
+            } else{
+                console.log(type + " not yet supported");
+            }
+            return color;
+        };
+    };
+    
+         mpld3.draw_figure("fig_el1768951951822885059700933", {"width": 716.6666666666667, "height": 400.0, "axes": [{"bbox": [0.11323643410852714, 0.16069444444444447, 0.7867635658914729, 0.7334722222222223], "xlim": [341.6056377748726, 375.7715613249922], "ylim": [21.761879751086234, 19.415967813134195], "xdomain": [341.6056377748726, 375.7715613249922], "ydomain": [21.761879751086234, 19.415967813134195], "xscale": "linear", "yscale": "linear", "axes": [{"position": "bottom", "nticks": 9, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 1.0}, "visible": true}, {"position": "left", "nticks": 7, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 1.0}, "visible": true}], "axesbg": "#FFFFFF", "axesbgalpha": null, "zoomable": true, "id": "el176895194141712", "lines": [], "paths": [{"data": "data07", "xindex": 0, "yindex": 1, "coordinates": "axes", "pathcodes": ["M", "L", "S", "L", "S", "L", "S", "L", "S", "Z"], "id": "el176895195181456", "dasharray": "none", "alpha": 1, "facecolor": "#FFFFFF", "edgecolor": "#CCCCCC", "edgewidth": 1.0, "zorder": 1000000.0}], "markers": [], "texts": [{"text": "MJD - 58000", "position": [0.5, -0.09979170611626587], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "hanging", "rotation": -0.0, "fontsize": 16.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895195241936"}, {"text": "Magnitude", "position": [-0.08185333891666874, 0.5], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -90.0, "fontsize": 16.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895177838416"}, {"text": "Light Curve for ZTF18aburtku", "position": [0.5, 1.028403711418292], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -0.0, "fontsize": 18.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895195326416"}, {"text": "g-band", "position": [0.09113973938961006, 0.26699488733194465], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895195355984"}, {"text": "r-band", "position": [0.09113973938961006, 0.1956068926339708], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201502928"}, {"text": "Upper Limit r-band", "position": [0.09113973938961006, 0.12421889793599694], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201507664"}, {"text": "Upper Limit g-band", "position": [0.09113973938961006, 0.052830903238023086], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201545168"}], "collections": [{"offsets": "data01", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895195539344"}, {"offsets": "data02", "xindex": 0, "yindex": 1, "paths": [[[[361.16574069997296, 20.797401517629623], [361.16574069997296, 21.47019949555397]], ["M", "L"]], [[[361.1705670999363, 20.8792587518692], [361.1705670999363, 21.64434278011322]], ["M", "L"]], [[[362.19502309989184, 20.62980529665947], [362.19502309989184, 21.22879531979561]], ["M", "L"]], [[[362.20171299995854, 20.80166321992874], [362.20171299995854, 21.469737231731415]], ["M", "L"]], [[[364.1944213001989, 20.63088631629944], [364.1944213001989, 21.438312292099]], ["M", "L"]], [[[365.2226736000739, 20.75337463617325], [365.2226736000739, 21.454026639461517]], ["M", "L"]], [[[366.2044676002115, 20.88035136461258], [366.2044676002115, 21.655247390270233]], ["M", "L"]], [[[366.2380786999129, 20.79756984114647], [366.2380786999129, 21.40442982316017]], ["M", "L"]], [[[368.20057869981974, 20.338847905397415], [368.20057869981974, 20.875953882932663]], ["M", "L"]], [[[368.23548609996215, 20.43832778930664], [368.23548609996215, 21.034671783447266]], ["M", "L"]], [[[369.2230786997825, 20.20510768890381], [369.2230786997825, 20.85629367828369]], ["M", "L"]], [[[369.25372690008953, 20.27815169095993], [369.25372690008953, 20.779049694538116]], ["M", "L"]], [[[370.1780324000865, 20.260887384414673], [370.1780324000865, 20.815513372421265]], ["M", "L"]], [[[370.19898150023073, 20.14231400191784], [370.19898150023073, 20.609085991978645]], ["M", "L"]], [[[370.21959490003064, 20.00628450512886], [370.21959490003064, 20.512716501951218]], ["M", "L"]], [[[371.1993170999922, 20.12919157743454], [371.1993170999922, 20.564007580280304]], ["M", "L"]], [[[371.1993170999922, 20.12919157743454], [371.1993170999922, 20.564007580280304]], ["M", "L"]], [[[371.21341439988464, 20.037840574979782], [371.21341439988464, 20.415406495332718]], ["M", "L"]], [[[371.21341439988464, 20.037840574979782], [371.21341439988464, 20.415406495332718]], ["M", "L"]], [[[371.2143287002109, 20.013223484158516], [371.2143287002109, 20.38740746676922]], ["M", "L"]], [[[371.2363657001406, 20.00031453371048], [371.2363657001406, 20.508886516094208]], ["M", "L"]], [[[372.20599539997056, 20.055654853582382], [372.20599539997056, 20.372735649347305]], ["M", "L"]], [[[372.20599539997056, 20.055654853582382], [372.20599539997056, 20.372735649347305]], ["M", "L"]], [[[372.2138772998005, 20.00573195517063], [372.2138772998005, 20.387067422270775]], ["M", "L"]], [[[372.2138772998005, 20.00573195517063], [372.2138772998005, 20.387067422270775]], ["M", "L"]], [[[372.2628704002127, 20.052811294794083], [372.2628704002127, 20.44922575354576]], ["M", "L"]], [[[373.20215279981494, 19.971155926585197], [373.20215279981494, 20.436043933033943]], ["M", "L"]], [[[373.221747700125, 20.25612559914589], [373.221747700125, 21.1828735768795]], ["M", "L"]], [[[373.2365624997765, 19.906073659658432], [373.2365624997765, 20.40952768921852]], ["M", "L"]], [[[374.19903940008953, 20.03294077515602], [374.19903940008953, 20.60866078734398]], ["M", "L"]], [[[374.19995369995013, 20.293340906500816], [374.19995369995013, 20.689046636223793]], ["M", "L"]], [[[374.2185647999868, 20.300089478492737], [374.2185647999868, 20.935109496116638]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(46, 139, 87, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el176895195178704"}, {"offsets": "data03", "xindex": 0, "yindex": 1, "paths": [[[[0.0, -0.5], [0.13260155, -0.5], [0.25978993539242673, -0.44731684579412084], [0.3535533905932738, -0.3535533905932738], [0.44731684579412084, -0.25978993539242673], [0.5, -0.13260155], [0.5, 0.0], [0.5, 0.13260155], [0.44731684579412084, 0.25978993539242673], [0.3535533905932738, 0.3535533905932738], [0.25978993539242673, 0.44731684579412084], [0.13260155, 0.5], [0.0, 0.5], [-0.13260155, 0.5], [-0.25978993539242673, 0.44731684579412084], [-0.3535533905932738, 0.3535533905932738], [-0.44731684579412084, 0.25978993539242673], [-0.5, 0.13260155], [-0.5, 0.0], [-0.5, -0.13260155], [-0.44731684579412084, -0.25978993539242673], [-0.3535533905932738, -0.3535533905932738], [-0.25978993539242673, -0.44731684579412084], [-0.13260155, -0.5], [0.0, -0.5]], ["M", "C", "C", "C", "C", "C", "C", "C", "C", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895195788880"}, {"offsets": "data02", "xindex": 0, "yindex": 0, "paths": [[[[362.1749305999838, 20.627051383256912], [362.1749305999838, 21.277947396039963]], ["M", "L"]], [[[364.15430560009554, 20.21750110387802], [364.15430560009554, 20.8176971077919]], ["M", "L"]], [[[368.1380902999081, 20.43616759777069], [368.1380902999081, 20.91723358631134]], ["M", "L"]], [[[368.15726849995553, 20.536487072706223], [368.15726849995553, 21.13631108403206]], ["M", "L"]], [[[368.18412039987743, 20.359205812215805], [368.18412039987743, 20.980393797159195]], ["M", "L"]], [[[369.1796991000883, 20.317154988646507], [369.1796991000883, 20.81064499914646]], ["M", "L"]], [[[370.1436343002133, 20.38387554883957], [370.1436343002133, 20.949723541736603]], ["M", "L"]], [[[370.1564814997837, 20.150433719158173], [370.1564814997837, 20.644167721271515]], ["M", "L"]], [[[371.1383449002169, 20.39924782514572], [371.1383449002169, 20.850553810596466]], ["M", "L"]], [[[371.1383449002169, 20.39924782514572], [371.1383449002169, 20.850553810596466]], ["M", "L"]], [[[371.15899309981614, 20.348645746707916], [371.15899309981614, 20.805555760860443]], ["M", "L"]], [[[371.15899309981614, 20.348645746707916], [371.15899309981614, 20.805555760860443]], ["M", "L"]], [[[371.18100690003484, 20.251327335834503], [371.18100690003484, 20.67255800962448]], ["M", "L"]], [[[371.18100690003484, 20.251327335834503], [371.18100690003484, 20.67255800962448]], ["M", "L"]], [[[372.1558333002031, 20.27828261256218], [372.1558333002031, 20.77591660618782]], ["M", "L"]], [[[372.1558333002031, 20.27828261256218], [372.1558333002031, 20.77591660618782]], ["M", "L"]], [[[372.1819791998714, 20.241839736700058], [372.1819791998714, 20.788761764764786]], ["M", "L"]], [[[372.1819791998714, 20.241839736700058], [372.1819791998714, 20.788761764764786]], ["M", "L"]], [[[373.1285764002241, 20.272034376859665], [373.1285764002241, 20.8927643597126]], ["M", "L"]], [[[373.15287039987743, 20.18783575296402], [373.15287039987743, 20.712165772914886]], ["M", "L"]], [[[373.1817939998582, 20.131390810012817], [373.1817939998582, 20.705408811569214]], ["M", "L"]], [[[374.1593519002199, 20.0762657225132], [374.1593519002199, 20.71273574233055]], ["M", "L"]], [[[374.1841434999369, 20.078086882829666], [374.1841434999369, 20.492214173078537]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(220, 20, 60, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el176895195899984"}, {"offsets": "data04", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895201465744"}, {"offsets": "data05", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895201477456"}, {"offsets": "data06", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201462608"}, {"offsets": "data06", "xindex": 0, "yindex": 2, "paths": [[[[0.0, -0.5], [0.13260155, -0.5], [0.25978993539242673, -0.44731684579412084], [0.3535533905932738, -0.3535533905932738], [0.44731684579412084, -0.25978993539242673], [0.5, -0.13260155], [0.5, 0.0], [0.5, 0.13260155], [0.44731684579412084, 0.25978993539242673], [0.3535533905932738, 0.3535533905932738], [0.25978993539242673, 0.44731684579412084], [0.13260155, 0.5], [0.0, 0.5], [-0.13260155, 0.5], [-0.25978993539242673, 0.44731684579412084], [-0.3535533905932738, 0.3535533905932738], [-0.44731684579412084, 0.25978993539242673], [-0.5, 0.13260155], [-0.5, 0.0], [-0.5, -0.13260155], [-0.44731684579412084, -0.25978993539242673], [-0.3535533905932738, -0.3535533905932738], [-0.25978993539242673, -0.44731684579412084], [-0.13260155, -0.5], [0.0, -0.5]], ["M", "C", "C", "C", "C", "C", "C", "C", "C", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201504400"}, {"offsets": "data06", "xindex": 0, "yindex": 3, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201509072"}, {"offsets": "data06", "xindex": 0, "yindex": 4, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201546576"}], "images": [], "sharex": [], "sharey": []}], "data": {"data01": [[361.16574069997296, 21.133800506591797], [361.1705670999363, 21.26180076599121], [362.19502309989184, 20.92930030822754], [362.20171299995854, 21.135700225830078], [364.1944213001989, 21.03459930419922], [365.2226736000739, 21.103700637817383], [366.2044676002115, 21.267799377441406], [366.2380786999129, 21.10099983215332], [368.20057869981974, 20.60740089416504], [368.23548609996215, 20.736499786376953], [369.2230786997825, 20.53070068359375], [369.25372690008953, 20.528600692749023], [370.1780324000865, 20.53820037841797], [370.19898150023073, 20.375699996948242], [370.21959490003064, 20.25950050354004], [371.1993170999922, 20.346599578857422], [371.1993170999922, 20.346599578857422], [371.21341439988464, 20.22662353515625], [371.21341439988464, 20.22662353515625], [371.2143287002109, 20.200315475463867], [371.2363657001406, 20.254600524902344], [372.20599539997056, 20.214195251464844], [372.20599539997056, 20.214195251464844], [372.2138772998005, 20.196399688720703], [372.2138772998005, 20.196399688720703], [372.2628704002127, 20.251018524169922], [373.20215279981494, 20.20359992980957], [373.221747700125, 20.719499588012695], [373.2365624997765, 20.157800674438477], [374.19903940008953, 20.32080078125], [374.19995369995013, 20.491193771362305], [374.2185647999868, 20.617599487304688]], "data02": [[0.0, 0.0]], "data03": [[362.1749305999838, 20.952499389648438], [364.15430560009554, 20.51759910583496], [368.1380902999081, 20.676700592041016], [368.15726849995553, 20.83639907836914], [368.18412039987743, 20.6697998046875], [369.1796991000883, 20.563899993896484], [370.1436343002133, 20.666799545288086], [370.1564814997837, 20.397300720214844], [371.1383449002169, 20.624900817871094], [371.1383449002169, 20.624900817871094], [371.15899309981614, 20.57710075378418], [371.15899309981614, 20.57710075378418], [371.18100690003484, 20.461942672729492], [371.18100690003484, 20.461942672729492], [372.1558333002031, 20.527099609375], [372.1558333002031, 20.527099609375], [372.1819791998714, 20.515300750732422], [372.1819791998714, 20.515300750732422], [373.1285764002241, 20.582399368286133], [373.15287039987743, 20.450000762939453], [373.1817939998582, 20.418399810791016], [374.1593519002199, 20.394500732421875], [374.1841434999369, 20.2851505279541]], "data04": [[343.15863429987803, 20.625699996948242], [346.1787731000222, 20.61720085144043], [349.24172449996695, 20.25279998779297], [349.2426388999447, 20.24650001525879], [349.2681249999441, 20.298799514770508], [349.2788542001508, 20.1299991607666], [350.16318289982155, 20.467500686645508], [350.1833101999946, 20.439599990844727], [350.19837959995493, 20.395700454711914], [351.1610880000517, 20.448999404907227], [351.17556709982455, 20.422700881958008], [351.2008680999279, 20.374300003051758], [352.2208795999177, 20.109399795532227], [352.2363888998516, 20.11520004272461], [352.2438773000613, 20.06450080871582], [352.2557176002301, 20.095800399780273], [353.1602545999922, 20.27739906311035], [353.1779281999916, 20.340299606323242], [353.1992361000739, 20.34469985961914], [353.2417939999141, 20.161100387573242], [353.2558101997711, 20.188800811767578], [353.2845139000565, 20.12190055847168], [354.1993865999393, 19.894399642944336], [354.21817129990086, 19.738100051879883], [354.2403472000733, 20.05120086669922], [355.24109950009733, 20.02829933166504], [355.2547569000162, 20.087400436401367], [356.2205440001562, 19.808799743652344], [356.2214583000168, 19.715700149536133], [356.2447684998624, 19.850500106811523], [356.2688889000565, 19.702999114990234], [357.1820948999375, 19.794200897216797], [357.23783560004085, 19.73390007019043], [357.25936339981854, 19.606000900268555], [357.28414350003004, 19.55419921875], [358.1945718000643, 19.935400009155273], [358.2202431000769, 19.845500946044922], [358.2421065000817, 19.78660011291504], [359.2171180997975, 19.827899932861328], [359.2180440002121, 19.759700775146484], [359.24600689997897, 19.922300338745117], [359.2679050997831, 19.895099639892578], [360.22613430023193, 20.11210060119629], [360.2463656999171, 20.132299423217773], [360.267546299845, 19.960800170898438], [361.2445370000787, 20.12809944152832], [361.2631597002037, 20.087600708007812], [362.1385416998528, 20.44499969482422], [362.15771989990026, 20.53339958190918], [362.15863429987803, 20.601900100708008], [363.2259953999892, 20.355899810791016], [363.2394559998065, 19.522600173950195], [363.2571991002187, 19.98189926147461], [364.14304400002584, 20.529699325561523], [364.17506940010935, 20.63159942626953], [365.1362268999219, 20.550800323486328], [365.15745369996876, 20.60740089416504], [365.15836809994653, 20.693899154663086], [365.1824190001935, 20.466100692749023], [367.15984949981794, 20.549299240112305], [367.17865739995614, 20.588899612426758], [367.1953587997705, 20.32229995727539], [368.1371758999303, 20.668100357055664], [369.1401852001436, 20.62339973449707], [369.15756940003484, 20.63759994506836], [370.26079860003665, 20.05459976196289], [371.1392593001947, 20.730199813842773], [372.1425578999333, 20.645200729370117], [374.1335300998762, 20.680299758911133], [374.1344444002025, 20.59149932861328]], "data05": [[343.17887730011716, 20.775800704956055], [346.1555093000643, 20.526100158691406], [349.1591667002067, 20.28510093688965], [349.1720023001544, 20.430599212646484], [349.17292820010334, 20.41659927368164], [349.19476850004867, 20.47279930114746], [350.24709489988163, 20.33880043029785], [350.26622689981014, 20.30419921875], [350.3231019000523, 20.242300033569336], [351.23975689988583, 20.235700607299805], [351.2671181000769, 20.19849967956543], [351.2851736000739, 19.972700119018555], [352.1617708001286, 19.980499267578125], [352.17984949983656, 20.003799438476562], [352.1835994999856, 20.07200050354004], [352.1972684999928, 20.066699981689453], [360.1446759002283, 20.302000045776367], [360.1546759000048, 20.520299911499023], [361.1989930998534, 20.834699630737305], [362.2159838001244, 20.742300033569336], [362.2361690001562, 20.56570053100586], [363.1617708001286, 20.637100219726562], [363.17127310018986, 20.56999969482422], [363.20406250003725, 20.637100219726562], [364.2184028001502, 20.902099609375], [364.2378472001292, 20.84469985961914], [365.22171299997717, 20.801700592041016], [365.23819439997897, 20.792499542236328], [365.2577893999405, 20.719200134277344], [366.21358799980953, 20.877700805664062], [367.2207059999928, 20.680099487304688], [367.24439809983596, 20.536800384521484], [367.2621758999303, 20.38610076904297], [368.2014930997975, 20.785499572753906], [368.22363429982215, 20.79199981689453], [369.24526620004326, 20.564899444580078]], "data06": [[0.04680148779466462, 0.2794215110774474, 0.20803351637947354, 0.13664552168149968, 0.06525752698352583]], "data07": [[0.017242653398034324, 0.023669759515243305], [0.3341626228539054, 0.023669759515243305], [0.33908909525334374, 0.023669759515243305], [0.33908909525334374, 0.033137663321340605], [0.33908909525334374, 0.31395569021018754], [0.33908909525334374, 0.32342359401628484], [0.3341626228539054, 0.32342359401628484], [0.017242653398034324, 0.32342359401628484], [0.012316180998595938, 0.32342359401628484], [0.012316180998595938, 0.31395569021018754], [0.012316180998595938, 0.033137663321340605], [0.012316180998595938, 0.023669759515243305], [0.017242653398034324, 0.023669759515243305]]}, "id": "el176895195182288", "plugins": [{"type": "reset"}, {"type": "zoom", "button": true, "enabled": false}, {"type": "boxzoom", "button": true, "enabled": false}, {"type": "htmltooltip", "id": "el176895201465744", "labels": ["MJD: 58343.15863429988<br>Maglim: 20.625699996948242", "MJD: 58346.17877310002<br>Maglim: 20.61720085144043", "MJD: 58349.24172449997<br>Maglim: 20.25279998779297", "MJD: 58349.242638899945<br>Maglim: 20.24650001525879", "MJD: 58349.268124999944<br>Maglim: 20.298799514770508", "MJD: 58349.27885420015<br>Maglim: 20.1299991607666", "MJD: 58350.16318289982<br>Maglim: 20.467500686645508", "MJD: 58350.183310199995<br>Maglim: 20.439599990844727", "MJD: 58350.198379599955<br>Maglim: 20.395700454711914", "MJD: 58351.16108800005<br>Maglim: 20.448999404907227", "MJD: 58351.175567099825<br>Maglim: 20.422700881958008", "MJD: 58351.20086809993<br>Maglim: 20.374300003051758", "MJD: 58352.22087959992<br>Maglim: 20.109399795532227", "MJD: 58352.23638889985<br>Maglim: 20.11520004272461", "MJD: 58352.24387730006<br>Maglim: 20.06450080871582", "MJD: 58352.25571760023<br>Maglim: 20.095800399780273", "MJD: 58353.16025459999<br>Maglim: 20.27739906311035", "MJD: 58353.17792819999<br>Maglim: 20.340299606323242", "MJD: 58353.199236100074<br>Maglim: 20.34469985961914", "MJD: 58353.241793999914<br>Maglim: 20.161100387573242", "MJD: 58353.25581019977<br>Maglim: 20.188800811767578", "MJD: 58353.28451390006<br>Maglim: 20.12190055847168", "MJD: 58354.19938659994<br>Maglim: 19.894399642944336", "MJD: 58354.2181712999<br>Maglim: 19.738100051879883", "MJD: 58354.24034720007<br>Maglim: 20.05120086669922", "MJD: 58355.2410995001<br>Maglim: 20.02829933166504", "MJD: 58355.254756900016<br>Maglim: 20.087400436401367", "MJD: 58356.220544000156<br>Maglim: 19.808799743652344", "MJD: 58356.22145830002<br>Maglim: 19.715700149536133", "MJD: 58356.24476849986<br>Maglim: 19.850500106811523", "MJD: 58356.26888890006<br>Maglim: 19.702999114990234", "MJD: 58357.18209489994<br>Maglim: 19.794200897216797", "MJD: 58357.23783560004<br>Maglim: 19.73390007019043", "MJD: 58357.25936339982<br>Maglim: 19.606000900268555", "MJD: 58357.28414350003<br>Maglim: 19.55419921875", "MJD: 58358.194571800064<br>Maglim: 19.935400009155273", "MJD: 58358.22024310008<br>Maglim: 19.845500946044922", "MJD: 58358.24210650008<br>Maglim: 19.78660011291504", "MJD: 58359.2171180998<br>Maglim: 19.827899932861328", "MJD: 58359.21804400021<br>Maglim: 19.759700775146484", "MJD: 58359.24600689998<br>Maglim: 19.922300338745117", "MJD: 58359.26790509978<br>Maglim: 19.895099639892578", "MJD: 58360.22613430023<br>Maglim: 20.11210060119629", "MJD: 58360.24636569992<br>Maglim: 20.132299423217773", "MJD: 58360.267546299845<br>Maglim: 19.960800170898438", "MJD: 58361.24453700008<br>Maglim: 20.12809944152832", "MJD: 58361.263159700204<br>Maglim: 20.087600708007812", "MJD: 58362.13854169985<br>Maglim: 20.44499969482422", "MJD: 58362.1577198999<br>Maglim: 20.53339958190918", "MJD: 58362.15863429988<br>Maglim: 20.601900100708008", "MJD: 58363.22599539999<br>Maglim: 20.355899810791016", "MJD: 58363.23945599981<br>Maglim: 19.522600173950195", "MJD: 58363.25719910022<br>Maglim: 19.98189926147461", "MJD: 58364.143044000026<br>Maglim: 20.529699325561523", "MJD: 58364.17506940011<br>Maglim: 20.63159942626953", "MJD: 58365.13622689992<br>Maglim: 20.550800323486328", "MJD: 58365.15745369997<br>Maglim: 20.60740089416504", "MJD: 58365.15836809995<br>Maglim: 20.693899154663086", "MJD: 58365.18241900019<br>Maglim: 20.466100692749023", "MJD: 58367.15984949982<br>Maglim: 20.549299240112305", "MJD: 58367.178657399956<br>Maglim: 20.588899612426758", "MJD: 58367.19535879977<br>Maglim: 20.32229995727539", "MJD: 58368.13717589993<br>Maglim: 20.668100357055664", "MJD: 58369.14018520014<br>Maglim: 20.62339973449707", "MJD: 58369.157569400035<br>Maglim: 20.63759994506836", "MJD: 58370.26079860004<br>Maglim: 20.05459976196289", "MJD: 58371.139259300195<br>Maglim: 20.730199813842773", "MJD: 58372.14255789993<br>Maglim: 20.645200729370117", "MJD: 58374.133530099876<br>Maglim: 20.680299758911133", "MJD: 58374.1344444002<br>Maglim: 20.59149932861328"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895201477456", "labels": ["MJD: 58343.17887730012<br>Maglim: 20.775800704956055", "MJD: 58346.155509300064<br>Maglim: 20.526100158691406", "MJD: 58349.15916670021<br>Maglim: 20.28510093688965", "MJD: 58349.172002300154<br>Maglim: 20.430599212646484", "MJD: 58349.1729282001<br>Maglim: 20.41659927368164", "MJD: 58349.19476850005<br>Maglim: 20.47279930114746", "MJD: 58350.24709489988<br>Maglim: 20.33880043029785", "MJD: 58350.26622689981<br>Maglim: 20.30419921875", "MJD: 58350.32310190005<br>Maglim: 20.242300033569336", "MJD: 58351.239756899886<br>Maglim: 20.235700607299805", "MJD: 58351.26711810008<br>Maglim: 20.19849967956543", "MJD: 58351.285173600074<br>Maglim: 19.972700119018555", "MJD: 58352.16177080013<br>Maglim: 19.980499267578125", "MJD: 58352.17984949984<br>Maglim: 20.003799438476562", "MJD: 58352.183599499986<br>Maglim: 20.07200050354004", "MJD: 58352.19726849999<br>Maglim: 20.066699981689453", "MJD: 58360.14467590023<br>Maglim: 20.302000045776367", "MJD: 58360.154675900005<br>Maglim: 20.520299911499023", "MJD: 58361.19899309985<br>Maglim: 20.834699630737305", "MJD: 58362.215983800124<br>Maglim: 20.742300033569336", "MJD: 58362.236169000156<br>Maglim: 20.56570053100586", "MJD: 58363.16177080013<br>Maglim: 20.637100219726562", "MJD: 58363.17127310019<br>Maglim: 20.56999969482422", "MJD: 58363.20406250004<br>Maglim: 20.637100219726562", "MJD: 58364.21840280015<br>Maglim: 20.902099609375", "MJD: 58364.23784720013<br>Maglim: 20.84469985961914", "MJD: 58365.22171299998<br>Maglim: 20.801700592041016", "MJD: 58365.23819439998<br>Maglim: 20.792499542236328", "MJD: 58365.25778939994<br>Maglim: 20.719200134277344", "MJD: 58366.21358799981<br>Maglim: 20.877700805664062", "MJD: 58367.22070599999<br>Maglim: 20.680099487304688", "MJD: 58367.244398099836<br>Maglim: 20.536800384521484", "MJD: 58367.26217589993<br>Maglim: 20.38610076904297", "MJD: 58368.2014930998<br>Maglim: 20.785499572753906", "MJD: 58368.22363429982<br>Maglim: 20.79199981689453", "MJD: 58369.24526620004<br>Maglim: 20.564899444580078"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895195539344", "labels": ["MJD: 58361.16574069997<br>Mag: 21.133800506591797", "MJD: 58361.170567099936<br>Mag: 21.26180076599121", "MJD: 58362.19502309989<br>Mag: 20.92930030822754", "MJD: 58362.20171299996<br>Mag: 21.135700225830078", "MJD: 58364.1944213002<br>Mag: 21.03459930419922", "MJD: 58365.222673600074<br>Mag: 21.103700637817383", "MJD: 58366.20446760021<br>Mag: 21.267799377441406", "MJD: 58366.23807869991<br>Mag: 21.10099983215332", "MJD: 58368.20057869982<br>Mag: 20.60740089416504", "MJD: 58368.23548609996<br>Mag: 20.736499786376953", "MJD: 58369.22307869978<br>Mag: 20.53070068359375", "MJD: 58369.25372690009<br>Mag: 20.528600692749023", "MJD: 58370.17803240009<br>Mag: 20.53820037841797", "MJD: 58370.19898150023<br>Mag: 20.375699996948242", "MJD: 58370.21959490003<br>Mag: 20.25950050354004", "MJD: 58371.19931709999<br>Mag: 20.346599578857422", "MJD: 58371.19931709999<br>Mag: 20.346599578857422", "MJD: 58371.213414399885<br>Mag: 20.22662353515625", "MJD: 58371.213414399885<br>Mag: 20.22662353515625", "MJD: 58371.21432870021<br>Mag: 20.200315475463867", "MJD: 58371.23636570014<br>Mag: 20.254600524902344", "MJD: 58372.20599539997<br>Mag: 20.214195251464844", "MJD: 58372.20599539997<br>Mag: 20.214195251464844", "MJD: 58372.2138772998<br>Mag: 20.196399688720703", "MJD: 58372.2138772998<br>Mag: 20.196399688720703", "MJD: 58372.26287040021<br>Mag: 20.251018524169922", "MJD: 58373.202152799815<br>Mag: 20.20359992980957", "MJD: 58373.221747700125<br>Mag: 20.719499588012695", "MJD: 58373.23656249978<br>Mag: 20.157800674438477", "MJD: 58374.19903940009<br>Mag: 20.32080078125", "MJD: 58374.19995369995<br>Mag: 20.491193771362305", "MJD: 58374.21856479999<br>Mag: 20.617599487304688"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895195788880", "labels": ["MJD: 58362.174930599984<br>Mag: 20.952499389648438", "MJD: 58364.154305600096<br>Mag: 20.51759910583496", "MJD: 58368.13809029991<br>Mag: 20.676700592041016", "MJD: 58368.157268499956<br>Mag: 20.83639907836914", "MJD: 58368.18412039988<br>Mag: 20.6697998046875", "MJD: 58369.17969910009<br>Mag: 20.563899993896484", "MJD: 58370.14363430021<br>Mag: 20.666799545288086", "MJD: 58370.156481499784<br>Mag: 20.397300720214844", "MJD: 58371.13834490022<br>Mag: 20.624900817871094", "MJD: 58371.13834490022<br>Mag: 20.624900817871094", "MJD: 58371.158993099816<br>Mag: 20.57710075378418", "MJD: 58371.158993099816<br>Mag: 20.57710075378418", "MJD: 58371.181006900035<br>Mag: 20.461942672729492", "MJD: 58371.181006900035<br>Mag: 20.461942672729492", "MJD: 58372.1558333002<br>Mag: 20.527099609375", "MJD: 58372.1558333002<br>Mag: 20.527099609375", "MJD: 58372.18197919987<br>Mag: 20.515300750732422", "MJD: 58372.18197919987<br>Mag: 20.515300750732422", "MJD: 58373.128576400224<br>Mag: 20.582399368286133", "MJD: 58373.15287039988<br>Mag: 20.450000762939453", "MJD: 58373.18179399986<br>Mag: 20.418399810791016", "MJD: 58374.15935190022<br>Mag: 20.394500732421875", "MJD: 58374.18414349994<br>Mag: 20.2851505279541"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "interactive_legend", "element_ids": [["el176895195539344", "el176895195788880"], ["el176895201465744", "el176895201477456"]], "labels": ["Alerts", "Limits"], "ax": null, "alpha_unsel": 0.2, "alpha_over": 1.0, "start_visible": [true, true], "font_size": 10, "legend_offset": [0, 0]}]});
+      });
+    });
+}else{
+    // require.js not available: dynamically load d3 & mpld3
+    mpld3_load_lib("https://d3js.org/d3.v5.js", function(){
+         mpld3_load_lib("https://mpld3.github.io/js/mpld3.v0.5.10.js", function(){
+                 
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("interactive_legend", InteractiveLegend);
+    InteractiveLegend.prototype = Object.create(mpld3.Plugin.prototype);
+    InteractiveLegend.prototype.constructor = InteractiveLegend;
+    InteractiveLegend.prototype.requiredProps = ["element_ids", "labels"];
+    InteractiveLegend.prototype.defaultProps = {"ax":null,
+                                                "alpha_unsel":0.2,
+                                                "alpha_over":1.0,
+                                                "start_visible":true,
+                                                "font_size": 10,
+                                                "legend_offset": [0,0]}
+    function InteractiveLegend(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    InteractiveLegend.prototype.draw = function(){
+        var alpha_unsel = this.props.alpha_unsel;
+        var alpha_over = this.props.alpha_over;
+        var font_size = this.props.font_size;
+        var legend_offset = this.props.legend_offset;
+
+        var legendItems = new Array();
+        for(var i=0; i<this.props.labels.length; i++){
+            var obj = {};
+            obj.label = this.props.labels[i];
+
+            var element_id = this.props.element_ids[i];
+            mpld3_elements = [];
+            for(var j=0; j<element_id.length; j++){
+                var mpld3_element = mpld3.get_element(element_id[j], this.fig);
+
+                // mpld3_element might be null in case of Line2D instances
+                // for we pass the id for both the line and the markers. Either
+                // one might not exist on the D3 side
+                if(mpld3_element){
+                    mpld3_elements.push(mpld3_element);
+                }
+            }
+
+            obj.mpld3_elements = mpld3_elements;
+            obj.visible = this.props.start_visible[i]; // should become be setable from python side
+            legendItems.push(obj);
+            set_alphas(obj, false);
+        }
+
+        // determine the axes with which this legend is associated
+        var ax = this.props.ax
+        if(!ax){
+            ax = this.fig.axes[0];
+        } else{
+            ax = mpld3.get_element(ax, this.fig);
+        }
+
+        // add a legend group to the canvas of the figure
+        var legend = this.fig.canvas.append("svg:g")
+                               .attr("class", "legend");
+
+        // add the rectangles
+        legend.selectAll("rect")
+                .data(legendItems)
+                .enter().append("rect")
+                .attr("height", 0.7*font_size)
+                .attr("width", 1.6*font_size)
+                .attr("x", ax.width + ax.position[0] + 15 + legend_offset[0])
+                .attr("y",function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + legend_offset[1];})
+                .attr("stroke", get_color)
+                .attr("class", "legend-box")
+                .style("fill", function(d, i) {
+                           return d.visible ? get_color(d) : "white";})
+                .on("click", click).on('mouseover', over).on('mouseout', out);
+
+        // add the labels
+        legend.selectAll("text")
+              .data(legendItems)
+              .enter().append("text")
+              .attr("font-size", font_size)
+              .attr("x", function (d) {
+                           return ax.width + ax.position[0] + (1.9*font_size+15) + legend_offset[0];})
+              .attr("y", function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + (0.72*font_size-1) + legend_offset[1];})
+              .text(function(d) { return d.label })
+              .on('mouseover', over).on('mouseout', out);
+
+
+        // specify the action on click
+        function click(d,i){
+            d.visible = !d.visible;
+            d3.select(this)
+              .style("fill",function(d, i) {
+                return d.visible ? get_color(d) : "white";
+              })
+            set_alphas(d, false);
+
+        };
+
+        // specify the action on legend overlay 
+        function over(d,i){
+             set_alphas(d, true);
+        };
+
+        // specify the action on legend overlay 
+        function out(d,i){
+             set_alphas(d, false);
+        };
+
+        // helper function for setting alphas
+        function set_alphas(d, is_over){
+            for(var i=0; i<d.mpld3_elements.length; i++){
+                var type = d.mpld3_elements[i].constructor.name;
+
+                if(type =="mpld3_Line"){
+                    var current_alpha = d.mpld3_elements[i].props.alpha;
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d3.select(d.mpld3_elements[i].path.nodes()[0])
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("stroke-width", is_over ?
+                                alpha_over * d.mpld3_elements[i].props.edgewidth : d.mpld3_elements[i].props.edgewidth);
+                } else if((type=="mpld3_PathCollection")||
+                         (type=="mpld3_Markers")){
+                    var current_alpha = d.mpld3_elements[i].props.alphas[0];
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d.mpld3_elements[i].pathsobj
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("fill-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel));
+                } else{
+                    console.log(type + " not yet supported");
+                }
+            }
+        };
+
+
+        // helper function for determining the color of the rectangles
+        function get_color(d){
+            var type = d.mpld3_elements[0].constructor.name;
+            var color = "black";
+            if(type =="mpld3_Line"){
+                color = d.mpld3_elements[0].props.edgecolor;
+            } else if((type=="mpld3_PathCollection")||
+                      (type=="mpld3_Markers")){
+                color = d.mpld3_elements[0].props.facecolors[0];
+            } else{
+                console.log(type + " not yet supported");
+            }
+            return color;
+        };
+    };
+    
+                 mpld3.draw_figure("fig_el1768951951822885059700933", {"width": 716.6666666666667, "height": 400.0, "axes": [{"bbox": [0.11323643410852714, 0.16069444444444447, 0.7867635658914729, 0.7334722222222223], "xlim": [341.6056377748726, 375.7715613249922], "ylim": [21.761879751086234, 19.415967813134195], "xdomain": [341.6056377748726, 375.7715613249922], "ydomain": [21.761879751086234, 19.415967813134195], "xscale": "linear", "yscale": "linear", "axes": [{"position": "bottom", "nticks": 9, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 1.0}, "visible": true}, {"position": "left", "nticks": 7, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 1.0}, "visible": true}], "axesbg": "#FFFFFF", "axesbgalpha": null, "zoomable": true, "id": "el176895194141712", "lines": [], "paths": [{"data": "data07", "xindex": 0, "yindex": 1, "coordinates": "axes", "pathcodes": ["M", "L", "S", "L", "S", "L", "S", "L", "S", "Z"], "id": "el176895195181456", "dasharray": "none", "alpha": 1, "facecolor": "#FFFFFF", "edgecolor": "#CCCCCC", "edgewidth": 1.0, "zorder": 1000000.0}], "markers": [], "texts": [{"text": "MJD - 58000", "position": [0.5, -0.09979170611626587], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "hanging", "rotation": -0.0, "fontsize": 16.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895195241936"}, {"text": "Magnitude", "position": [-0.08185333891666874, 0.5], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -90.0, "fontsize": 16.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895177838416"}, {"text": "Light Curve for ZTF18aburtku", "position": [0.5, 1.028403711418292], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -0.0, "fontsize": 18.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el176895195326416"}, {"text": "g-band", "position": [0.09113973938961006, 0.26699488733194465], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895195355984"}, {"text": "r-band", "position": [0.09113973938961006, 0.1956068926339708], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201502928"}, {"text": "Upper Limit r-band", "position": [0.09113973938961006, 0.12421889793599694], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201507664"}, {"text": "Upper Limit g-band", "position": [0.09113973938961006, 0.052830903238023086], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el176895201545168"}], "collections": [{"offsets": "data01", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895195539344"}, {"offsets": "data02", "xindex": 0, "yindex": 1, "paths": [[[[361.16574069997296, 20.797401517629623], [361.16574069997296, 21.47019949555397]], ["M", "L"]], [[[361.1705670999363, 20.8792587518692], [361.1705670999363, 21.64434278011322]], ["M", "L"]], [[[362.19502309989184, 20.62980529665947], [362.19502309989184, 21.22879531979561]], ["M", "L"]], [[[362.20171299995854, 20.80166321992874], [362.20171299995854, 21.469737231731415]], ["M", "L"]], [[[364.1944213001989, 20.63088631629944], [364.1944213001989, 21.438312292099]], ["M", "L"]], [[[365.2226736000739, 20.75337463617325], [365.2226736000739, 21.454026639461517]], ["M", "L"]], [[[366.2044676002115, 20.88035136461258], [366.2044676002115, 21.655247390270233]], ["M", "L"]], [[[366.2380786999129, 20.79756984114647], [366.2380786999129, 21.40442982316017]], ["M", "L"]], [[[368.20057869981974, 20.338847905397415], [368.20057869981974, 20.875953882932663]], ["M", "L"]], [[[368.23548609996215, 20.43832778930664], [368.23548609996215, 21.034671783447266]], ["M", "L"]], [[[369.2230786997825, 20.20510768890381], [369.2230786997825, 20.85629367828369]], ["M", "L"]], [[[369.25372690008953, 20.27815169095993], [369.25372690008953, 20.779049694538116]], ["M", "L"]], [[[370.1780324000865, 20.260887384414673], [370.1780324000865, 20.815513372421265]], ["M", "L"]], [[[370.19898150023073, 20.14231400191784], [370.19898150023073, 20.609085991978645]], ["M", "L"]], [[[370.21959490003064, 20.00628450512886], [370.21959490003064, 20.512716501951218]], ["M", "L"]], [[[371.1993170999922, 20.12919157743454], [371.1993170999922, 20.564007580280304]], ["M", "L"]], [[[371.1993170999922, 20.12919157743454], [371.1993170999922, 20.564007580280304]], ["M", "L"]], [[[371.21341439988464, 20.037840574979782], [371.21341439988464, 20.415406495332718]], ["M", "L"]], [[[371.21341439988464, 20.037840574979782], [371.21341439988464, 20.415406495332718]], ["M", "L"]], [[[371.2143287002109, 20.013223484158516], [371.2143287002109, 20.38740746676922]], ["M", "L"]], [[[371.2363657001406, 20.00031453371048], [371.2363657001406, 20.508886516094208]], ["M", "L"]], [[[372.20599539997056, 20.055654853582382], [372.20599539997056, 20.372735649347305]], ["M", "L"]], [[[372.20599539997056, 20.055654853582382], [372.20599539997056, 20.372735649347305]], ["M", "L"]], [[[372.2138772998005, 20.00573195517063], [372.2138772998005, 20.387067422270775]], ["M", "L"]], [[[372.2138772998005, 20.00573195517063], [372.2138772998005, 20.387067422270775]], ["M", "L"]], [[[372.2628704002127, 20.052811294794083], [372.2628704002127, 20.44922575354576]], ["M", "L"]], [[[373.20215279981494, 19.971155926585197], [373.20215279981494, 20.436043933033943]], ["M", "L"]], [[[373.221747700125, 20.25612559914589], [373.221747700125, 21.1828735768795]], ["M", "L"]], [[[373.2365624997765, 19.906073659658432], [373.2365624997765, 20.40952768921852]], ["M", "L"]], [[[374.19903940008953, 20.03294077515602], [374.19903940008953, 20.60866078734398]], ["M", "L"]], [[[374.19995369995013, 20.293340906500816], [374.19995369995013, 20.689046636223793]], ["M", "L"]], [[[374.2185647999868, 20.300089478492737], [374.2185647999868, 20.935109496116638]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(46, 139, 87, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el176895195178704"}, {"offsets": "data03", "xindex": 0, "yindex": 1, "paths": [[[[0.0, -0.5], [0.13260155, -0.5], [0.25978993539242673, -0.44731684579412084], [0.3535533905932738, -0.3535533905932738], [0.44731684579412084, -0.25978993539242673], [0.5, -0.13260155], [0.5, 0.0], [0.5, 0.13260155], [0.44731684579412084, 0.25978993539242673], [0.3535533905932738, 0.3535533905932738], [0.25978993539242673, 0.44731684579412084], [0.13260155, 0.5], [0.0, 0.5], [-0.13260155, 0.5], [-0.25978993539242673, 0.44731684579412084], [-0.3535533905932738, 0.3535533905932738], [-0.44731684579412084, 0.25978993539242673], [-0.5, 0.13260155], [-0.5, 0.0], [-0.5, -0.13260155], [-0.44731684579412084, -0.25978993539242673], [-0.3535533905932738, -0.3535533905932738], [-0.25978993539242673, -0.44731684579412084], [-0.13260155, -0.5], [0.0, -0.5]], ["M", "C", "C", "C", "C", "C", "C", "C", "C", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895195788880"}, {"offsets": "data02", "xindex": 0, "yindex": 0, "paths": [[[[362.1749305999838, 20.627051383256912], [362.1749305999838, 21.277947396039963]], ["M", "L"]], [[[364.15430560009554, 20.21750110387802], [364.15430560009554, 20.8176971077919]], ["M", "L"]], [[[368.1380902999081, 20.43616759777069], [368.1380902999081, 20.91723358631134]], ["M", "L"]], [[[368.15726849995553, 20.536487072706223], [368.15726849995553, 21.13631108403206]], ["M", "L"]], [[[368.18412039987743, 20.359205812215805], [368.18412039987743, 20.980393797159195]], ["M", "L"]], [[[369.1796991000883, 20.317154988646507], [369.1796991000883, 20.81064499914646]], ["M", "L"]], [[[370.1436343002133, 20.38387554883957], [370.1436343002133, 20.949723541736603]], ["M", "L"]], [[[370.1564814997837, 20.150433719158173], [370.1564814997837, 20.644167721271515]], ["M", "L"]], [[[371.1383449002169, 20.39924782514572], [371.1383449002169, 20.850553810596466]], ["M", "L"]], [[[371.1383449002169, 20.39924782514572], [371.1383449002169, 20.850553810596466]], ["M", "L"]], [[[371.15899309981614, 20.348645746707916], [371.15899309981614, 20.805555760860443]], ["M", "L"]], [[[371.15899309981614, 20.348645746707916], [371.15899309981614, 20.805555760860443]], ["M", "L"]], [[[371.18100690003484, 20.251327335834503], [371.18100690003484, 20.67255800962448]], ["M", "L"]], [[[371.18100690003484, 20.251327335834503], [371.18100690003484, 20.67255800962448]], ["M", "L"]], [[[372.1558333002031, 20.27828261256218], [372.1558333002031, 20.77591660618782]], ["M", "L"]], [[[372.1558333002031, 20.27828261256218], [372.1558333002031, 20.77591660618782]], ["M", "L"]], [[[372.1819791998714, 20.241839736700058], [372.1819791998714, 20.788761764764786]], ["M", "L"]], [[[372.1819791998714, 20.241839736700058], [372.1819791998714, 20.788761764764786]], ["M", "L"]], [[[373.1285764002241, 20.272034376859665], [373.1285764002241, 20.8927643597126]], ["M", "L"]], [[[373.15287039987743, 20.18783575296402], [373.15287039987743, 20.712165772914886]], ["M", "L"]], [[[373.1817939998582, 20.131390810012817], [373.1817939998582, 20.705408811569214]], ["M", "L"]], [[[374.1593519002199, 20.0762657225132], [374.1593519002199, 20.71273574233055]], ["M", "L"]], [[[374.1841434999369, 20.078086882829666], [374.1841434999369, 20.492214173078537]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(220, 20, 60, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el176895195899984"}, {"offsets": "data04", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895201465744"}, {"offsets": "data05", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el176895201477456"}, {"offsets": "data06", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201462608"}, {"offsets": "data06", "xindex": 0, "yindex": 2, "paths": [[[[0.0, -0.5], [0.13260155, -0.5], [0.25978993539242673, -0.44731684579412084], [0.3535533905932738, -0.3535533905932738], [0.44731684579412084, -0.25978993539242673], [0.5, -0.13260155], [0.5, 0.0], [0.5, 0.13260155], [0.44731684579412084, 0.25978993539242673], [0.3535533905932738, 0.3535533905932738], [0.25978993539242673, 0.44731684579412084], [0.13260155, 0.5], [0.0, 0.5], [-0.13260155, 0.5], [-0.25978993539242673, 0.44731684579412084], [-0.3535533905932738, 0.3535533905932738], [-0.44731684579412084, 0.25978993539242673], [-0.5, 0.13260155], [-0.5, 0.0], [-0.5, -0.13260155], [-0.44731684579412084, -0.25978993539242673], [-0.3535533905932738, -0.3535533905932738], [-0.25978993539242673, -0.44731684579412084], [-0.13260155, -0.5], [0.0, -0.5]], ["M", "C", "C", "C", "C", "C", "C", "C", "C", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201504400"}, {"offsets": "data06", "xindex": 0, "yindex": 3, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["#DC143C"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201509072"}, {"offsets": "data06", "xindex": 0, "yindex": 4, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el176895201546576"}], "images": [], "sharex": [], "sharey": []}], "data": {"data01": [[361.16574069997296, 21.133800506591797], [361.1705670999363, 21.26180076599121], [362.19502309989184, 20.92930030822754], [362.20171299995854, 21.135700225830078], [364.1944213001989, 21.03459930419922], [365.2226736000739, 21.103700637817383], [366.2044676002115, 21.267799377441406], [366.2380786999129, 21.10099983215332], [368.20057869981974, 20.60740089416504], [368.23548609996215, 20.736499786376953], [369.2230786997825, 20.53070068359375], [369.25372690008953, 20.528600692749023], [370.1780324000865, 20.53820037841797], [370.19898150023073, 20.375699996948242], [370.21959490003064, 20.25950050354004], [371.1993170999922, 20.346599578857422], [371.1993170999922, 20.346599578857422], [371.21341439988464, 20.22662353515625], [371.21341439988464, 20.22662353515625], [371.2143287002109, 20.200315475463867], [371.2363657001406, 20.254600524902344], [372.20599539997056, 20.214195251464844], [372.20599539997056, 20.214195251464844], [372.2138772998005, 20.196399688720703], [372.2138772998005, 20.196399688720703], [372.2628704002127, 20.251018524169922], [373.20215279981494, 20.20359992980957], [373.221747700125, 20.719499588012695], [373.2365624997765, 20.157800674438477], [374.19903940008953, 20.32080078125], [374.19995369995013, 20.491193771362305], [374.2185647999868, 20.617599487304688]], "data02": [[0.0, 0.0]], "data03": [[362.1749305999838, 20.952499389648438], [364.15430560009554, 20.51759910583496], [368.1380902999081, 20.676700592041016], [368.15726849995553, 20.83639907836914], [368.18412039987743, 20.6697998046875], [369.1796991000883, 20.563899993896484], [370.1436343002133, 20.666799545288086], [370.1564814997837, 20.397300720214844], [371.1383449002169, 20.624900817871094], [371.1383449002169, 20.624900817871094], [371.15899309981614, 20.57710075378418], [371.15899309981614, 20.57710075378418], [371.18100690003484, 20.461942672729492], [371.18100690003484, 20.461942672729492], [372.1558333002031, 20.527099609375], [372.1558333002031, 20.527099609375], [372.1819791998714, 20.515300750732422], [372.1819791998714, 20.515300750732422], [373.1285764002241, 20.582399368286133], [373.15287039987743, 20.450000762939453], [373.1817939998582, 20.418399810791016], [374.1593519002199, 20.394500732421875], [374.1841434999369, 20.2851505279541]], "data04": [[343.15863429987803, 20.625699996948242], [346.1787731000222, 20.61720085144043], [349.24172449996695, 20.25279998779297], [349.2426388999447, 20.24650001525879], [349.2681249999441, 20.298799514770508], [349.2788542001508, 20.1299991607666], [350.16318289982155, 20.467500686645508], [350.1833101999946, 20.439599990844727], [350.19837959995493, 20.395700454711914], [351.1610880000517, 20.448999404907227], [351.17556709982455, 20.422700881958008], [351.2008680999279, 20.374300003051758], [352.2208795999177, 20.109399795532227], [352.2363888998516, 20.11520004272461], [352.2438773000613, 20.06450080871582], [352.2557176002301, 20.095800399780273], [353.1602545999922, 20.27739906311035], [353.1779281999916, 20.340299606323242], [353.1992361000739, 20.34469985961914], [353.2417939999141, 20.161100387573242], [353.2558101997711, 20.188800811767578], [353.2845139000565, 20.12190055847168], [354.1993865999393, 19.894399642944336], [354.21817129990086, 19.738100051879883], [354.2403472000733, 20.05120086669922], [355.24109950009733, 20.02829933166504], [355.2547569000162, 20.087400436401367], [356.2205440001562, 19.808799743652344], [356.2214583000168, 19.715700149536133], [356.2447684998624, 19.850500106811523], [356.2688889000565, 19.702999114990234], [357.1820948999375, 19.794200897216797], [357.23783560004085, 19.73390007019043], [357.25936339981854, 19.606000900268555], [357.28414350003004, 19.55419921875], [358.1945718000643, 19.935400009155273], [358.2202431000769, 19.845500946044922], [358.2421065000817, 19.78660011291504], [359.2171180997975, 19.827899932861328], [359.2180440002121, 19.759700775146484], [359.24600689997897, 19.922300338745117], [359.2679050997831, 19.895099639892578], [360.22613430023193, 20.11210060119629], [360.2463656999171, 20.132299423217773], [360.267546299845, 19.960800170898438], [361.2445370000787, 20.12809944152832], [361.2631597002037, 20.087600708007812], [362.1385416998528, 20.44499969482422], [362.15771989990026, 20.53339958190918], [362.15863429987803, 20.601900100708008], [363.2259953999892, 20.355899810791016], [363.2394559998065, 19.522600173950195], [363.2571991002187, 19.98189926147461], [364.14304400002584, 20.529699325561523], [364.17506940010935, 20.63159942626953], [365.1362268999219, 20.550800323486328], [365.15745369996876, 20.60740089416504], [365.15836809994653, 20.693899154663086], [365.1824190001935, 20.466100692749023], [367.15984949981794, 20.549299240112305], [367.17865739995614, 20.588899612426758], [367.1953587997705, 20.32229995727539], [368.1371758999303, 20.668100357055664], [369.1401852001436, 20.62339973449707], [369.15756940003484, 20.63759994506836], [370.26079860003665, 20.05459976196289], [371.1392593001947, 20.730199813842773], [372.1425578999333, 20.645200729370117], [374.1335300998762, 20.680299758911133], [374.1344444002025, 20.59149932861328]], "data05": [[343.17887730011716, 20.775800704956055], [346.1555093000643, 20.526100158691406], [349.1591667002067, 20.28510093688965], [349.1720023001544, 20.430599212646484], [349.17292820010334, 20.41659927368164], [349.19476850004867, 20.47279930114746], [350.24709489988163, 20.33880043029785], [350.26622689981014, 20.30419921875], [350.3231019000523, 20.242300033569336], [351.23975689988583, 20.235700607299805], [351.2671181000769, 20.19849967956543], [351.2851736000739, 19.972700119018555], [352.1617708001286, 19.980499267578125], [352.17984949983656, 20.003799438476562], [352.1835994999856, 20.07200050354004], [352.1972684999928, 20.066699981689453], [360.1446759002283, 20.302000045776367], [360.1546759000048, 20.520299911499023], [361.1989930998534, 20.834699630737305], [362.2159838001244, 20.742300033569336], [362.2361690001562, 20.56570053100586], [363.1617708001286, 20.637100219726562], [363.17127310018986, 20.56999969482422], [363.20406250003725, 20.637100219726562], [364.2184028001502, 20.902099609375], [364.2378472001292, 20.84469985961914], [365.22171299997717, 20.801700592041016], [365.23819439997897, 20.792499542236328], [365.2577893999405, 20.719200134277344], [366.21358799980953, 20.877700805664062], [367.2207059999928, 20.680099487304688], [367.24439809983596, 20.536800384521484], [367.2621758999303, 20.38610076904297], [368.2014930997975, 20.785499572753906], [368.22363429982215, 20.79199981689453], [369.24526620004326, 20.564899444580078]], "data06": [[0.04680148779466462, 0.2794215110774474, 0.20803351637947354, 0.13664552168149968, 0.06525752698352583]], "data07": [[0.017242653398034324, 0.023669759515243305], [0.3341626228539054, 0.023669759515243305], [0.33908909525334374, 0.023669759515243305], [0.33908909525334374, 0.033137663321340605], [0.33908909525334374, 0.31395569021018754], [0.33908909525334374, 0.32342359401628484], [0.3341626228539054, 0.32342359401628484], [0.017242653398034324, 0.32342359401628484], [0.012316180998595938, 0.32342359401628484], [0.012316180998595938, 0.31395569021018754], [0.012316180998595938, 0.033137663321340605], [0.012316180998595938, 0.023669759515243305], [0.017242653398034324, 0.023669759515243305]]}, "id": "el176895195182288", "plugins": [{"type": "reset"}, {"type": "zoom", "button": true, "enabled": false}, {"type": "boxzoom", "button": true, "enabled": false}, {"type": "htmltooltip", "id": "el176895201465744", "labels": ["MJD: 58343.15863429988<br>Maglim: 20.625699996948242", "MJD: 58346.17877310002<br>Maglim: 20.61720085144043", "MJD: 58349.24172449997<br>Maglim: 20.25279998779297", "MJD: 58349.242638899945<br>Maglim: 20.24650001525879", "MJD: 58349.268124999944<br>Maglim: 20.298799514770508", "MJD: 58349.27885420015<br>Maglim: 20.1299991607666", "MJD: 58350.16318289982<br>Maglim: 20.467500686645508", "MJD: 58350.183310199995<br>Maglim: 20.439599990844727", "MJD: 58350.198379599955<br>Maglim: 20.395700454711914", "MJD: 58351.16108800005<br>Maglim: 20.448999404907227", "MJD: 58351.175567099825<br>Maglim: 20.422700881958008", "MJD: 58351.20086809993<br>Maglim: 20.374300003051758", "MJD: 58352.22087959992<br>Maglim: 20.109399795532227", "MJD: 58352.23638889985<br>Maglim: 20.11520004272461", "MJD: 58352.24387730006<br>Maglim: 20.06450080871582", "MJD: 58352.25571760023<br>Maglim: 20.095800399780273", "MJD: 58353.16025459999<br>Maglim: 20.27739906311035", "MJD: 58353.17792819999<br>Maglim: 20.340299606323242", "MJD: 58353.199236100074<br>Maglim: 20.34469985961914", "MJD: 58353.241793999914<br>Maglim: 20.161100387573242", "MJD: 58353.25581019977<br>Maglim: 20.188800811767578", "MJD: 58353.28451390006<br>Maglim: 20.12190055847168", "MJD: 58354.19938659994<br>Maglim: 19.894399642944336", "MJD: 58354.2181712999<br>Maglim: 19.738100051879883", "MJD: 58354.24034720007<br>Maglim: 20.05120086669922", "MJD: 58355.2410995001<br>Maglim: 20.02829933166504", "MJD: 58355.254756900016<br>Maglim: 20.087400436401367", "MJD: 58356.220544000156<br>Maglim: 19.808799743652344", "MJD: 58356.22145830002<br>Maglim: 19.715700149536133", "MJD: 58356.24476849986<br>Maglim: 19.850500106811523", "MJD: 58356.26888890006<br>Maglim: 19.702999114990234", "MJD: 58357.18209489994<br>Maglim: 19.794200897216797", "MJD: 58357.23783560004<br>Maglim: 19.73390007019043", "MJD: 58357.25936339982<br>Maglim: 19.606000900268555", "MJD: 58357.28414350003<br>Maglim: 19.55419921875", "MJD: 58358.194571800064<br>Maglim: 19.935400009155273", "MJD: 58358.22024310008<br>Maglim: 19.845500946044922", "MJD: 58358.24210650008<br>Maglim: 19.78660011291504", "MJD: 58359.2171180998<br>Maglim: 19.827899932861328", "MJD: 58359.21804400021<br>Maglim: 19.759700775146484", "MJD: 58359.24600689998<br>Maglim: 19.922300338745117", "MJD: 58359.26790509978<br>Maglim: 19.895099639892578", "MJD: 58360.22613430023<br>Maglim: 20.11210060119629", "MJD: 58360.24636569992<br>Maglim: 20.132299423217773", "MJD: 58360.267546299845<br>Maglim: 19.960800170898438", "MJD: 58361.24453700008<br>Maglim: 20.12809944152832", "MJD: 58361.263159700204<br>Maglim: 20.087600708007812", "MJD: 58362.13854169985<br>Maglim: 20.44499969482422", "MJD: 58362.1577198999<br>Maglim: 20.53339958190918", "MJD: 58362.15863429988<br>Maglim: 20.601900100708008", "MJD: 58363.22599539999<br>Maglim: 20.355899810791016", "MJD: 58363.23945599981<br>Maglim: 19.522600173950195", "MJD: 58363.25719910022<br>Maglim: 19.98189926147461", "MJD: 58364.143044000026<br>Maglim: 20.529699325561523", "MJD: 58364.17506940011<br>Maglim: 20.63159942626953", "MJD: 58365.13622689992<br>Maglim: 20.550800323486328", "MJD: 58365.15745369997<br>Maglim: 20.60740089416504", "MJD: 58365.15836809995<br>Maglim: 20.693899154663086", "MJD: 58365.18241900019<br>Maglim: 20.466100692749023", "MJD: 58367.15984949982<br>Maglim: 20.549299240112305", "MJD: 58367.178657399956<br>Maglim: 20.588899612426758", "MJD: 58367.19535879977<br>Maglim: 20.32229995727539", "MJD: 58368.13717589993<br>Maglim: 20.668100357055664", "MJD: 58369.14018520014<br>Maglim: 20.62339973449707", "MJD: 58369.157569400035<br>Maglim: 20.63759994506836", "MJD: 58370.26079860004<br>Maglim: 20.05459976196289", "MJD: 58371.139259300195<br>Maglim: 20.730199813842773", "MJD: 58372.14255789993<br>Maglim: 20.645200729370117", "MJD: 58374.133530099876<br>Maglim: 20.680299758911133", "MJD: 58374.1344444002<br>Maglim: 20.59149932861328"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895201477456", "labels": ["MJD: 58343.17887730012<br>Maglim: 20.775800704956055", "MJD: 58346.155509300064<br>Maglim: 20.526100158691406", "MJD: 58349.15916670021<br>Maglim: 20.28510093688965", "MJD: 58349.172002300154<br>Maglim: 20.430599212646484", "MJD: 58349.1729282001<br>Maglim: 20.41659927368164", "MJD: 58349.19476850005<br>Maglim: 20.47279930114746", "MJD: 58350.24709489988<br>Maglim: 20.33880043029785", "MJD: 58350.26622689981<br>Maglim: 20.30419921875", "MJD: 58350.32310190005<br>Maglim: 20.242300033569336", "MJD: 58351.239756899886<br>Maglim: 20.235700607299805", "MJD: 58351.26711810008<br>Maglim: 20.19849967956543", "MJD: 58351.285173600074<br>Maglim: 19.972700119018555", "MJD: 58352.16177080013<br>Maglim: 19.980499267578125", "MJD: 58352.17984949984<br>Maglim: 20.003799438476562", "MJD: 58352.183599499986<br>Maglim: 20.07200050354004", "MJD: 58352.19726849999<br>Maglim: 20.066699981689453", "MJD: 58360.14467590023<br>Maglim: 20.302000045776367", "MJD: 58360.154675900005<br>Maglim: 20.520299911499023", "MJD: 58361.19899309985<br>Maglim: 20.834699630737305", "MJD: 58362.215983800124<br>Maglim: 20.742300033569336", "MJD: 58362.236169000156<br>Maglim: 20.56570053100586", "MJD: 58363.16177080013<br>Maglim: 20.637100219726562", "MJD: 58363.17127310019<br>Maglim: 20.56999969482422", "MJD: 58363.20406250004<br>Maglim: 20.637100219726562", "MJD: 58364.21840280015<br>Maglim: 20.902099609375", "MJD: 58364.23784720013<br>Maglim: 20.84469985961914", "MJD: 58365.22171299998<br>Maglim: 20.801700592041016", "MJD: 58365.23819439998<br>Maglim: 20.792499542236328", "MJD: 58365.25778939994<br>Maglim: 20.719200134277344", "MJD: 58366.21358799981<br>Maglim: 20.877700805664062", "MJD: 58367.22070599999<br>Maglim: 20.680099487304688", "MJD: 58367.244398099836<br>Maglim: 20.536800384521484", "MJD: 58367.26217589993<br>Maglim: 20.38610076904297", "MJD: 58368.2014930998<br>Maglim: 20.785499572753906", "MJD: 58368.22363429982<br>Maglim: 20.79199981689453", "MJD: 58369.24526620004<br>Maglim: 20.564899444580078"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895195539344", "labels": ["MJD: 58361.16574069997<br>Mag: 21.133800506591797", "MJD: 58361.170567099936<br>Mag: 21.26180076599121", "MJD: 58362.19502309989<br>Mag: 20.92930030822754", "MJD: 58362.20171299996<br>Mag: 21.135700225830078", "MJD: 58364.1944213002<br>Mag: 21.03459930419922", "MJD: 58365.222673600074<br>Mag: 21.103700637817383", "MJD: 58366.20446760021<br>Mag: 21.267799377441406", "MJD: 58366.23807869991<br>Mag: 21.10099983215332", "MJD: 58368.20057869982<br>Mag: 20.60740089416504", "MJD: 58368.23548609996<br>Mag: 20.736499786376953", "MJD: 58369.22307869978<br>Mag: 20.53070068359375", "MJD: 58369.25372690009<br>Mag: 20.528600692749023", "MJD: 58370.17803240009<br>Mag: 20.53820037841797", "MJD: 58370.19898150023<br>Mag: 20.375699996948242", "MJD: 58370.21959490003<br>Mag: 20.25950050354004", "MJD: 58371.19931709999<br>Mag: 20.346599578857422", "MJD: 58371.19931709999<br>Mag: 20.346599578857422", "MJD: 58371.213414399885<br>Mag: 20.22662353515625", "MJD: 58371.213414399885<br>Mag: 20.22662353515625", "MJD: 58371.21432870021<br>Mag: 20.200315475463867", "MJD: 58371.23636570014<br>Mag: 20.254600524902344", "MJD: 58372.20599539997<br>Mag: 20.214195251464844", "MJD: 58372.20599539997<br>Mag: 20.214195251464844", "MJD: 58372.2138772998<br>Mag: 20.196399688720703", "MJD: 58372.2138772998<br>Mag: 20.196399688720703", "MJD: 58372.26287040021<br>Mag: 20.251018524169922", "MJD: 58373.202152799815<br>Mag: 20.20359992980957", "MJD: 58373.221747700125<br>Mag: 20.719499588012695", "MJD: 58373.23656249978<br>Mag: 20.157800674438477", "MJD: 58374.19903940009<br>Mag: 20.32080078125", "MJD: 58374.19995369995<br>Mag: 20.491193771362305", "MJD: 58374.21856479999<br>Mag: 20.617599487304688"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el176895195788880", "labels": ["MJD: 58362.174930599984<br>Mag: 20.952499389648438", "MJD: 58364.154305600096<br>Mag: 20.51759910583496", "MJD: 58368.13809029991<br>Mag: 20.676700592041016", "MJD: 58368.157268499956<br>Mag: 20.83639907836914", "MJD: 58368.18412039988<br>Mag: 20.6697998046875", "MJD: 58369.17969910009<br>Mag: 20.563899993896484", "MJD: 58370.14363430021<br>Mag: 20.666799545288086", "MJD: 58370.156481499784<br>Mag: 20.397300720214844", "MJD: 58371.13834490022<br>Mag: 20.624900817871094", "MJD: 58371.13834490022<br>Mag: 20.624900817871094", "MJD: 58371.158993099816<br>Mag: 20.57710075378418", "MJD: 58371.158993099816<br>Mag: 20.57710075378418", "MJD: 58371.181006900035<br>Mag: 20.461942672729492", "MJD: 58371.181006900035<br>Mag: 20.461942672729492", "MJD: 58372.1558333002<br>Mag: 20.527099609375", "MJD: 58372.1558333002<br>Mag: 20.527099609375", "MJD: 58372.18197919987<br>Mag: 20.515300750732422", "MJD: 58372.18197919987<br>Mag: 20.515300750732422", "MJD: 58373.128576400224<br>Mag: 20.582399368286133", "MJD: 58373.15287039988<br>Mag: 20.450000762939453", "MJD: 58373.18179399986<br>Mag: 20.418399810791016", "MJD: 58374.15935190022<br>Mag: 20.394500732421875", "MJD: 58374.18414349994<br>Mag: 20.2851505279541"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "interactive_legend", "element_ids": [["el176895195539344", "el176895195788880"], ["el176895201465744", "el176895201477456"]], "labels": ["Alerts", "Limits"], "ax": null, "alpha_unsel": 0.2, "alpha_over": 1.0, "start_visible": [true, true], "font_size": 10, "legend_offset": [0, 0]}]});
+            })
+         });
+}
+</script>

@@ -2,6 +2,7 @@
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy import units as u
+from astropy.time import Time
 
 # Data handling modules
 import pandas as pd
@@ -12,6 +13,8 @@ import gzip
 import io
 import os
 from collections import Counter, defaultdict
+import random
+import time
 
 # Image handling modules
 from PIL import Image
@@ -30,6 +33,8 @@ import json
 
 # External utility modules
 from ztfquery.utils import stamps
+
+import mastcasjobs
 
 def logon():
     """ Log onto Kowalski """
@@ -109,8 +114,9 @@ def get_pos(s,name):
 def get_galactic(ra,dec):
     """ Convert to galactic coordinates, ra and dec given in decimal deg """
     c = SkyCoord(ra,dec,unit='deg')
-    latitude = c.galactic.b
-    return latitude
+    galactic_l = c.galactic.l.deg
+    galactic_b = c.galactic.b.deg
+    return galactic_l, galactic_b
 
 
 def get_lc(s, name):
@@ -281,6 +287,7 @@ def get_prv_dets(s, name):
     return None
 
 
+
 def get_prv_dets_forced(s, name):
     """
     Query forced photometry history of a given source from the ZTF_alerts_aux catalog.
@@ -364,6 +371,25 @@ def plot_triplet(triplet):
     plt.tight_layout()
     plt.show()
 
+def get_brightest_dets(s, name):
+    q0 = {
+        "query_type": "find_one",
+        "query": {
+            "catalog": "ZTF_alerts",
+            "filter": {"objectId": name}
+        }
+    }
+    out = s.query(q0)
+    
+    # Check if the query result contains the expected structure
+    if "default" in out and "data" in out["default"]:
+        alert = out["default"]["data"]
+        return alert
+    else:
+        # Handle the case where the expected keys are not found
+        print(f"Error: Expected data not found in the query result for object {name}")
+        return None
+
 def plot_ztf_cutout(s,ddir,name):
     """ Plot the ZTF cutouts: science, reference, difference """
     fname = "%s/%s_triplet.png" %(ddir,name)
@@ -383,6 +409,23 @@ def plot_ztf_cutout(s,ddir,name):
         plt.tight_layout()
         plt.savefig(fname, bbox_inches = "tight")
         plt.close()
+    return fname
+
+
+def get_brightest_triplet(ddir, detections, name):
+    fname = "%s/%s_triplet_brightest.png" %(ddir,name)
+    """ Get the alert with the brightest magnitude (lowest magpsf) """
+    
+    
+    
+    # Select a random detection from the filtered list
+    brightest_alert = detections
+    
+    tr = make_triplet(brightest_alert)
+    plot_triplet(tr)
+    plt.tight_layout()
+    plt.savefig(fname, bbox_inches = "tight")
+    plt.close()
     return fname
 
 
@@ -448,15 +491,31 @@ def plot_light_curve(lc, source_id):
     Returns:
     str: The filename of the saved plot.
     """
+    non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
+    
     if lc['mag_final'].isna().sum() > 0:
         print("NaN values found in 'mag_final'. Dropping NaN values.")
         lc = lc.dropna(subset=['mag_final'])
+    
+    if lc['maglim'].isna().sum() > 0:
+        print("NaN values found in 'maglim'. Dropping NaN values.")
+        lc = lc.dropna(subset=['maglim'])
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Convert JD to MJD
+    lc['mjd'] = Time(lc['jd'], format='jd').mjd
+    # Reference to MJD 58000
+    lc['mjd'] = lc['mjd'] - 58000
+
+    # Convert JD to MJD
+    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd
+    # Reference to MJD 58000
+    non_dets['mjd'] = non_dets['mjd'] - 58000
+
+    fig, ax = plt.subplots(figsize=(10/1.5 + .5, 6/1.5))
     
     # Define colors and symbols
-    color_map = {'g': 'aquamarine', 'r': 'crimson', 'i': 'goldenrod'}
-    marker_map = {'g': 's', 'r': 'o', 'i': '^'}
+    color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
+    marker_map = {'g': 's', 'r': 'o', 'i': 's'}
     
     # Creating a dictionary to store scatter plot references
     scatter_dict = {}
@@ -472,39 +531,213 @@ def plot_light_curve(lc, source_id):
         
         band_data = lc[lc['fid'] == band]
         
-        scatter = ax.scatter(band_data['jd'], band_data['mag_final'],
+        scatter = ax.scatter(band_data['mjd'], band_data['mag_final'],
                              color=color_map[filter_name], label=f'{filter_name}-band', marker=marker_map[filter_name])
         
-        ax.errorbar(band_data['jd'], band_data['mag_final'], yerr=band_data['emag_final'],
+        ax.errorbar(band_data['mjd'], band_data['mag_final'], yerr=band_data['emag_final'],
                              fmt='none', color=color_map[filter_name], alpha=0.5)
         
         # Storing scatter plot references and labels
-        labels = [f'JD: {jd} Mag: {mag}' for jd, mag in zip(band_data['jd'], band_data['mag_final'])]
+        labels = [f'MJD: {mjd + 58000}<br>Mag: {mag}' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
         scatter_dict[scatter] = labels
+    
+    non_det_scatter_dict = {}
+    non_det_elements = []
+    for band in non_dets['fid'].unique():
+        if band == 1:
+            filter_name = 'g'
+        elif band == 2:
+            filter_name = 'r'
+        elif band == 3:
+            filter_name = 'i'
+        band_data = non_dets[non_dets['fid'] == band]
+        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], color=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
+        
+        
+        # Storing scatter plot references and labels for non-detections
+        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
+        non_det_scatter_dict[scatter] = labels
+        non_det_elements.append(scatter)
+  
+            
 
+   
+    # Adding tooltips for non-detections
+    for scatter, labels in non_det_scatter_dict.items():
+        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
+        plugins.connect(fig, tooltip)
     # Adding tooltip
     for scatter, labels in scatter_dict.items():
-        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: white;")
+        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
         plugins.connect(fig, tooltip)
+
+    elements = [list(scatter_dict.keys()), non_det_elements]
+    labels = ['Alerts', 'Limits']
+    plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
 
     # Finalize the plot
     ax.invert_yaxis()
-    ax.set_xlabel('Julian Date')
-    ax.set_ylabel('Magnitude')
-    ax.set_title(f'Light Curve for {source_id}')
+    ax.set_xlabel('MJD - 58000', fontsize=16)
+    ax.set_ylabel('Magnitude', fontsize=16)
+    ax.set_title(f'Light Curve for {source_id}', fontsize=18)
     ax.legend(framealpha=1, facecolor='white')
     ax.grid(True)
     plt.tight_layout()
+    fig.subplots_adjust(right=0.9)
 
     # Convert the plot to HTML with mpld3
     html_str = mpld3.fig_to_html(fig)
+
+    custom_css = """
+    <style>
+    body {font-size: 16px;}
+    .mpld3-legend text { 
+        font-size: 14px; 
+        fill: #000000; 
+    }
+    .mpld3-legend rect { 
+        fill: #FFFFE0; 
+        stroke: #000000; 
+        opacity: 0.8; 
+    }
+    .mpld3-tooltip {
+        background-color: white;
+        color: black;
+        font-size: 16px;
+    }
+    </style>
+    """
+    html_str = custom_css + html_str
 
     # Save the HTML to a file
     plot_filename = f'static/light_curves/{source_id}_light_curve.html'
     with open(plot_filename, 'w') as f:
         f.write(html_str)
 
+    plt.close(fig)
+
+    return plot_filename
+
+def plot_big_light_curve(lc, source_id):
+    """
+    Plots the light curve of a given source and saves the plot as a PNG file.
+
+    Parameters:
+    lc (DataFrame): A DataFrame containing light curve data with columns 'fid', 'jd', 'mag_final', and 'emag_final'.
+    source_id (str): The identifier of the source whose light curve is being plotted.
+
+    Returns:
+    str: The filename of the saved plot.
+    """
     
+    non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
+
+    if lc['mag_final'].isna().sum() > 0:
+        print("NaN values found in 'mag_final'. Dropping NaN values.")
+        lc = lc.dropna(subset=['mag_final'])
+
+    if lc['maglim'].isna().sum() > 0:
+        print("NaN values found in 'maglim'. Dropping NaN values.")
+        lc = lc.dropna(subset=['maglim'])
+    # Convert JD to MJD
+    lc['mjd'] = Time(lc['jd'], format='jd').mjd
+    # Reference to MJD 58000
+    lc['mjd'] = lc['mjd'] - 58000
+
+    # Convert JD to MJD for non-detections
+    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd
+    # Reference to MJD 58000
+    non_dets['mjd'] = non_dets['mjd'] - 58000
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Define colors and symbols
+    color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
+    marker_map = {'g': 's', 'r': 'o', 'i': 's'}
+    
+    # Creating a dictionary to store scatter plot references
+    scatter_dict = {}
+
+    # Associating ID to color
+    for band in lc['fid'].unique():
+        if band == 1:
+            filter_name = 'g'
+        elif band == 2:
+            filter_name = 'r'
+        elif band == 3:
+            filter_name = 'i'
+        
+        band_data = lc[lc['fid'] == band]
+        
+        scatter = ax.scatter(band_data['mjd'], band_data['mag_final'],
+                             color=color_map[filter_name], label=f'{filter_name}-band', marker=marker_map[filter_name])
+        
+        ax.errorbar(band_data['mjd'], band_data['mag_final'], yerr=band_data['emag_final'],
+                             fmt='none', color=color_map[filter_name], alpha=0.5)
+        
+        # Storing scatter plot references and labels
+        labels = [f'MJD: {mjd + 58000}<br>Mag: {mag}' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
+        scatter_dict[scatter] = labels
+    
+    non_det_scatter_dict = {}
+    non_det_elements = []
+    for band in non_dets['fid'].unique():
+        if band == 1:
+            filter_name = 'g'
+        elif band == 2:
+            filter_name = 'r'
+        elif band == 3:
+            filter_name = 'i'
+        band_data = non_dets[non_dets['fid'] == band]
+        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], color=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
+        
+        
+        # Storing scatter plot references and labels for non-detections
+        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
+        non_det_scatter_dict[scatter] = labels
+        non_det_elements.append(scatter)
+    
+    # Adding tooltips for non-detections
+    for scatter, labels in non_det_scatter_dict.items():
+        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
+        plugins.connect(fig, tooltip)
+
+    # Adding tooltip
+    for scatter, labels in scatter_dict.items():
+        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 12px;")
+        plugins.connect(fig, tooltip)
+
+    elements = [list(scatter_dict.keys()), non_det_elements]
+    labels = ['Alerts', 'Limits']
+    plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
+
+    # Finalize the plot
+    ax.invert_yaxis()
+    ax.set_xlabel('MJD - 58000', fontsize=20)
+    ax.set_ylabel('Magnitude', fontsize=20)
+    ax.set_title(f'Light Curve for {source_id}', fontsize=22)
+    ax.legend(framealpha=1, facecolor='white')
+    ax.grid(True)
+    plt.tight_layout()
+    fig.subplots_adjust(right=0.9)
+
+    # Convert the plot to HTML with mpld3
+    html_str = mpld3.fig_to_html(fig)
+
+    custom_css = """
+    <style>
+    body {font-size: 20px;}
+    .mpld3-tooltip {font-size: 18px;}
+    </style>
+    """
+    html_str = custom_css + html_str
+
+    # Save the HTML to a file
+    plot_filename = f'static/light_curves/{source_id}_big_light_curve.html'
+    with open(plot_filename, 'w') as f:
+        f.write(html_str)
+
+    plt.close(fig)
 
     return plot_filename
 
@@ -563,7 +796,7 @@ def filter_ztf_alerts(ztf_alerts):
                 seen_sgscore1.add(row['sgscore1'])
     return pd.DataFrame(filtered_data)
 
-def plot_polar_coordinates(ztf_alerts, legacy_survey_data, source_ra, source_dec, output_path):
+def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size):
     """
     Plots the polar coordinates of nearby sources with the transient at the center.
 
@@ -576,8 +809,98 @@ def plot_polar_coordinates(ztf_alerts, legacy_survey_data, source_ra, source_dec
     """
     
     
-    # Filter ZTF alerts
-    ztf_alerts = filter_ztf_alerts(ztf_alerts)
+    # Filter ZTF alerts 
+    #ztf_alerts = filter_ztf_alerts(ztf_alerts)
+
+    # Create a SkyCoord object for the transient source
+    central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit='deg')
+
+    # Process ZTF alerts
+    ztf_coords = SkyCoord(ra=ztf_alerts['ra'], dec=ztf_alerts['dec'], unit='deg')
+
+    # Calculate offsets in arcseconds
+    ztf_ra_offset = (ztf_coords.ra - central_coord.ra).arcsec
+    ztf_dec_offset = (ztf_coords.dec - central_coord.dec).arcsec
+
+    # Plotting
+    fig, ax = plt.subplots(figsize=(3.7, 3.7))
+    ax.set_aspect('equal')
+
+    # Plot ZTF alerts
+    filters = {1: 'green', 2: 'red'}
+    for fid, color in filters.items():
+        mask = ztf_alerts['fid'] == fid
+        #if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
+        scatter = ax.scatter(ztf_ra_offset[mask], ztf_dec_offset[mask], color=color, label=f'ztf{color[0]}', s=point_size)  # Reduce marker size to 50
+        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(ztf_alerts['ra'], ztf_alerts['dec'])]
+        plugins.connect(fig, plugins.PointHTMLTooltip(scatter, labels=labels))
+
+    # Plot Legacy Survey data if available
+    if not legacy_survey_data.empty:
+        legacy_coords = SkyCoord(ra=legacy_survey_data['ra'], dec=legacy_survey_data['dec'], unit='deg')
+        legacy_ra_offset = (legacy_coords.ra - central_coord.ra).arcsec
+        legacy_dec_offset = (legacy_coords.dec - central_coord.dec).arcsec
+        legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=point_size*10, label='Legacy Survey')
+        
+        # Simplify HTML Tooltip content
+        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
+        plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
+
+    # Plot Legacy Survey data if available
+    if ra_ps1 != -1 and dec_ps1 != -1:
+        # Create a SkyCoord object for the PS1 source
+        ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit='deg')
+        ps1_ra_offset = (ps1_coord.ra - central_coord.ra).arcsec
+        ps1_dec_offset = (ps1_coord.dec - central_coord.dec).arcsec
+        # Plot PS1 source
+        ps1_scatter = ax.scatter(ps1_ra_offset, ps1_dec_offset, color='purple', marker='*', s=point_size*10, label='PS1')
+        plugins.connect(fig, plugins.PointHTMLTooltip(ps1_scatter, labels=[f'PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}']))
+            
+        
+    # Central source
+    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient')  # Reduce marker size to 100
+    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient']))
+
+    # Add concentric circles
+    circle1 = plt.Circle((0, 0), 3, color='blue', fill=False, alpha=0.1)  # Increase radius to 3 arcseconds
+    circle2 = plt.Circle((0, 0), 1.5, color='blue', fill=False, alpha=0.3)  # Increase radius to 1.5 arcseconds
+    ax.add_artist(circle1)
+    ax.add_artist(circle2)
+
+    ax.set_xlabel('RA (arcsec)', fontsize=16)
+    ax.set_ylabel(r'Dec (arcsec)', fontsize=16)
+    ax.legend(title='Filter/Catalog')
+    ax.set_title('Coordinates of Nearby Sources', fontsize=18)
+    ax.legend(loc='upper right')
+    ax.grid(True)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    plt.tight_layout()
+
+    # Save as HTML
+    html_str = mpld3.fig_to_html(fig)
+    with open(output_path, 'w') as f:
+        f.write(html_str)
+
+    plt.close(fig)
+
+def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size):
+    """
+    Plots the polar coordinates of nearby sources with the transient at the center.
+
+    Parameters:
+    - ztf_alerts (pd.DataFrame): DataFrame containing ZTF alert data with columns 'ra', 'dec', 'fid', and other relevant data.
+    - legacy_survey_data (pd.DataFrame): DataFrame containing Legacy Survey data with columns 'ra', 'dec', and other relevant data.
+    - source_ra (float): Right Ascension of the transient source.
+    - source_dec (float): Declination of the transient source.
+    - output_path (str): Path to save the output plot.
+    """
+    
+    
+    # Filter ZTF alerts 
+    #ztf_alerts = filter_ztf_alerts(ztf_alerts)
 
     # Create a SkyCoord object for the transient source
     central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit='deg')
@@ -598,7 +921,7 @@ def plot_polar_coordinates(ztf_alerts, legacy_survey_data, source_ra, source_dec
     for fid, color in filters.items():
         mask = ztf_alerts['fid'] == fid
         #if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
-        scatter = ax.scatter(ztf_ra_offset[mask], ztf_dec_offset[mask], color=color, label=f'ztf{color[0]}', s=50)  # Reduce marker size to 50
+        scatter = ax.scatter(ztf_ra_offset[mask], ztf_dec_offset[mask], color=color, label=f'ztf{color[0]}', s=point_size * 1.1)  # Reduce marker size to 50
         labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(ztf_alerts['ra'], ztf_alerts['dec'])]
         plugins.connect(fig, plugins.PointHTMLTooltip(scatter, labels=labels))
 
@@ -607,14 +930,25 @@ def plot_polar_coordinates(ztf_alerts, legacy_survey_data, source_ra, source_dec
         legacy_coords = SkyCoord(ra=legacy_survey_data['ra'], dec=legacy_survey_data['dec'], unit='deg')
         legacy_ra_offset = (legacy_coords.ra - central_coord.ra).arcsec
         legacy_dec_offset = (legacy_coords.dec - central_coord.dec).arcsec
-        legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=50, label='Legacy Survey')
+        legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=point_size *10, label='Legacy Survey')
         
         # Simplify HTML Tooltip content
         labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
         plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
 
+    # Plot Legacy Survey data if available
+    if ra_ps1 != -1 and dec_ps1 != -1:
+        # Create a SkyCoord object for the PS1 source
+        ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit='deg')
+        ps1_ra_offset = (ps1_coord.ra - central_coord.ra).arcsec
+        ps1_dec_offset = (ps1_coord.dec - central_coord.dec).arcsec
+        # Plot PS1 source
+        ps1_scatter = ax.scatter(ps1_ra_offset, ps1_dec_offset, color='purple', marker='*', s=point_size*10, label='PS1')
+        plugins.connect(fig, plugins.PointHTMLTooltip(ps1_scatter, labels=[f'PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}']))
+            
+        
     # Central source
-    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=100, label='Transient')  # Reduce marker size to 100
+    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient')  # Reduce marker size to 100
     plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient']))
 
     # Add concentric circles
@@ -623,15 +957,15 @@ def plot_polar_coordinates(ztf_alerts, legacy_survey_data, source_ra, source_dec
     ax.add_artist(circle1)
     ax.add_artist(circle2)
 
-    ax.set_xlabel('RA (arcsec)')
-    ax.set_ylabel(r'Dec (arcsec)')
+    ax.set_xlabel('RA (arcsec)', fontsize=18)
+    ax.set_ylabel(r'Dec (arcsec)', fontsize=18)
     ax.legend(title='Filter/Catalog')
-    ax.set_title('Coordinates of Nearby Sources')
+    ax.set_title('Coordinates of Nearby Sources', fontsize=20)
     ax.legend(loc='upper right')
     ax.grid(True)
 
-    ax.set_xlim(-5, 5)
-    ax.set_ylim(-5, 5)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
 
     plt.tight_layout()
 
@@ -660,3 +994,83 @@ def get_most_confident_classification(classifications):
             key=lambda x: (x[1]['confidence'], x[1]['count'])
         )[0]
     return None
+
+
+def get_ps1_host(s, name):
+    """Retrieve the distance to the nearest PS1 host"""
+    q = {
+        "query_type": "find_one",
+        "query": {
+            "catalog": "ZTF_alerts",
+            "filter": {
+                'objectId': {'$eq': name},
+            },
+            "projection": {
+                "_id": 0,
+                "candidate.distpsnr1": 1
+            }
+        }
+    }
+    query_result = s.query(query=q)
+    out = query_result['default']['data']
+    return out['candidate']['distpsnr1']
+
+def get_ps1_photoz(ra, dec, radius=10):
+    """ Find the photoz for a PS1 object within 10 arcseconds """
+    wsid = "user"
+    pwd = "pass"
+    jobs = mastcasjobs.MastCasJobs(
+            userid=wsid, password=pwd, context="HLSP_PS1_STRM")
+    query = """select o.objID, o.uniquePspsOBid, o.raMean, o.decMean,
+            o.class, o.prob_Galaxy, o.prob_Star, o.prob_QSO,
+            o.extrapolation_Class, o.cellDistance_Class, o.cellID_Class,
+            o.z_phot, o.z_photErr, o.z_phot0,
+            o.extrapolation_Photoz, cellDistance_Photoz, o.cellID_Photoz
+            from fGetNearbyObjEq({},{},{}) nb
+            inner join catalogRecordRowStore o on o.objID=nb.objID
+            """.format(ra, dec, radius/60)
+    max_retries = 5
+    retry_delay = 5
+    for attempt in range(max_retries):
+        try:
+            tab = jobs.quick(query, task_name="python cone search")
+            time.sleep(3)
+            return tab
+        except Exception as e:
+            print(f"Attempt {attempt+1} failed with exception: {e}")
+            if 'deadlocked on lock resources' in str(e):
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                return []
+    print("PS1 query failed after multiple retries")
+    return []
+
+def analyze_ps1_photoz(s, name, ra, dec, radius=5):
+    nearest_ps1_dist = get_ps1_host(s, name)
+    
+    if nearest_ps1_dist < radius:
+        print("Getting PS1 photo-z")
+        tab = get_ps1_photoz(ra, dec, radius)
+        
+        if nearest_ps1_dist < radius:
+            print("Getting PS1 photo-z")
+            tab = get_ps1_photoz(ra, dec, radius)
+            
+            if len(tab) > 0:
+                print("PS1 photo-z values obtained")
+                ramatch = tab['raMean'].data
+                decmatch = tab['decMean'].data
+                cmatch = SkyCoord(ramatch, decmatch, unit='deg')
+                seps = cmatch.separation(SkyCoord(ra, dec, unit='deg')).arcsec
+                ind = np.argmin(seps)
+                print(ramatch[ind], decmatch[ind])
+                return ramatch[ind], decmatch[ind]
+            else:
+                print("No PS1 photo-z values found")
+                return None, None
+        else:
+            print("No nearby PS1 host found within the specified radius")
+            return None, None
+    
+    return -1, -1
