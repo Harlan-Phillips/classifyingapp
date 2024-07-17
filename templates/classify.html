@@ -176,9 +176,14 @@
                     <p><strong>Galactic (l, b):</strong> {{ galactic_l|round(4) }}, {{ galactic_b|round(4) }}</p>
                     <!-- Cutouts from ZTF -->
                     {% if ztf_cutout %}
-                    <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%"class="img-thumbnail">
-                    {% else %}
+                        <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img-thumbnail">
                     {% endif %}
+                    <!-- Buttons to Switch ZTF Cutouts -->
+                    <div class="btn-group-vertical mt-2 justify-content-center" role="toolbar" aria-label="ZTF Image Switcher">
+                        {% for i in range(1, 4) %}
+                            <button id="btn-ztf{{ i }}" class="btn btn-outline-secondary btn-ztf" onclick="switchZTFImage('ztf{{ i }}')">Alert {{ i }}</button>
+                        {% endfor %}
+                    </div>
                 </div>
                         
                 
@@ -441,21 +446,27 @@
                 btnPs1.classList.remove('btn-outline-secondary');
                 btnLs.classList.add('btn-outline-secondary');
                 btnLs.classList.remove('btn-secondary');
-            } else if (source === 'ztf' && '{{ ztf_cutout }}') {
-                imgElement.src = "{{ url_for('static', filename='cutouts/' + ztf_cutout) }}";
-                imgElement.alt = 'ZTF Cutout for {{ source_id }}';
-                btnPs1.classList.add('btn-secondary');
-                btnPs1.classList.remove('btn-outline-secondary');
-                btnLs.classList.add('btn-outline-secondary');
-                btnLs.classList.remove('btn-secondary');
-            } else if (source === 'triplet' && '{{ ztf_brightest_cutout }}') {
-                imgElement.src = "{{ url_for('static', filename='cutouts/' + ztf_brightest_cutout) }}";
-                imgElement.alt = 'ZTF Brightest Cutout for {{ source_id }}';
-                btnPs1.classList.add('btn-secondary');
-                btnPs1.classList.remove('btn-outline-secondary');
-                btnLs.classList.add('btn-outline-secondary');
-                btnLs.classList.remove('btn-secondary');
-            }
+            } 
+        }
+
+        function switchZTFImage(cutout) {
+            var ztfCutouts = {
+                'ztf1': "{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}",
+                'ztf2': "{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}",
+                'ztf3': "{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}"
+            };
+            var imgElement = document.getElementById('ztf-image');
+
+            imgElement.src = ztfCutouts[cutout];
+            imgElement.alt = 'ZTF Cutout for {{ source_id }}';
+
+           // Update button styles
+           document.querySelectorAll('.btn-ztf').forEach(btn => {
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-outline-secondary');
+            });
+            document.getElementById('btn-' + cutout).classList.add('btn-secondary');
+            document.getElementById('btn-' + cutout).classList.remove('btn-outline-secondary');
         }
     
     function adjustIframe() {

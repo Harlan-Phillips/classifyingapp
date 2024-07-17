@@ -7,6 +7,16 @@
 <!-- Import styles for animated background -->
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+    .alert-dark-bg {
+        background-color: #333;
+        color: #fff;
+        border-color: #444;
+    }
+    .alert-dark-bg .close {
+        color: #fff;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -29,7 +39,7 @@
         {% if current_user.is_authenticated %}  
         <p>Click <a href="{{ url_for('list_test_transients') }}">here</a> to start classifying the Training Set.</p>
         <p>Classifications are based on photometric data, cutouts from different surveys, and cross match data.</p>
-        <p>Please email: <a href="mailto:harlanphillips@berkeley.edu">harlanphillips@berkeley.edu</a> for any issues or to provide feedback.</p>
+        <p>Please email: <a href="mailto:harlanphillips@berkeley.edu">harlanphillips@berkeley.edu</a> gitfor any issues or to provide feedback.</p>
         {% else %}
             <a href="{{ url_for('login') }}">Login</a>
             <a href="{{ url_for('register') }}">Register</a>

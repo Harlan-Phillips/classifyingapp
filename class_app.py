@@ -25,8 +25,8 @@ from utils import (
     get_pos, get_galactic, get_lc, logon, plot_ztf_cutout, 
     plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
     xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
-    get_brightest_triplet, get_brightest_dets, plot_big_light_curve, plot_big_polar_coordinates, 
-    get_ps1_host, get_ps1_photoz, analyze_ps1_photoz
+    plot_big_light_curve, plot_big_polar_coordinates, 
+    analyze_ps1_photoz
 )
 from vlass_utils import get_vlass_data, run_search
 
@@ -196,14 +196,16 @@ def classify_source(source_id):
         galactic_l, galactic_b = get_galactic(ra, dec)
         
         dets = get_dets(kowalski_session, source_id) # Extract data from get_dets
-        brightest_dets = get_brightest_dets(kowalski_session, source_id)
 
         cutout_dir = os.path.join(basedir, 'static', 'cutouts')
         light_cur = os.path.join(basedir, 'static', 'light_curves')
         light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
         big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
-        ztf_cutout_path = os.path.join(cutout_dir, f"{source_id}_triplet.png")
-        ztf_brightest_cutout_path = os.path.join(cutout_dir, f"{source_id}_triplet_brightest.png")
+        ztf_cutout_paths = [
+            os.path.join(cutout_dir, f"{source_id}_triplet1.png"),
+            os.path.join(cutout_dir, f"{source_id}_triplet2.png"),
+            os.path.join(cutout_dir, f"{source_id}_triplet3.png")
+        ]
         ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
         ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
 
@@ -220,18 +222,18 @@ def classify_source(source_id):
             light_curve = get_lc(kowalski_session, source_id)
             plot_big_filename = plot_big_light_curve(light_curve, source_id) 
 
-        if os.path.exists(ztf_cutout_path):
-            ztf_cutout_basename = f"{source_id}_triplet.png"
-        else:
-            ztf_cutout = plot_ztf_cutout(kowalski_session, cutout_dir, source_id)
-            ztf_cutout_basename = os.path.basename(ztf_cutout) if ztf_cutout else None
+        ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout_paths if os.path.exists(path)]
         
-        if os.path.exists(ztf_brightest_cutout_path):
-            ztf_brightest_cutout_basename = f"{source_id}_triplet_brightest.png"
-        else:
-            ztf_brightest_cutout = get_brightest_triplet(cutout_dir,  brightest_dets, source_id)
-            ztf_brightest_cutout_basename = os.path.basename(ztf_brightest_cutout) if ztf_brightest_cutout else None
 
+        if not ztf_cutout_basenames:
+            ztf_cutout = plot_ztf_cutout(kowalski_session, cutout_dir, source_id)
+            ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
+            if len(ztf_cutout_basenames) < 3:
+                ztf_cutout_basenames.extend(['no_image.png'] * (3 - len(ztf_cutout_basenames)))
+                
+        if len(ztf_cutout_basenames) < 3:
+            ztf_cutout_basenames.extend(['no_image.png'] * (3 - len(ztf_cutout_basenames)))
+            
         if os.path.exists(ps1_cutout_path):
             ps1_cutout_basename = f"{source_id}_ps1.png"
         else:
@@ -332,8 +334,7 @@ def classify_source(source_id):
                             light_curve=light_curve.to_dict(orient='records') if 'light_curve' in locals() else None,
                             plot_filename=plot_filename,
                             plot_big_filename=plot_big_filename,
-                            ztf_cutout=ztf_cutout_basename,
-                            ztf_brightest_cutout=ztf_brightest_cutout_basename,
+                            ztf_cutout=ztf_cutout_basenames,
                             ps1_cutout=ps1_cutout_basename,
                             ls_cutout=ls_cutout_basename,
                             classifications=classifications,

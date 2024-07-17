@@ -83,6 +83,8 @@ def get_dets(s, name):
 def get_pos(s,name):
     """ Calculate the median position from alerts, and the scatter """
     det_alerts = get_dets(s, name)
+    if not det_alerts:
+        return None, None, None
     det_prv = get_prv_dets(s, name)
     ras = [det['candidate']['ra'] for det in det_alerts]
     decs = [det['candidate']['dec'] for det in det_alerts]
@@ -319,10 +321,83 @@ def get_prv_dets_forced(s, name):
     return None
 
 
+# def make_triplet(alert, normalize=False):
+#     """
+#     Get the science, reference, and difference image for a given alert
+
+#     Takes in an alert packet
+#     """
+#     cutout_dict = dict()
+
+#     for cutout in ('science', 'template', 'difference'):
+#         tmpstr = 'cutout' + cutout.capitalize()
+#         cutout_data = alert[tmpstr]['stampData']
+
+#         # unzip
+#         with gzip.open(io.BytesIO(cutout_data), 'rb') as f:
+#             with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
+#                 data = hdu[0].data
+#                 # replace nans with zeros
+#                 cutout_dict[cutout] = np.nan_to_num(data)
+#                 # normalize
+#                 if normalize:
+#                     cutout_dict[cutout] /= np.linalg.norm(cutout_dict[cutout])
+
+#         # pad to 63x63 if smaller
+#         shape = cutout_dict[cutout].shape
+#         if shape != (63, 63):
+#             cutout_dict[cutout] = np.pad(cutout_dict[cutout], [(0, 63 - shape[0]), (0, 63 - shape[1])],
+#                                          mode='constant', constant_values=1e-9)
+
+#     triplet = np.zeros((63, 63, 3))
+#     triplet[:, :, 0] = cutout_dict['science']
+#     triplet[:, :, 1] = cutout_dict['template']
+#     triplet[:, :, 2] = cutout_dict['difference']
+#     return triplet
+
+# def plot_triplet(triplet):
+#     """
+#     Plot the triplet images (science, template, difference) with enhanced settings.
+#     """
+#     fig, axes = plt.subplots(1, 3, figsize=(6.3, 2.1))
+#     titles = ['Science', 'Reference', 'Difference']
+
+#     # Normalize the images for better contrast
+#     for ax, img, title in zip(axes, triplet.transpose((2, 0, 1)), titles):
+#         # Normalize the image for better display quality
+#         img = (img - np.min(img)) / (np.max(img) - np.min(img))
+#         ax.imshow(img, cmap='gray', origin='lower')
+#         ax.set_title(title)
+#         ax.axis('off')
+
+#     plt.tight_layout()
+#     plt.show()
+
+
+# def plot_ztf_cutout(s,ddir,name):
+#     """ Plot the ZTF cutouts: science, reference, difference """
+#     fname = "%s/%s_triplet.png" %(ddir,name)
+#     print(fname)
+#     if os.path.isfile(fname)==False:
+#         q0 = {
+#                 "query_type": "find_one",
+#                 "query": {
+#                             "catalog": "ZTF_alerts",
+#                             "filter": {"objectId": name}
+#                         }
+#             }
+#         out = s.query(q0)
+#         alert = out["default"]["data"]
+#         tr = make_triplet(alert)
+#         plot_triplet(tr)
+#         plt.tight_layout()
+#         plt.savefig(fname, bbox_inches = "tight")
+#         plt.close()
+#     return fname
+
 def make_triplet(alert, normalize=False):
     """
     Get the science, reference, and difference image for a given alert
-
     Takes in an alert packet
     """
     cutout_dict = dict()
@@ -369,65 +444,42 @@ def plot_triplet(triplet):
         ax.axis('off')
 
     plt.tight_layout()
-    plt.show()
+    return fig  # Return the figure to allow saving
 
-def get_brightest_dets(s, name):
-    q0 = {
-        "query_type": "find_one",
-        "query": {
-            "catalog": "ZTF_alerts",
-            "filter": {"objectId": name}
-        }
-    }
-    out = s.query(q0)
-    
-    # Check if the query result contains the expected structure
-    if "default" in out and "data" in out["default"]:
-        alert = out["default"]["data"]
-        return alert
-    else:
-        # Handle the case where the expected keys are not found
-        print(f"Error: Expected data not found in the query result for object {name}")
-        return None
-
-def plot_ztf_cutout(s,ddir,name):
+def plot_ztf_cutout(s, ddir, name):
     """ Plot the ZTF cutouts: science, reference, difference """
-    fname = "%s/%s_triplet.png" %(ddir,name)
-    print(fname)
-    if os.path.isfile(fname)==False:
+    fnames = []
+    need_query = False
+
+    for i in range(3):
+        fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
+        if not os.path.isfile(fname):
+            need_query = True
+        fnames.append(fname)
+
+    if need_query:
         q0 = {
-                "query_type": "find_one",
-                "query": {
-                            "catalog": "ZTF_alerts",
-                            "filter": {"objectId": name}
-                        }
+            "query_type": "find",
+            "query": {
+                "catalog": "ZTF_alerts",
+                "filter": {"objectId": name}
+            },
+            "kwargs": {
+                "limit": 3,
             }
+        }
         out = s.query(q0)
-        alert = out["default"]["data"]
-        tr = make_triplet(alert)
-        plot_triplet(tr)
-        plt.tight_layout()
-        plt.savefig(fname, bbox_inches = "tight")
-        plt.close()
-    return fname
+        
+        for i, alert in enumerate(out["default"]["data"]):
+            fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
+            if not os.path.isfile(fname):
+                print(f"Processing {name} - Creating {fname}")
+                tr = make_triplet(alert)
+                fig = plot_triplet(tr)
+                fig.savefig(fname, bbox_inches="tight")
+                plt.close(fig)
 
-
-def get_brightest_triplet(ddir, detections, name):
-    fname = "%s/%s_triplet_brightest.png" %(ddir,name)
-    """ Get the alert with the brightest magnitude (lowest magpsf) """
-    
-    
-    
-    # Select a random detection from the filtered list
-    brightest_alert = detections
-    
-    tr = make_triplet(brightest_alert)
-    plot_triplet(tr)
-    plt.tight_layout()
-    plt.savefig(fname, bbox_inches = "tight")
-    plt.close()
-    return fname
-
+    return fnames
 
 def plot_ps1_cutout(s,ddir,name,ra,dec):
     """ Plot cutout from PS1 """
@@ -517,8 +569,40 @@ def plot_light_curve(lc, source_id):
     color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
     marker_map = {'g': 's', 'r': 'o', 'i': 's'}
     
+
+    
     # Creating a dictionary to store scatter plot references
     scatter_dict = {}
+
+    non_det_scatter_dict = {}
+    non_det_elements = []
+    for band in non_dets['fid'].unique():
+        if band == 1:
+            filter_name = 'g'
+        elif band == 2:
+            filter_name = 'r'
+        elif band == 3:
+            filter_name = 'i'
+        band_data = non_dets[non_dets['fid'] == band]
+        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], edgecolor=color_map[filter_name], facecolor=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
+        
+        # Adjusting the transparency separately
+        facecolors = scatter.get_facecolors()
+        edgecolors = scatter.get_edgecolors()
+        
+        for facecolor in facecolors:
+            facecolor[3] = 0.05  # Make facecolor fully transparent
+
+        for edgecolor in edgecolors:
+            edgecolor[3] = 1  # Set edgecolor to be semi-transparent
+
+        scatter.set_facecolors(facecolors)
+        scatter.set_edgecolors(edgecolors)
+
+        # Storing scatter plot references and labels for non-detections
+        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
+        non_det_scatter_dict[scatter] = labels
+        non_det_elements.append(scatter)
 
     # Associating ID to color
     for band in lc['fid'].unique():
@@ -541,26 +625,6 @@ def plot_light_curve(lc, source_id):
         labels = [f'MJD: {mjd + 58000}<br>Mag: {mag}' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
         scatter_dict[scatter] = labels
     
-    non_det_scatter_dict = {}
-    non_det_elements = []
-    for band in non_dets['fid'].unique():
-        if band == 1:
-            filter_name = 'g'
-        elif band == 2:
-            filter_name = 'r'
-        elif band == 3:
-            filter_name = 'i'
-        band_data = non_dets[non_dets['fid'] == band]
-        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], color=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
-        
-        
-        # Storing scatter plot references and labels for non-detections
-        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
-        non_det_scatter_dict[scatter] = labels
-        non_det_elements.append(scatter)
-  
-            
-
    
     # Adding tooltips for non-detections
     for scatter, labels in non_det_scatter_dict.items():
@@ -575,6 +639,8 @@ def plot_light_curve(lc, source_id):
     labels = ['Alerts', 'Limits']
     plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
 
+    detection_mags = lc['mag_final']
+    ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
     # Finalize the plot
     ax.invert_yaxis()
     ax.set_xlabel('MJD - 58000', fontsize=16)
@@ -658,6 +724,36 @@ def plot_big_light_curve(lc, source_id):
     # Creating a dictionary to store scatter plot references
     scatter_dict = {}
 
+    non_det_scatter_dict = {}
+    non_det_elements = []
+    for band in non_dets['fid'].unique():
+        if band == 1:
+            filter_name = 'g'
+        elif band == 2:
+            filter_name = 'r'
+        elif band == 3:
+            filter_name = 'i'
+        band_data = non_dets[non_dets['fid'] == band]
+        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], edgecolor=color_map[filter_name], facecolor=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
+        
+        # Adjusting the transparency separately
+        facecolors = scatter.get_facecolors()
+        edgecolors = scatter.get_edgecolors()
+        
+        for facecolor in facecolors:
+            facecolor[3] = 0.05  # Make facecolor fully transparent
+
+        for edgecolor in edgecolors:
+            edgecolor[3] = 1  # Set edgecolor to be semi-transparent
+
+        scatter.set_facecolors(facecolors)
+        scatter.set_edgecolors(edgecolors)
+        
+        # Storing scatter plot references and labels for non-detections
+        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
+        non_det_scatter_dict[scatter] = labels
+        non_det_elements.append(scatter)
+
     # Associating ID to color
     for band in lc['fid'].unique():
         if band == 1:
@@ -678,25 +774,7 @@ def plot_big_light_curve(lc, source_id):
         # Storing scatter plot references and labels
         labels = [f'MJD: {mjd + 58000}<br>Mag: {mag}' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
         scatter_dict[scatter] = labels
-    
-    non_det_scatter_dict = {}
-    non_det_elements = []
-    for band in non_dets['fid'].unique():
-        if band == 1:
-            filter_name = 'g'
-        elif band == 2:
-            filter_name = 'r'
-        elif band == 3:
-            filter_name = 'i'
-        band_data = non_dets[non_dets['fid'] == band]
-        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], color=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
-        
-        
-        # Storing scatter plot references and labels for non-detections
-        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
-        non_det_scatter_dict[scatter] = labels
-        non_det_elements.append(scatter)
-    
+
     # Adding tooltips for non-detections
     for scatter, labels in non_det_scatter_dict.items():
         tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
@@ -710,6 +788,9 @@ def plot_big_light_curve(lc, source_id):
     elements = [list(scatter_dict.keys()), non_det_elements]
     labels = ['Alerts', 'Limits']
     plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
+
+    detection_mags = lc['mag_final']
+    ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
 
     # Finalize the plot
     ax.invert_yaxis()
