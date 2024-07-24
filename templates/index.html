@@ -37,9 +37,9 @@
         <!-- <p>Start classifying transients <a href="{{ url_for('list_transients') }}">here</a>.</p> -->
         <!-- Display Login/Register if User not Logged in -->
         {% if current_user.is_authenticated %}  
-        <p>Click <a href="{{ url_for('list_test_transients') }}">here</a> to start classifying the Training Set.</p>
+        <p>Click <a href="{{ url_for('random_transient') }}">here</a> to start classifying.</p>
         <p>Classifications are based on photometric data, cutouts from different surveys, and cross match data.</p>
-        <p>Please email: <a href="mailto:harlanphillips@berkeley.edu">harlanphillips@berkeley.edu</a> gitfor any issues or to provide feedback.</p>
+        <p>Please email: <a href="mailto:harlanphillips@berkeley.edu">harlanphillips@berkeley.edu</a> for any issues or to provide feedback.</p>
         {% else %}
             <a href="{{ url_for('login') }}">Login</a>
             <a href="{{ url_for('register') }}">Register</a>

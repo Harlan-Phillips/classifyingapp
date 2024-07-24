@@ -5,6 +5,8 @@ import random
 from collections import Counter, defaultdict
 from datetime import datetime
 from io import BytesIO
+import time
+import logging
 
 import pandas as pd
 from astropy.coordinates import SkyCoord
@@ -14,6 +16,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, curren
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from wtforms import StringField, PasswordField, SubmitField
@@ -26,7 +29,7 @@ from utils import (
     plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
     xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
     plot_big_light_curve, plot_big_polar_coordinates, 
-    analyze_ps1_photoz
+    analyze_ps1_photoz, get_drb, get_span, plot_wise, filter_and_plot_alerts
 )
 from vlass_utils import get_vlass_data, run_search
 
@@ -36,10 +39,23 @@ kowalski_session = logon()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# Setup logging for debugging
+logging.basicConfig(level=logging.DEBUG, 
+                    format='%(asctime)s [%(levelname)s] %(message)s',
+                    handlers=[
+                        logging.FileHandler("debug.log"),
+                        logging.StreamHandler()
+                    ])
 # Create flask app instance
 class_app = Flask(__name__)
 class_app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///' + os.path.join(basedir, 'class_app.db')
 class_app.config['SECRET_KEY'] = 'your_secret_key_here'
+
+# Initialize CSRF Protection
+class_app.config['SECRET_KEY'] = 'your_secret_key_here'
+class_app.config['WTF_CSRF_ENABLED'] = True
+
+csrf = CSRFProtect(class_app)
 
 # Initializing database, and login manager with Flask 
 db.init_app(class_app)
@@ -191,71 +207,101 @@ def classify(source_id):
 def classify_source(source_id):
     """Render the classification page for a given source."""   
     try:
+        logging.debug(f"Attempting to classify source: {source_id}")
+        
         # Fetch positional and galactic data        
         ra, dec, scat_sep = get_pos(kowalski_session, source_id)
+        logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
+        
         galactic_l, galactic_b = get_galactic(ra, dec)
+        logging.debug(f"Galactic Coordinates - l: {galactic_l}, b: {galactic_b}")
+
         
         dets = get_dets(kowalski_session, source_id) # Extract data from get_dets
+        logging.debug(f"Detections: {dets}")
+
+        med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, dets)
+        logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
+
 
         cutout_dir = os.path.join(basedir, 'static', 'cutouts')
         light_cur = os.path.join(basedir, 'static', 'light_curves')
+        wise_dir = os.path.join(basedir, 'static', 'wise_plots')
+        wise_plot_path = os.path.join(wise_dir, f"{source_id}_wise_plot.html")
         light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
         big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
         ztf_cutout_paths = [
-            os.path.join(cutout_dir, f"{source_id}_triplet1.png"),
-            os.path.join(cutout_dir, f"{source_id}_triplet2.png"),
-            os.path.join(cutout_dir, f"{source_id}_triplet3.png")
+            os.path.join(cutout_dir, f"{source_id}_first.png"),
+            os.path.join(cutout_dir, f"{source_id}_last.png"),
+            os.path.join(cutout_dir, f"{source_id}_highest_drb.png"),
+            os.path.join(cutout_dir, f"{source_id}_median.png"),
+            os.path.join(cutout_dir, f"{source_id}_highest_snr.png")
         ]
         ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
         ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
 
         # Checking if cutouts exist reducing processing time
+        if os.path.exists(wise_plot_path):
+            wise_filename = f"static/wise_plots/{source_id}_wise_plot.html"
+        else:
+            wise_filename = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+
         if os.path.exists(light_curve_path):
             plot_filename = f"static/light_curves/{source_id}_light_curve.html"
+            plot_filename_zoomed = f"static/light_curves/{source_id}_light_curve_zoomed.html"
         else:
             light_curve = get_lc(kowalski_session, source_id)
             plot_filename = plot_light_curve(light_curve, source_id)
+            plot_filename_zoomed = plot_light_curve(light_curve, source_id, "detections")
+
         
         if os.path.exists(big_light_curve_path):
             plot_big_filename = f"static/light_curves/{source_id}_big_light_curve.html"
+            plot_big_filename_zoomed = f"static/light_curves/{source_id}_big_light_curve_zoomed.html"
+
         else:
             light_curve = get_lc(kowalski_session, source_id)
             plot_big_filename = plot_big_light_curve(light_curve, source_id) 
+            plot_big_filename_zoomed = plot_big_light_curve(light_curve, source_id, "detections")
 
         ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout_paths if os.path.exists(path)]
+        logging.debug(f"ZTF Cutout Basenames: {ztf_cutout_basenames}")
+
+        if len(ztf_cutout_basenames) != 5:
+            ztf_cutout = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
+            ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
+        
         
 
-        if not ztf_cutout_basenames:
-            ztf_cutout = plot_ztf_cutout(kowalski_session, cutout_dir, source_id)
-            ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
-            if len(ztf_cutout_basenames) < 3:
-                ztf_cutout_basenames.extend(['no_image.png'] * (3 - len(ztf_cutout_basenames)))
-                
-        if len(ztf_cutout_basenames) < 3:
-            ztf_cutout_basenames.extend(['no_image.png'] * (3 - len(ztf_cutout_basenames)))
-            
         if os.path.exists(ps1_cutout_path):
             ps1_cutout_basename = f"{source_id}_ps1.png"
         else:
             ps1_cutout = plot_ps1_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
             ps1_cutout_basename = os.path.basename(ps1_cutout) if ps1_cutout else None
 
-        if os.path.exists(ls_cutout_path):
-            ls_cutout_basename = f"{source_id}_ls.png"
-        else:
-            ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-            ls_cutout_basename = os.path.basename(ls_cutout) if ls_cutout else ''
-    
+        # Retry mechanism to ensure LS cutout is ready
+        ls_cutout_basename = ''
+        for attempt in range(5):  # Retry up to 5 times
+            if os.path.exists(ls_cutout_path):
+                ls_cutout_basename = f"{source_id}_ls.png"
+                break
+            else:
+                ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
+                ls_cutout_basename = os.path.basename(ls_cutout) if ls_cutout else ''
+            time.sleep(2)  # Wait for 2 seconds before retrying
+        logging.debug(f"LS Cutout Basename: {ls_cutout_basename}")
+
         legacy_survey_data = xmatch_ls(ra, dec) # Fetch Legacy Survey data
-     
+        logging.debug(f"Legacy Survey Data: {legacy_survey_data}")
         
         # Determine if there is SDSS data
         sdss_data = None
-        if dets[0]['candidate']['ssdistnr'] != -999.0 and dets[0]['candidate']['ssmagnr'] != -999.0:
+        if dets and dets[0]['candidate']['ssdistnr'] != -999.0 and dets[0]['candidate']['ssmagnr'] != -999.0:
             sdss_data = {
                 'ssdistnr': dets[0]['candidate']['ssdistnr'],
                 'ssmagnr': dets[0]['candidate']['ssmagnr']
             }
+        logging.debug(f"SDSS Data: {sdss_data}")
 
         # Aggregate Pan-STARRS data and remove duplicates
         pan_starrs_data = []
@@ -270,21 +316,19 @@ def classify_source(source_id):
                     })
                     seen_sgscore1.add(candidate['sgscore1'])
         pan_starrs_df = pd.DataFrame(pan_starrs_data)
-        
+        logging.debug(f"Pan-STARRS DataFrame: {pan_starrs_df}")
+
         # Retrieve VLASS images
         vlass_images = session.pop('vlass_images', []) 
 
         # Create the polar plot
-        # polar_plot_path = os.path.join(cutout_dir, f"{source_id}_polar_plot.html")
         ztf_alerts = pd.DataFrame([det['candidate'] for det in dets])
-        # plot_polar_coordinates(ztf_alerts, legacy_survey_data, ra, dec, polar_plot_path)
         polar_plot_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
         polar_big_plot_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
         polar_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
         polar_big_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot_out.html')
         
-        
-        if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out) :
+        if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out):
             ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
             plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
             plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
@@ -292,7 +336,12 @@ def classify_source(source_id):
             plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
 
     except ValueError as e:
+        logging.error(f"ValueError: {e}")
         flash('Source does not exist or data could not be retrieved.')
+        return redirect(url_for('index'))
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        flash(f'An error occurred: {str(e)}')
         return redirect(url_for('index'))
 
     # Retrieve classifications and determine the most confident classification
@@ -318,37 +367,48 @@ def classify_source(source_id):
     else:
         most_confident_classification = None
 
-    coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
-    ra = coord.ra.to_string(unit=u.hour, sep=':', precision=4)
-    dec = coord.dec.to_string(unit=u.degree, sep=':', precision=4)
+    logging.debug(f"Most Confident Classification: {most_confident_classification}")
 
+    coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
+    ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4)
+    dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4)
+
+    logging.debug(f"RA (string): {ra_str}, Dec (string): {dec_str}")
     
 
     return render_template('classify.html', 
-                            source_id=source_id, 
-                            ra=ra, 
-                            dec=dec, 
-                            scat_sep=scat_sep, 
-                            galactic_b=galactic_b, 
-                            galactic_l=galactic_l,
-                            light_curve=light_curve.to_dict(orient='records') if 'light_curve' in locals() else None,
-                            plot_filename=plot_filename,
-                            plot_big_filename=plot_big_filename,
-                            ztf_cutout=ztf_cutout_basenames,
-                            ps1_cutout=ps1_cutout_basename,
-                            ls_cutout=ls_cutout_basename,
-                            classifications=classifications,
+                           source_id=source_id, 
+                           ra=ra_str, 
+                           dec=dec_str, 
+                           scat_sep=scat_sep, 
+                           galactic_b=galactic_b, 
+                           galactic_l=galactic_l,
+                           span=get_span(kowalski_session, source_id, dets),
+                           med_drb=med_drb,
+                           min_drb=min_drb,
+                           max_drb=max_drb,
+                           avg_drb=avg_drb,
+                           light_curve=light_curve.to_dict(orient='records') if 'light_curve' in locals() else None,
+                           plot_filename=plot_filename,
+                           plot_filename_zoomed=plot_filename_zoomed,
+                           plot_big_filename=plot_big_filename,
+                           plot_big_filename_zoomed=plot_big_filename_zoomed,
+                           ztf_cutout=ztf_cutout_basenames,
+                           ps1_cutout=ps1_cutout_basename,
+                           ls_cutout=ls_cutout_basename,
+                           classifications=classifications,
                            most_confident_classification=most_confident_classification,
                            classified_by_users=classified_by_users,
-                            vlass_images=vlass_images,
+                           vlass_images=vlass_images,
                            legacy_survey_data=legacy_survey_data,
                            sdss_data=sdss_data,
-                            pan_starrs_df=pan_starrs_df,
-                            polar_plot=polar_plot_path,
-                            polar_big_plot=polar_big_plot_path,
-                            polar_big_plot_out=polar_big_plot_path_out,
-                            polar_plot_out=polar_plot_path_out
-                           )
+                           pan_starrs_df=pan_starrs_df,
+                           polar_plot=polar_plot_path,
+                           polar_big_plot=polar_big_plot_path,
+                           polar_big_plot_out=polar_big_plot_path_out,
+                           polar_plot_out=polar_plot_path_out,
+                           wise_plot=wise_filename
+                          )
     
 @class_app.route('/retrieve_vlass_data/<source_id>', methods=['POST'])
 @login_required
@@ -487,6 +547,32 @@ def random_transient():
     
     random_source_id = random.choice(test_transients_ids)
     return redirect(url_for('classify_source', source_id=random_source_id))
+
+@class_app.route('/user_classifications')
+@login_required
+def user_classifications():
+    """Display a table of user's classifications."""
+    user_id = current_user.id
+    classifications = Classification.query.filter_by(user_id=user_id).all()
+    
+    return render_template('user_classifications.html', classifications=classifications, userid=user_id)
+
+@class_app.route('/delete_classification/<int:classification_id>', methods=['POST'])
+@login_required
+def delete_classification(classification_id):
+    """Delete a classification by its ID."""
+    classification = Classification.query.get_or_404(classification_id)
+    
+    # Ensure the classification belongs to the current user
+    if classification.user_id != current_user.id:
+        flash('You are not authorized to delete this classification.', 'danger')
+        return redirect(url_for('user_classifications'))
+    
+    db.session.delete(classification)
+    db.session.commit()
+    
+    flash('Classification deleted successfully.', 'success')
+    return redirect(url_for('user_classifications'))
 
 if __name__ == '__main__':
     # Initialize databases and load transients from csv

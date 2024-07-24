@@ -69,7 +69,8 @@ def get_dets(s, name):
                 "candidate.ssdistnr": 1,
                 "candidate.ssmagnr": 1,
                 "candidate.distpsnr1": 1,
-                "candidate.sgscore1": 1
+                "candidate.sgscore1": 1,
+                "candidate.drb": 1
             }
         }
     }
@@ -79,7 +80,48 @@ def get_dets(s, name):
         return out
     except:
         return []
-   
+    
+def get_drb(s,name,dets):
+    """ Calculate the median position from alerts, and the scatter """
+    det_alerts = dets
+    if not det_alerts:
+        return None, None, None, None
+    
+    #det_prv = get_prv_dets(s, name)
+    
+    drbs = [det['candidate']['drb'] for det in det_alerts if 'drb' in det['candidate']]
+    
+    if not drbs:
+        return None, None, None, None
+    
+    # Calculate the median position
+    med = np.median(drbs)
+    mini = np.min(drbs)
+    mx = np.max(drbs)
+    avg = np.mean(drbs)
+
+    return med,mini,mx,avg
+
+def get_span(s,name,dets):
+    """ Calculate the median position from alerts, and the scatter """
+    det_alerts = dets
+    if not det_alerts:
+        return None
+    
+    det_prv = get_prv_dets(s, name)
+    
+    detects = [det['candidate']['jd'] for det in det_alerts]
+
+    if det_prv:
+        for det in det_prv:
+            if len(det)>50:
+                detects.append(det['jd'])
+
+    if not detects:
+        return None
+    
+    return max(detects) - min(detects)
+
 def get_pos(s,name):
     """ Calculate the median position from alerts, and the scatter """
     det_alerts = get_dets(s, name)
@@ -324,7 +366,6 @@ def get_prv_dets_forced(s, name):
 # def make_triplet(alert, normalize=False):
 #     """
 #     Get the science, reference, and difference image for a given alert
-
 #     Takes in an alert packet
 #     """
 #     cutout_dict = dict()
@@ -371,29 +412,43 @@ def get_prv_dets_forced(s, name):
 #         ax.axis('off')
 
 #     plt.tight_layout()
-#     plt.show()
+#     return fig  # Return the figure to allow saving
 
-
-# def plot_ztf_cutout(s,ddir,name):
+# def plot_ztf_cutout(s, ddir, name):
 #     """ Plot the ZTF cutouts: science, reference, difference """
-#     fname = "%s/%s_triplet.png" %(ddir,name)
-#     print(fname)
-#     if os.path.isfile(fname)==False:
+#     fnames = []
+#     need_query = False
+
+#     for i in range(3):
+#         fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
+#         if not os.path.isfile(fname):
+#             need_query = True
+#         fnames.append(fname)
+
+#     if need_query:
 #         q0 = {
-#                 "query_type": "find_one",
-#                 "query": {
-#                             "catalog": "ZTF_alerts",
-#                             "filter": {"objectId": name}
-#                         }
+#             "query_type": "find",
+#             "query": {
+#                 "catalog": "ZTF_alerts",
+#                 "filter": {"objectId": name}
+#             },
+#             "kwargs": {
+#                 "limit": 3,
 #             }
+#         }
 #         out = s.query(q0)
-#         alert = out["default"]["data"]
-#         tr = make_triplet(alert)
-#         plot_triplet(tr)
-#         plt.tight_layout()
-#         plt.savefig(fname, bbox_inches = "tight")
-#         plt.close()
-#     return fname
+        
+#         for i, alert in enumerate(out["default"]["data"]):
+#             fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
+#             if not os.path.isfile(fname):
+#                 print(f"Processing {name} - Creating {fname}")
+#                 tr = make_triplet(alert)
+#                 fig = plot_triplet(tr)
+#                 fig.savefig(fname, bbox_inches="tight")
+#                 plt.close(fig)
+
+#     return fnames
+
 
 def make_triplet(alert, normalize=False):
     """
@@ -437,7 +492,6 @@ def plot_triplet(triplet):
 
     # Normalize the images for better contrast
     for ax, img, title in zip(axes, triplet.transpose((2, 0, 1)), titles):
-        # Normalize the image for better display quality
         img = (img - np.min(img)) / (np.max(img) - np.min(img))
         ax.imshow(img, cmap='gray', origin='lower')
         ax.set_title(title)
@@ -446,13 +500,32 @@ def plot_triplet(triplet):
     plt.tight_layout()
     return fig  # Return the figure to allow saving
 
-def plot_ztf_cutout(s, ddir, name):
+def plot_ztf_cutout(s, alert, cutout_type='science'):
     """ Plot the ZTF cutouts: science, reference, difference """
+    cutout_data = alert['cutout' + cutout_type.capitalize()]['stampData']
+    
+    # unzip
+    with gzip.open(io.BytesIO(cutout_data), 'rb') as f:
+        with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
+            data = hdu[0].data
+            # replace nans with zeros
+            data = np.nan_to_num(data)
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.imshow(data, cmap='gray', origin='lower')
+    ax.set_title(f'{cutout_type.capitalize()} Cutout')
+    plt.axis('off')
+    plt.tight_layout()
+    return fig
+
+def filter_and_plot_alerts(s, output_dir, object_id):
+        
     fnames = []
     need_query = False
-
-    for i in range(3):
-        fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
+    filters = ["first", "last", "median", "highest_snr", "highest_drb"]
+    
+    for filter in filters:
+        fname = "%s/%s_%s.png" % (output_dir, object_id, filter)
         if not os.path.isfile(fname):
             need_query = True
         fnames.append(fname)
@@ -462,23 +535,49 @@ def plot_ztf_cutout(s, ddir, name):
             "query_type": "find",
             "query": {
                 "catalog": "ZTF_alerts",
-                "filter": {"objectId": name}
+                "filter": {"objectId": object_id}
             },
             "kwargs": {
-                "limit": 3,
+                "limit": 1000,
             }
         }
         out = s.query(q0)
+        alerts = out["default"]["data"]
         
-        for i, alert in enumerate(out["default"]["data"]):
-            fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
-            if not os.path.isfile(fname):
-                print(f"Processing {name} - Creating {fname}")
-                tr = make_triplet(alert)
-                fig = plot_triplet(tr)
-                fig.savefig(fname, bbox_inches="tight")
-                plt.close(fig)
+        if len(alerts) == 0:
+            print("No alerts found for the given object ID.")
+            return
 
+        # Convert alerts to DataFrame
+        df = pd.DataFrame([alert['candidate'] for alert in alerts])
+        
+        # Extract the desired detections
+        # Ensure the DataFrame is sorted by the 'jd' column in ascending order
+        df_sorted = df.sort_values(by='jd')
+
+        # Select the first, last, and median detections
+        first_detection = df_sorted.iloc[0]
+        last_detection = df_sorted.iloc[-1]
+        median_detection = df_sorted.iloc[len(df_sorted) // 2]
+        highest_sn_detection = df.loc[df['scorr'].idxmax()]
+        highest_drb_detection = df.loc[df['drb'].idxmax()]
+
+        # Plot cutouts for each detection
+        key_detections = {
+            'first': first_detection,
+            'last': last_detection,
+            'median': median_detection,
+            'highest_snr': highest_sn_detection,
+            'highest_drb': highest_drb_detection
+        }
+
+        for key, detection in key_detections.items():
+            alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
+            triplet = make_triplet(alert)
+            fig = plot_triplet(triplet)
+            fig.savefig(os.path.join(output_dir, f"{object_id}_{key}.png"), bbox_inches="tight")
+            plt.close(fig)
+    
     return fnames
 
 def plot_ps1_cutout(s,ddir,name,ra,dec):
@@ -532,7 +631,7 @@ import matplotlib
 matplotlib.use('Agg')  # Use a non-interactive backend
 import matplotlib.pyplot as plt
 
-def plot_light_curve(lc, source_id):
+def plot_light_curve(lc, source_id, span=None):
     """
     Plots the light curve of a given source and saves the plot as a PNG file.
 
@@ -543,15 +642,16 @@ def plot_light_curve(lc, source_id):
     Returns:
     str: The filename of the saved plot.
     """
+
     non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
     
     if lc['mag_final'].isna().sum() > 0:
         print("NaN values found in 'mag_final'. Dropping NaN values.")
         lc = lc.dropna(subset=['mag_final'])
     
-    if lc['maglim'].isna().sum() > 0:
+    if non_dets['maglim'].isna().sum() > 0:
         print("NaN values found in 'maglim'. Dropping NaN values.")
-        lc = lc.dropna(subset=['maglim'])
+        non_dets = non_dets.dropna(subset=['maglim'])
 
     # Convert JD to MJD
     lc['mjd'] = Time(lc['jd'], format='jd').mjd
@@ -563,7 +663,7 @@ def plot_light_curve(lc, source_id):
     # Reference to MJD 58000
     non_dets['mjd'] = non_dets['mjd'] - 58000
 
-    fig, ax = plt.subplots(figsize=(10/1.5 + .5, 6/1.5))
+    fig, ax = plt.subplots(figsize=(10/1.5 + .5, 6/1.2))
     
     # Define colors and symbols
     color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
@@ -626,11 +726,12 @@ def plot_light_curve(lc, source_id):
         scatter_dict[scatter] = labels
     
    
-    # Adding tooltips for non-detections
+    # Adding lavels for non-detections when hovered over
     for scatter, labels in non_det_scatter_dict.items():
         tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
         plugins.connect(fig, tooltip)
-    # Adding tooltip
+    
+    # Adding labels for detections when hovered over
     for scatter, labels in scatter_dict.items():
         tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
         plugins.connect(fig, tooltip)
@@ -639,15 +740,29 @@ def plot_light_curve(lc, source_id):
     labels = ['Alerts', 'Limits']
     plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
 
+    # Safeguard against invalid values for axis limits
     detection_mags = lc['mag_final']
-    ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
+    if not detection_mags.empty:
+        ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
+    
+    # Set x-axis limits based on the span parameter
+    if span == 'detections':
+        detection_dates = lc['mjd']
+        if not detection_dates.empty:
+            diff = detection_dates.max() - detection_dates.min()
+            if diff < 1:
+                ax.set_xlim(detection_dates.min() - (diff * 1.2), detection_dates.max() + (diff * 1.2))
+            else:
+                ax.set_xlim(detection_dates.min() - 0.5, detection_dates.max() + 0.5)
+    
+
     # Finalize the plot
-    ax.invert_yaxis()
     ax.set_xlabel('MJD - 58000', fontsize=16)
     ax.set_ylabel('Magnitude', fontsize=16)
     ax.set_title(f'Light Curve for {source_id}', fontsize=18)
-    ax.legend(framealpha=1, facecolor='white')
-    ax.grid(True)
+    #ax.legend(framealpha=1, facecolor='white')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5,-0.2), fancybox=True, shadow=True, ncol=3)
+    ax.grid(alpha =.1)
     plt.tight_layout()
     fig.subplots_adjust(right=0.9)
 
@@ -677,6 +792,9 @@ def plot_light_curve(lc, source_id):
 
     # Save the HTML to a file
     plot_filename = f'static/light_curves/{source_id}_light_curve.html'
+    if span == "detections":
+        plot_filename = f'static/light_curves/{source_id}_light_curve_zoomed.html'
+
     with open(plot_filename, 'w') as f:
         f.write(html_str)
 
@@ -684,7 +802,7 @@ def plot_light_curve(lc, source_id):
 
     return plot_filename
 
-def plot_big_light_curve(lc, source_id):
+def plot_big_light_curve(lc, source_id, span=None):
     """
     Plots the light curve of a given source and saves the plot as a PNG file.
 
@@ -702,9 +820,9 @@ def plot_big_light_curve(lc, source_id):
         print("NaN values found in 'mag_final'. Dropping NaN values.")
         lc = lc.dropna(subset=['mag_final'])
 
-    if lc['maglim'].isna().sum() > 0:
+    if non_dets['maglim'].isna().sum() > 0:
         print("NaN values found in 'maglim'. Dropping NaN values.")
-        lc = lc.dropna(subset=['maglim'])
+        non_dets = non_dets.dropna(subset=['maglim'])
     # Convert JD to MJD
     lc['mjd'] = Time(lc['jd'], format='jd').mjd
     # Reference to MJD 58000
@@ -789,16 +907,27 @@ def plot_big_light_curve(lc, source_id):
     labels = ['Alerts', 'Limits']
     plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
 
+    # Safeguard against invalid values for axis limits
     detection_mags = lc['mag_final']
-    ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
+    if not detection_mags.empty:
+        ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
+
+    # Set x-axis limits based on the span parameter
+    if span == 'detections':
+        detection_dates = lc['mjd']
+        if not detection_dates.empty:
+            diff = detection_dates.max() - detection_dates.min()
+            if diff < 1:
+                ax.set_xlim(detection_dates.min() - (diff * 1.2), detection_dates.max() + (diff * 1.2))
+            else:    
+                ax.set_xlim(detection_dates.min() - 0.5, detection_dates.max() + 0.5)
 
     # Finalize the plot
-    ax.invert_yaxis()
     ax.set_xlabel('MJD - 58000', fontsize=20)
     ax.set_ylabel('Magnitude', fontsize=20)
     ax.set_title(f'Light Curve for {source_id}', fontsize=22)
     ax.legend(framealpha=1, facecolor='white')
-    ax.grid(True)
+    ax.grid(alpha=.1)
     plt.tight_layout()
     fig.subplots_adjust(right=0.9)
 
@@ -815,6 +944,10 @@ def plot_big_light_curve(lc, source_id):
 
     # Save the HTML to a file
     plot_filename = f'static/light_curves/{source_id}_big_light_curve.html'
+    
+    if span == "detections":
+        plot_filename = f'static/light_curves/{source_id}_big_light_curve_zoomed.html'
+
     with open(plot_filename, 'w') as f:
         f.write(html_str)
 
@@ -904,7 +1037,7 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
     ztf_dec_offset = (ztf_coords.dec - central_coord.dec).arcsec
 
     # Plotting
-    fig, ax = plt.subplots(figsize=(3.7, 3.7))
+    fig, ax = plt.subplots(figsize=(5, 5))
     ax.set_aspect('equal')
 
     # Plot ZTF alerts
@@ -924,11 +1057,11 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
         legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=point_size*10, label='Legacy Survey')
         
         # Simplify HTML Tooltip content
-        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
+        labels = [f"Legacy Survey<br><div>RA: {ra:.6f}<br> Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
         plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
 
     # Plot Legacy Survey data if available
-    if ra_ps1 != -1 and dec_ps1 != -1:
+    if ra_ps1 and dec_ps1:
         # Create a SkyCoord object for the PS1 source
         ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit='deg')
         ps1_ra_offset = (ps1_coord.ra - central_coord.ra).arcsec
@@ -952,13 +1085,15 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
     ax.set_ylabel(r'Dec (arcsec)', fontsize=16)
     ax.legend(title='Filter/Catalog')
     ax.set_title('Coordinates of Nearby Sources', fontsize=18)
-    ax.legend(loc='upper right')
-    ax.grid(True)
+    #ax.legend(loc='upper right')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5,-0.2), fancybox=True, shadow=True, ncol=2)
+    ax.grid(alpha =.1)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
     plt.tight_layout()
+    #fig.subplots_adjust(top=0.9, bottom=0.1, left=0.1, right=0.9, hspace=0.2, wspace=0.2)
 
     # Save as HTML
     html_str = mpld3.fig_to_html(fig)
@@ -994,7 +1129,7 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
     ztf_dec_offset = (ztf_coords.dec - central_coord.dec).arcsec
 
     # Plotting
-    fig, ax = plt.subplots(figsize=(5, 5))
+    fig, ax = plt.subplots(figsize=(6, 6))
     ax.set_aspect('equal')
 
     # Plot ZTF alerts
@@ -1014,11 +1149,11 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
         legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=point_size *10, label='Legacy Survey')
         
         # Simplify HTML Tooltip content
-        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
+        labels = [f"Legacy Survey<br><div>RA: {ra:.6f}<br> Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
         plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
 
     # Plot Legacy Survey data if available
-    if ra_ps1 != -1 and dec_ps1 != -1:
+    if ra_ps1 and dec_ps1:
         # Create a SkyCoord object for the PS1 source
         ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit='deg')
         ps1_ra_offset = (ps1_coord.ra - central_coord.ra).arcsec
@@ -1042,13 +1177,16 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
     ax.set_ylabel(r'Dec (arcsec)', fontsize=18)
     ax.legend(title='Filter/Catalog')
     ax.set_title('Coordinates of Nearby Sources', fontsize=20)
-    ax.legend(loc='upper right')
-    ax.grid(True)
+    #ax.legend(loc='upper right')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5,-0.1), fancybox=True, shadow=True, ncol=2)
+
+    ax.grid(alpha =.1)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
     plt.tight_layout()
+    #fig.subplots_adjust(top=.98, bottom=0.2, left=0.1, right=.75, hspace=0, wspace=0)
 
     # Save as HTML
     html_str = mpld3.fig_to_html(fig)
@@ -1154,4 +1292,81 @@ def analyze_ps1_photoz(s, name, ra, dec, radius=5):
             print("No nearby PS1 host found within the specified radius")
             return None, None
     
-    return -1, -1
+    return None, None
+
+def wise_xmatch(s, ra, dec, radius=3):
+    print(f"Querying WISE for coordinates: RA={ra}, Dec={dec}, Radius={radius}")
+    qu = {
+        "query_type": "cone_search",
+        "query": {
+            "object_coordinates": {
+                "radec": "[(%.5f, %.5f)]" % (ra, dec),
+                "cone_search_radius": "%.2f" % radius,
+                "cone_search_unit": "arcsec"
+            },
+            "kwargs": {},
+            "catalogs": {
+                "AllWISE": {
+                    "filter": "{}",
+                    "projection": "{}"
+                }
+            }
+        }
+    }
+    r = s.query(query=qu)
+    out = r['default']['data']
+    key = list(out['AllWISE'].keys())[0]
+    print(f"Output from WISE query: {out}")
+    if len(out['AllWISE'][key]) > 0:
+        dat = out['AllWISE'][key][0]
+        if np.logical_and.reduce(('w1mpro' in dat.keys(), 'w3mpro' in dat.keys(), 'w2mpro' in dat.keys())):
+            wmag = [dat['w1mpro'], dat['w2mpro'], dat['w3mpro']]
+            return dat['ra'], dat['dec'], wmag
+        else:
+            print("WISE data does not contain all required magnitudes (w1mpro, w2mpro, w3mpro).")
+            return None, None, None
+    else:
+        print("No matching WISE data found within the specified radius.")
+        return None, None, None
+
+def plot_wise(s, name, ra, dec, output_path):
+    ra, dec, wmag = wise_xmatch(s, ra, dec)
+
+    if not ra or not dec or not wmag:
+        print(f"No WISE data available for source {name}.")
+        return None
+    
+    if len(wmag) != 3:
+        print("WISE magnitudes are incomplete.")
+        return None
+    
+    w1_w2 = wmag[0] - wmag[1]
+    w2_w3 = wmag[1] - wmag[2]
+
+    x = np.linspace(-1, 5, 400)
+    y1 = 0.5 + (x - 3) * 0.1
+    y2 = -1.5 * x + 3.25
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    scatter = ax.scatter(w1_w2, w2_w3, color='blue', label='WISE Source')
+    line1, = ax.plot(x, y1, label='y1 = 0.5 + (x-3) * 0.1', color='red', linestyle='--')
+    line2, = ax.plot(x, y2, label='y2 = -1.5 * x + 3.25', color='green', linestyle='--')
+
+    ax.set_xlabel('W1 - W2', fontsize=14)
+    ax.set_ylabel('W2 - W3', fontsize=14)
+    ax.set_title(f'WISE Color-Color Plot\n(RA: {ra:.5f}, Dec: {dec:.5f})', fontsize=16)
+    ax.legend()
+    ax.grid(True)
+
+    tooltip = plugins.PointHTMLTooltip(scatter, labels=[f"RA: {ra:.5f}, Dec: {dec:.5f}<br>W1-W2: {w1_w2:.2f}, W2-W3: {w2_w3:.2f}"], css="background-color: white; color: black; font-size: 14px;")
+    plugins.connect(fig, tooltip)
+    plugins.connect(fig, plugins.InteractiveLegendPlugin([scatter, line1, line2], ['Source', 'y1', 'y2']))
+
+    html_str = mpld3.fig_to_html(fig)
+    
+    # Save the HTML to a file
+    with open(output_path, 'w') as f:
+        f.write(html_str)
+
+    plt.close(fig)
+    return output_path

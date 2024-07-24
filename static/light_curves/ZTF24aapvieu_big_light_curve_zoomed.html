@@ -1,0 +1,1000 @@
+
+    <style>
+    body {font-size: 20px;}
+    .mpld3-tooltip {font-size: 18px;}
+    </style>
+    
+
+<style>
+background-color: white; color: black; font-size: 16px;background-color: white; color: black; font-size: 16px;background-color: white; color: black; font-size: 16px;background-color: white; color: black; font-size: 12px;
+    .legend-box {
+      cursor: pointer;
+    }
+    
+</style>
+
+<div id="fig_el6096855095013921574869931"></div>
+<script>
+function mpld3_load_lib(url, callback){
+  var s = document.createElement('script');
+  s.src = url;
+  s.async = true;
+  s.onreadystatechange = s.onload = callback;
+  s.onerror = function(){console.warn("failed to load library " + url);};
+  document.getElementsByTagName("head")[0].appendChild(s);
+}
+
+if(typeof(mpld3) !== "undefined" && mpld3._mpld3IsLoaded){
+   // already loaded: just create the figure
+   !function(mpld3){
+       
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("interactive_legend", InteractiveLegend);
+    InteractiveLegend.prototype = Object.create(mpld3.Plugin.prototype);
+    InteractiveLegend.prototype.constructor = InteractiveLegend;
+    InteractiveLegend.prototype.requiredProps = ["element_ids", "labels"];
+    InteractiveLegend.prototype.defaultProps = {"ax":null,
+                                                "alpha_unsel":0.2,
+                                                "alpha_over":1.0,
+                                                "start_visible":true,
+                                                "font_size": 10,
+                                                "legend_offset": [0,0]}
+    function InteractiveLegend(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    InteractiveLegend.prototype.draw = function(){
+        var alpha_unsel = this.props.alpha_unsel;
+        var alpha_over = this.props.alpha_over;
+        var font_size = this.props.font_size;
+        var legend_offset = this.props.legend_offset;
+
+        var legendItems = new Array();
+        for(var i=0; i<this.props.labels.length; i++){
+            var obj = {};
+            obj.label = this.props.labels[i];
+
+            var element_id = this.props.element_ids[i];
+            mpld3_elements = [];
+            for(var j=0; j<element_id.length; j++){
+                var mpld3_element = mpld3.get_element(element_id[j], this.fig);
+
+                // mpld3_element might be null in case of Line2D instances
+                // for we pass the id for both the line and the markers. Either
+                // one might not exist on the D3 side
+                if(mpld3_element){
+                    mpld3_elements.push(mpld3_element);
+                }
+            }
+
+            obj.mpld3_elements = mpld3_elements;
+            obj.visible = this.props.start_visible[i]; // should become be setable from python side
+            legendItems.push(obj);
+            set_alphas(obj, false);
+        }
+
+        // determine the axes with which this legend is associated
+        var ax = this.props.ax
+        if(!ax){
+            ax = this.fig.axes[0];
+        } else{
+            ax = mpld3.get_element(ax, this.fig);
+        }
+
+        // add a legend group to the canvas of the figure
+        var legend = this.fig.canvas.append("svg:g")
+                               .attr("class", "legend");
+
+        // add the rectangles
+        legend.selectAll("rect")
+                .data(legendItems)
+                .enter().append("rect")
+                .attr("height", 0.7*font_size)
+                .attr("width", 1.6*font_size)
+                .attr("x", ax.width + ax.position[0] + 15 + legend_offset[0])
+                .attr("y",function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + legend_offset[1];})
+                .attr("stroke", get_color)
+                .attr("class", "legend-box")
+                .style("fill", function(d, i) {
+                           return d.visible ? get_color(d) : "white";})
+                .on("click", click).on('mouseover', over).on('mouseout', out);
+
+        // add the labels
+        legend.selectAll("text")
+              .data(legendItems)
+              .enter().append("text")
+              .attr("font-size", font_size)
+              .attr("x", function (d) {
+                           return ax.width + ax.position[0] + (1.9*font_size+15) + legend_offset[0];})
+              .attr("y", function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + (0.72*font_size-1) + legend_offset[1];})
+              .text(function(d) { return d.label })
+              .on('mouseover', over).on('mouseout', out);
+
+
+        // specify the action on click
+        function click(d,i){
+            d.visible = !d.visible;
+            d3.select(this)
+              .style("fill",function(d, i) {
+                return d.visible ? get_color(d) : "white";
+              })
+            set_alphas(d, false);
+
+        };
+
+        // specify the action on legend overlay 
+        function over(d,i){
+             set_alphas(d, true);
+        };
+
+        // specify the action on legend overlay 
+        function out(d,i){
+             set_alphas(d, false);
+        };
+
+        // helper function for setting alphas
+        function set_alphas(d, is_over){
+            for(var i=0; i<d.mpld3_elements.length; i++){
+                var type = d.mpld3_elements[i].constructor.name;
+
+                if(type =="mpld3_Line"){
+                    var current_alpha = d.mpld3_elements[i].props.alpha;
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d3.select(d.mpld3_elements[i].path.nodes()[0])
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("stroke-width", is_over ?
+                                alpha_over * d.mpld3_elements[i].props.edgewidth : d.mpld3_elements[i].props.edgewidth);
+                } else if((type=="mpld3_PathCollection")||
+                         (type=="mpld3_Markers")){
+                    var current_alpha = d.mpld3_elements[i].props.alphas[0];
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d.mpld3_elements[i].pathsobj
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("fill-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel));
+                } else{
+                    console.log(type + " not yet supported");
+                }
+            }
+        };
+
+
+        // helper function for determining the color of the rectangles
+        function get_color(d){
+            var type = d.mpld3_elements[0].constructor.name;
+            var color = "black";
+            if(type =="mpld3_Line"){
+                color = d.mpld3_elements[0].props.edgecolor;
+            } else if((type=="mpld3_PathCollection")||
+                      (type=="mpld3_Markers")){
+                color = d.mpld3_elements[0].props.facecolors[0];
+            } else{
+                console.log(type + " not yet supported");
+            }
+            return color;
+        };
+    };
+    
+       mpld3.draw_figure("fig_el6096855095013921574869931", {"width": 1000.0, "height": 600.0, "axes": [{"bbox": [0.08915277777777779, 0.120462962962963, 0.8108472222222223, 0.8023148148148148], "xlim": [2461.7231250000186, 2510.69565969985], "ylim": [20.441726684570312, 17.47524642944336], "xdomain": [2461.7231250000186, 2510.69565969985], "ydomain": [20.441726684570312, 17.47524642944336], "xscale": "linear", "yscale": "linear", "axes": [{"position": "bottom", "nticks": 7, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 0.1}, "visible": true}, {"position": "left", "nticks": 8, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 0.1}, "visible": true}], "axesbg": "#FFFFFF", "axesbgalpha": null, "zoomable": true, "id": "el609685509511120", "lines": [], "paths": [{"data": "data07", "xindex": 0, "yindex": 1, "coordinates": "axes", "pathcodes": ["M", "L", "S", "L", "S", "L", "S", "L", "S", "Z"], "id": "el609685615521808", "dasharray": "none", "alpha": 1, "facecolor": "#FFFFFF", "edgecolor": "#CCCCCC", "edgewidth": 1.0, "zorder": 1000000.0}], "markers": [], "texts": [{"text": "MJD - 58000", "position": [0.5, -0.0608193883439123], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "hanging", "rotation": -0.0, "fontsize": 20.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685509072016"}, {"text": "Magnitude", "position": [-0.056919203165413414, 0.5], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -90.0, "fontsize": 20.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685615944592"}, {"text": "Light Curve for ZTF24aapvieu", "position": [0.5, 1.0173110213502596], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -0.0, "fontsize": 22.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685509441424"}, {"text": "Upper Limit g-band", "position": [0.06337678354259092, 0.9511829197922679], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615642192"}, {"text": "Upper Limit r-band", "position": [0.06337678354259092, 0.9076745527986152], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615530704"}, {"text": "Upper Limit i-band", "position": [0.06337678354259092, 0.8641661858049625], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615227600"}, {"text": "g-band", "position": [0.06337678354259092, 0.82065781881131], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615233104"}], "collections": [{"offsets": "data01", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["rgba(46, 139, 87, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685509147856"}, {"offsets": "data02", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["rgba(220, 20, 60, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685509721616"}, {"offsets": "data03", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DAA520"], "facecolors": ["rgba(218, 165, 32, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685615761936"}, {"offsets": "data04", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685615760784"}, {"offsets": "data05", "xindex": 0, "yindex": 1, "paths": [[[[2462.2231250000186, 19.780987083911896], [2462.2231250000186, 20.10246628522873]], ["M", "L"]], [[[2462.2231250000186, 19.780987083911896], [2462.2231250000186, 20.10246628522873]], ["M", "L"]], [[[2462.224062500056, 19.58044883608818], [2462.224062500056, 19.95474174618721]], ["M", "L"]], [[[2462.224062500056, 19.58044883608818], [2462.224062500056, 19.95474174618721]], ["M", "L"]], [[[2462.259386599995, 19.731957733631134], [2462.259386599995, 20.033713042736053]], ["M", "L"]], [[[2483.1949420999736, 19.589943438768387], [2483.1949420999736, 20.205657452344894]], ["M", "L"]], [[[2484.268877299968, 19.15859904885292], [2484.268877299968, 19.650399059057236]], ["M", "L"]], [[[2486.202129600104, 19.37039887905121], [2486.202129600104, 19.64262068271637]], ["M", "L"]], [[[2489.225173600018, 18.79345991462469], [2489.225173600018, 19.00148866325617]], ["M", "L"]], [[[2499.1972453999333, 18.025060541927814], [2499.1972453999333, 18.18493091315031]], ["M", "L"]], [[[2500.206087999977, 17.96255249530077], [2500.206087999977, 18.15695434063673]], ["M", "L"]], [[[2500.206087999977, 17.96255249530077], [2500.206087999977, 18.15695434063673]], ["M", "L"]], [[[2500.220856499858, 17.96300283819437], [2500.220856499858, 18.134378753602505]], ["M", "L"]], [[[2501.202789399773, 17.96204698830843], [2501.202789399773, 18.087158791720867]], ["M", "L"]], [[[2501.202789399773, 17.96204698830843], [2501.202789399773, 18.087158791720867]], ["M", "L"]], [[[2501.214363399893, 17.96403943002224], [2501.214363399893, 18.101062193512917]], ["M", "L"]], [[[2502.203541699797, 17.999324813485146], [2502.203541699797, 18.153827652335167]], ["M", "L"]], [[[2503.1855902997777, 17.958134174346924], [2503.1855902997777, 18.138156414031982]], ["M", "L"]], [[[2503.1855902997777, 17.958134174346924], [2503.1855902997777, 18.138156414031982]], ["M", "L"]], [[[2503.200069400016, 17.889631286263466], [2503.200069400016, 18.090566620230675]], ["M", "L"]], [[[2505.1991897998378, 17.898011676967144], [2505.1991897998378, 18.052481181919575]], ["M", "L"]], [[[2509.2008218001574, 17.977573804557323], [2509.2008218001574, 18.17873341590166]], ["M", "L"]], [[[2510.19565969985, 18.00461746752262], [2510.19565969985, 18.175848230719566]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(46, 139, 87, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el609685615762832"}, {"offsets": "data06", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["rgba(46, 139, 87, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615533520"}, {"offsets": "data06", "xindex": 0, "yindex": 2, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["rgba(220, 20, 60, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615526992"}, {"offsets": "data06", "xindex": 0, "yindex": 3, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DAA520"], "facecolors": ["rgba(218, 165, 32, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615235728"}, {"offsets": "data06", "xindex": 0, "yindex": 4, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615229072"}], "images": [], "sharex": [], "sharey": []}], "data": {"data01": [[2432.2819906999357, 20.5762996673584], [2433.2157755000517, 20.622800827026367], [2433.2633911999874, 20.80940055847168], [2434.2862963001244, 20.83679962158203], [2434.2872453997843, 20.703899383544922], [2434.3252431000583, 20.758399963378906], [2437.279745399952, 20.57659912109375], [2438.301400499884, 20.542200088500977], [2439.245150499977, 20.486900329589844], [2439.303298600018, 20.11720085144043], [2439.3042477001436, 20.33799934387207], [2440.284560199827, 20.51609992980957], [2440.3293055999093, 20.267799377441406], [2441.219386599958, 20.585100173950195], [2441.299085599836, 20.30500030517578], [2441.3074884000234, 20.136499404907227], [2442.2195255002007, 20.550800323486328], [2443.196562500205, 20.22760009765625], [2443.2845717999153, 20.404699325561523], [2443.2984722000547, 20.398500442504883], [2444.1754282000475, 20.395700454711914], [2444.352534700185, 20.614500045776367], [2445.2590855997987, 20.151399612426758], [2445.2657869998366, 20.02829933166504], [2446.180717600044, 19.808399200439453], [2446.3434490999207, 19.723400115966797], [2447.177326399833, 19.89780044555664], [2447.1790277999826, 19.943500518798828], [2447.277430600021, 19.934999465942383], [2448.1857870002277, 19.704599380493164], [2448.349027799908, 19.22209930419922], [2449.242719899863, 19.62929916381836], [2449.2436689999886, 19.688800811767578], [2449.278287000023, 19.675600051879883], [2450.1847105999477, 19.591299057006836], [2450.3442361000925, 18.898500442504883], [2451.217754600104, 19.533300399780273], [2451.249085600022, 19.39419937133789], [2452.238472199999, 19.622299194335938], [2452.3253704002127, 19.126399993896484], [2455.2623610999435, 19.622499465942383], [2457.1847105999477, 20.359800338745117], [2457.2232638997957, 20.592899322509766], [2457.2242129999213, 20.503599166870117], [2458.201319400221, 20.647199630737305], [2458.2232985999435, 20.692800521850586], [2459.1970254997723, 20.785499572753906], [2459.1979629998095, 20.826000213623047], [2459.2385300998576, 20.685100555419922], [2460.221527799964, 20.600200653076172], [2460.2449536998756, 20.444299697875977], [2461.216504599899, 20.662200927734375], [2461.2538772998378, 20.518600463867188], [2463.1982176001184, 20.611299514770508], [2463.218530099839, 20.687400817871094], [2464.2377431001514, 20.447500228881836], [2464.261411999818, 19.73710060119629], [2469.186168999877, 20.587200164794922], [2469.194664400071, 20.457000732421875], [2470.1851968001574, 20.714500427246094], [2470.202696800232, 20.681299209594727], [2471.1966204000637, 20.621999740600586], [2471.21732639987, 20.556800842285156], [2472.217581000179, 20.452199935913086], [2473.218807899859, 20.10580062866211], [2474.2003240999766, 20.258100509643555], [2474.2149768997915, 20.15239906311035], [2477.2022222001106, 19.88949966430664], [2477.20319439983, 19.798799514770508], [2477.2690624999814, 19.547399520874023], [2479.218645799905, 19.730899810791016], [2480.200868099928, 19.868900299072266], [2480.201840300113, 19.786500930786133], [2480.237905099988, 19.56599998474121], [2481.196238399949, 19.8075008392334], [2481.2659490997903, 19.243099212646484], [2482.216643500142, 19.59950065612793], [2483.2419560002163, 19.385299682617188], [2484.1949420999736, 19.97570037841797], [2484.195879600011, 19.97599983215332], [2486.2011921000667, 20.46030044555664], [2502.1805671001785, 19.822599411010742], [2507.1870602001436, 19.62470054626465], [2507.1998610999435, 19.519500732421875]], "data02": [[2432.319849499967, 20.477699279785156], [2433.2884491002187, 20.61520004272461], [2433.402939800173, 20.327499389648438], [2434.249421299901, 20.723600387573242], [2434.250358799938, 20.65719985961914], [2434.261088000145, 20.51799964904785], [2435.214571800083, 19.592300415039062], [2437.2172685000114, 20.622699737548828], [2438.2167361001484, 20.4906005859375], [2439.258495400194, 20.13610076904297], [2439.2594329002313, 20.363300323486328], [2439.275613400154, 20.403799057006836], [2440.264120399952, 20.561599731445312], [2440.3727778000757, 19.901599884033203], [2441.270046299789, 20.165800094604492], [2441.4154281998053, 19.488000869750977], [2441.4159027999267, 19.173999786376953], [2442.247615700122, 20.534700393676758], [2442.2546064998023, 20.464599609375], [2443.218391200062, 20.387399673461914], [2443.2193403001875, 20.422800064086914], [2443.2422337997705, 20.409900665283203], [2444.26765049994, 20.440000534057617], [2444.333402799908, 20.409500122070312], [2445.2200462999754, 20.09630012512207], [2445.2209838000126, 20.058399200439453], [2445.2481597000733, 19.992399215698242], [2446.260555599816, 19.885299682617188], [2446.2785880002193, 19.786300659179688], [2447.2988542001694, 19.83209991455078], [2447.3405324001797, 19.822200775146484], [2447.3414814998396, 19.91029930114746], [2448.2377198999748, 19.9281005859375], [2448.2807638999075, 19.577800750732422], [2449.3059954000637, 19.733600616455078], [2449.306932900101, 19.81060028076172], [2449.3497338001616, 19.453899383544922], [2450.247037000023, 19.477699279785156], [2450.3635648000054, 18.86079978942871], [2451.3037847001106, 19.553300857543945], [2451.3047337997705, 19.517799377441406], [2451.3447106000967, 19.190799713134766], [2452.1803008997813, 19.378799438476562], [2452.3607522998936, 18.93120002746582], [2455.2821527998894, 19.61949920654297], [2455.2830902999267, 19.511699676513672], [2456.2986110998318, 19.861799240112305], [2456.334432899952, 19.800199508666992], [2457.307187499944, 19.9143009185791], [2457.3206829000264, 19.74340057373047], [2457.321631900035, 19.793500900268555], [2458.1861227001064, 20.522300720214844], [2458.3707292000763, 19.451200485229492], [2459.3432638999075, 19.947900772094727], [2459.3442013999447, 19.929399490356445], [2459.3602546001785, 19.724700927734375], [2460.2626852001995, 20.38920021057129], [2460.2758101997897, 20.219999313354492], [2461.284560199827, 20.321300506591797], [2461.2991781998426, 20.27589988708496], [2462.1928008999676, 20.58799934387207], [2462.202152799815, 20.60740089416504], [2463.242893499788, 20.373300552368164], [2463.259259299841, 20.346099853515625], [2464.218634299934, 18.777799606323242], [2464.2195832999423, 18.892000198364258], [2469.282037000172, 19.91790008544922], [2469.3217823999003, 20.05940055847168], [2470.290960600134, 20.103099822998047], [2470.2946875002235, 20.327299118041992], [2471.288275499828, 20.273399353027344], [2471.3081249999814, 20.278900146484375], [2472.32024310017, 19.856300354003906], [2473.240185199771, 20.01259994506836], [2473.255740699824, 19.957300186157227], [2475.2439468000084, 20.08340072631836], [2477.187743099872, 19.917800903320312], [2477.3081943998113, 19.127700805664062], [2479.291840299964, 19.545299530029297], [2479.3032754999585, 19.371200561523438], [2480.3047801000066, 19.151899337768555], [2480.305729200132, 19.07309913635254], [2481.2782638999633, 19.452999114990234], [2481.296932899859, 18.912700653076172], [2482.302152799908, 19.239900588989258], [2483.265196800232, 19.398000717163086], [2483.2784258998, 19.34000015258789], [2484.2800694000907, 19.377300262451172], [2484.281006900128, 19.384599685668945], [2489.2758912001736, 19.665000915527344]], "data03": [[2433.2991088000126, 19.87150001525879], [2437.198449099902, 20.00510025024414], [2438.275752299931, 19.81089973449707], [2439.1936110998504, 19.63249969482422], [2442.309571799822, 19.819499969482422], [2446.2402431000955, 19.36370086669922], [2449.3221875000745, 19.168500900268555], [2452.1947685000487, 19.316699981689453], [2456.2851272998378, 19.62470054626465], [2459.2619444001466, 19.767200469970703], [2463.1832985999063, 19.846099853515625], [2466.18432869995, 19.72599983215332], [2469.2439468000084, 19.868099212646484], [2472.2375810001977, 19.857200622558594], [2476.227488399949, 19.669700622558594], [2482.277002300136, 19.225400924682617], [2504.2248031999916, 18.819299697875977], [2508.2135994997807, 18.91710090637207]], "data04": [[2462.2231250000186, 19.941726684570312], [2462.2231250000186, 19.941726684570312], [2462.224062500056, 19.767595291137695], [2462.224062500056, 19.767595291137695], [2462.259386599995, 19.882835388183594], [2483.1949420999736, 19.89780044555664], [2484.268877299968, 19.404499053955078], [2486.202129600104, 19.50650978088379], [2489.225173600018, 18.89747428894043], [2499.1972453999333, 18.104995727539062], [2500.206087999977, 18.05975341796875], [2500.206087999977, 18.05975341796875], [2500.220856499858, 18.048690795898438], [2501.202789399773, 18.02460289001465], [2501.202789399773, 18.02460289001465], [2501.214363399893, 18.032550811767578], [2502.203541699797, 18.076576232910156], [2503.1855902997777, 18.048145294189453], [2503.1855902997777, 18.048145294189453], [2503.200069400016, 17.99009895324707], [2505.1991897998378, 17.97524642944336], [2509.2008218001574, 18.078153610229492], [2510.19565969985, 18.090232849121094]], "data05": [[0.0, 0.0]], "data06": [[0.0325448347921413, 0.9587564916330065, 0.9152481246393538, 0.8717397576457011, 0.8282313906520485]], "data07": [[0.011990202291841515, 0.8028851702250432], [0.23237012041588878, 0.8028851702250432], [0.23579589249927208, 0.8028851702250432], [0.23579589249927208, 0.8086555106751299], [0.23579589249927208, 0.9798038084246969], [0.23579589249927208, 0.9855741488747836], [0.23237012041588878, 0.9855741488747836], [0.011990202291841515, 0.9855741488747836], [0.008564430208458235, 0.9855741488747836], [0.008564430208458235, 0.9798038084246969], [0.008564430208458235, 0.8086555106751299], [0.008564430208458235, 0.8028851702250432], [0.011990202291841515, 0.8028851702250432]]}, "id": "el609685509501392", "plugins": [{"type": "reset"}, {"type": "zoom", "button": true, "enabled": false}, {"type": "boxzoom", "button": true, "enabled": false}, {"type": "htmltooltip", "id": "el609685509147856", "labels": ["MJD: 60432.281990699936<br>Maglim: 20.5762996673584", "MJD: 60433.21577550005<br>Maglim: 20.622800827026367", "MJD: 60433.26339119999<br>Maglim: 20.80940055847168", "MJD: 60434.286296300124<br>Maglim: 20.83679962158203", "MJD: 60434.287245399784<br>Maglim: 20.703899383544922", "MJD: 60434.32524310006<br>Maglim: 20.758399963378906", "MJD: 60437.27974539995<br>Maglim: 20.57659912109375", "MJD: 60438.301400499884<br>Maglim: 20.542200088500977", "MJD: 60439.24515049998<br>Maglim: 20.486900329589844", "MJD: 60439.30329860002<br>Maglim: 20.11720085144043", "MJD: 60439.30424770014<br>Maglim: 20.33799934387207", "MJD: 60440.28456019983<br>Maglim: 20.51609992980957", "MJD: 60440.32930559991<br>Maglim: 20.267799377441406", "MJD: 60441.21938659996<br>Maglim: 20.585100173950195", "MJD: 60441.299085599836<br>Maglim: 20.30500030517578", "MJD: 60441.30748840002<br>Maglim: 20.136499404907227", "MJD: 60442.2195255002<br>Maglim: 20.550800323486328", "MJD: 60443.196562500205<br>Maglim: 20.22760009765625", "MJD: 60443.284571799915<br>Maglim: 20.404699325561523", "MJD: 60443.298472200055<br>Maglim: 20.398500442504883", "MJD: 60444.17542820005<br>Maglim: 20.395700454711914", "MJD: 60444.352534700185<br>Maglim: 20.614500045776367", "MJD: 60445.2590855998<br>Maglim: 20.151399612426758", "MJD: 60445.26578699984<br>Maglim: 20.02829933166504", "MJD: 60446.180717600044<br>Maglim: 19.808399200439453", "MJD: 60446.34344909992<br>Maglim: 19.723400115966797", "MJD: 60447.17732639983<br>Maglim: 19.89780044555664", "MJD: 60447.17902779998<br>Maglim: 19.943500518798828", "MJD: 60447.27743060002<br>Maglim: 19.934999465942383", "MJD: 60448.18578700023<br>Maglim: 19.704599380493164", "MJD: 60448.34902779991<br>Maglim: 19.22209930419922", "MJD: 60449.24271989986<br>Maglim: 19.62929916381836", "MJD: 60449.24366899999<br>Maglim: 19.688800811767578", "MJD: 60449.27828700002<br>Maglim: 19.675600051879883", "MJD: 60450.18471059995<br>Maglim: 19.591299057006836", "MJD: 60450.34423610009<br>Maglim: 18.898500442504883", "MJD: 60451.217754600104<br>Maglim: 19.533300399780273", "MJD: 60451.24908560002<br>Maglim: 19.39419937133789", "MJD: 60452.2384722<br>Maglim: 19.622299194335938", "MJD: 60452.32537040021<br>Maglim: 19.126399993896484", "MJD: 60455.26236109994<br>Maglim: 19.622499465942383", "MJD: 60457.18471059995<br>Maglim: 20.359800338745117", "MJD: 60457.223263899796<br>Maglim: 20.592899322509766", "MJD: 60457.22421299992<br>Maglim: 20.503599166870117", "MJD: 60458.20131940022<br>Maglim: 20.647199630737305", "MJD: 60458.22329859994<br>Maglim: 20.692800521850586", "MJD: 60459.19702549977<br>Maglim: 20.785499572753906", "MJD: 60459.19796299981<br>Maglim: 20.826000213623047", "MJD: 60459.23853009986<br>Maglim: 20.685100555419922", "MJD: 60460.221527799964<br>Maglim: 20.600200653076172", "MJD: 60460.244953699876<br>Maglim: 20.444299697875977", "MJD: 60461.2165045999<br>Maglim: 20.662200927734375", "MJD: 60461.25387729984<br>Maglim: 20.518600463867188", "MJD: 60463.19821760012<br>Maglim: 20.611299514770508", "MJD: 60463.21853009984<br>Maglim: 20.687400817871094", "MJD: 60464.23774310015<br>Maglim: 20.447500228881836", "MJD: 60464.26141199982<br>Maglim: 19.73710060119629", "MJD: 60469.18616899988<br>Maglim: 20.587200164794922", "MJD: 60469.19466440007<br>Maglim: 20.457000732421875", "MJD: 60470.18519680016<br>Maglim: 20.714500427246094", "MJD: 60470.20269680023<br>Maglim: 20.681299209594727", "MJD: 60471.196620400064<br>Maglim: 20.621999740600586", "MJD: 60471.21732639987<br>Maglim: 20.556800842285156", "MJD: 60472.21758100018<br>Maglim: 20.452199935913086", "MJD: 60473.21880789986<br>Maglim: 20.10580062866211", "MJD: 60474.20032409998<br>Maglim: 20.258100509643555", "MJD: 60474.21497689979<br>Maglim: 20.15239906311035", "MJD: 60477.20222220011<br>Maglim: 19.88949966430664", "MJD: 60477.20319439983<br>Maglim: 19.798799514770508", "MJD: 60477.26906249998<br>Maglim: 19.547399520874023", "MJD: 60479.218645799905<br>Maglim: 19.730899810791016", "MJD: 60480.20086809993<br>Maglim: 19.868900299072266", "MJD: 60480.20184030011<br>Maglim: 19.786500930786133", "MJD: 60480.23790509999<br>Maglim: 19.56599998474121", "MJD: 60481.19623839995<br>Maglim: 19.8075008392334", "MJD: 60481.26594909979<br>Maglim: 19.243099212646484", "MJD: 60482.21664350014<br>Maglim: 19.59950065612793", "MJD: 60483.241956000216<br>Maglim: 19.385299682617188", "MJD: 60484.19494209997<br>Maglim: 19.97570037841797", "MJD: 60484.19587960001<br>Maglim: 19.97599983215332", "MJD: 60486.20119210007<br>Maglim: 20.46030044555664", "MJD: 60502.18056710018<br>Maglim: 19.822599411010742", "MJD: 60507.18706020014<br>Maglim: 19.62470054626465", "MJD: 60507.19986109994<br>Maglim: 19.519500732421875"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685509721616", "labels": ["MJD: 60432.31984949997<br>Maglim: 20.477699279785156", "MJD: 60433.28844910022<br>Maglim: 20.61520004272461", "MJD: 60433.40293980017<br>Maglim: 20.327499389648438", "MJD: 60434.2494212999<br>Maglim: 20.723600387573242", "MJD: 60434.25035879994<br>Maglim: 20.65719985961914", "MJD: 60434.261088000145<br>Maglim: 20.51799964904785", "MJD: 60435.21457180008<br>Maglim: 19.592300415039062", "MJD: 60437.21726850001<br>Maglim: 20.622699737548828", "MJD: 60438.21673610015<br>Maglim: 20.4906005859375", "MJD: 60439.258495400194<br>Maglim: 20.13610076904297", "MJD: 60439.25943290023<br>Maglim: 20.363300323486328", "MJD: 60439.275613400154<br>Maglim: 20.403799057006836", "MJD: 60440.26412039995<br>Maglim: 20.561599731445312", "MJD: 60440.372777800076<br>Maglim: 19.901599884033203", "MJD: 60441.27004629979<br>Maglim: 20.165800094604492", "MJD: 60441.415428199805<br>Maglim: 19.488000869750977", "MJD: 60441.41590279993<br>Maglim: 19.173999786376953", "MJD: 60442.24761570012<br>Maglim: 20.534700393676758", "MJD: 60442.2546064998<br>Maglim: 20.464599609375", "MJD: 60443.21839120006<br>Maglim: 20.387399673461914", "MJD: 60443.21934030019<br>Maglim: 20.422800064086914", "MJD: 60443.24223379977<br>Maglim: 20.409900665283203", "MJD: 60444.26765049994<br>Maglim: 20.440000534057617", "MJD: 60444.33340279991<br>Maglim: 20.409500122070312", "MJD: 60445.220046299975<br>Maglim: 20.09630012512207", "MJD: 60445.22098380001<br>Maglim: 20.058399200439453", "MJD: 60445.24815970007<br>Maglim: 19.992399215698242", "MJD: 60446.260555599816<br>Maglim: 19.885299682617188", "MJD: 60446.27858800022<br>Maglim: 19.786300659179688", "MJD: 60447.29885420017<br>Maglim: 19.83209991455078", "MJD: 60447.34053240018<br>Maglim: 19.822200775146484", "MJD: 60447.34148149984<br>Maglim: 19.91029930114746", "MJD: 60448.237719899975<br>Maglim: 19.9281005859375", "MJD: 60448.28076389991<br>Maglim: 19.577800750732422", "MJD: 60449.305995400064<br>Maglim: 19.733600616455078", "MJD: 60449.3069329001<br>Maglim: 19.81060028076172", "MJD: 60449.34973380016<br>Maglim: 19.453899383544922", "MJD: 60450.24703700002<br>Maglim: 19.477699279785156", "MJD: 60450.363564800005<br>Maglim: 18.86079978942871", "MJD: 60451.30378470011<br>Maglim: 19.553300857543945", "MJD: 60451.30473379977<br>Maglim: 19.517799377441406", "MJD: 60451.3447106001<br>Maglim: 19.190799713134766", "MJD: 60452.18030089978<br>Maglim: 19.378799438476562", "MJD: 60452.360752299894<br>Maglim: 18.93120002746582", "MJD: 60455.28215279989<br>Maglim: 19.61949920654297", "MJD: 60455.28309029993<br>Maglim: 19.511699676513672", "MJD: 60456.29861109983<br>Maglim: 19.861799240112305", "MJD: 60456.33443289995<br>Maglim: 19.800199508666992", "MJD: 60457.307187499944<br>Maglim: 19.9143009185791", "MJD: 60457.32068290003<br>Maglim: 19.74340057373047", "MJD: 60457.321631900035<br>Maglim: 19.793500900268555", "MJD: 60458.186122700106<br>Maglim: 20.522300720214844", "MJD: 60458.370729200076<br>Maglim: 19.451200485229492", "MJD: 60459.34326389991<br>Maglim: 19.947900772094727", "MJD: 60459.344201399945<br>Maglim: 19.929399490356445", "MJD: 60459.36025460018<br>Maglim: 19.724700927734375", "MJD: 60460.2626852002<br>Maglim: 20.38920021057129", "MJD: 60460.27581019979<br>Maglim: 20.219999313354492", "MJD: 60461.28456019983<br>Maglim: 20.321300506591797", "MJD: 60461.29917819984<br>Maglim: 20.27589988708496", "MJD: 60462.19280089997<br>Maglim: 20.58799934387207", "MJD: 60462.202152799815<br>Maglim: 20.60740089416504", "MJD: 60463.24289349979<br>Maglim: 20.373300552368164", "MJD: 60463.25925929984<br>Maglim: 20.346099853515625", "MJD: 60464.218634299934<br>Maglim: 18.777799606323242", "MJD: 60464.21958329994<br>Maglim: 18.892000198364258", "MJD: 60469.28203700017<br>Maglim: 19.91790008544922", "MJD: 60469.3217823999<br>Maglim: 20.05940055847168", "MJD: 60470.290960600134<br>Maglim: 20.103099822998047", "MJD: 60470.29468750022<br>Maglim: 20.327299118041992", "MJD: 60471.28827549983<br>Maglim: 20.273399353027344", "MJD: 60471.30812499998<br>Maglim: 20.278900146484375", "MJD: 60472.32024310017<br>Maglim: 19.856300354003906", "MJD: 60473.24018519977<br>Maglim: 20.01259994506836", "MJD: 60473.255740699824<br>Maglim: 19.957300186157227", "MJD: 60475.24394680001<br>Maglim: 20.08340072631836", "MJD: 60477.18774309987<br>Maglim: 19.917800903320312", "MJD: 60477.30819439981<br>Maglim: 19.127700805664062", "MJD: 60479.291840299964<br>Maglim: 19.545299530029297", "MJD: 60479.30327549996<br>Maglim: 19.371200561523438", "MJD: 60480.30478010001<br>Maglim: 19.151899337768555", "MJD: 60480.30572920013<br>Maglim: 19.07309913635254", "MJD: 60481.27826389996<br>Maglim: 19.452999114990234", "MJD: 60481.29693289986<br>Maglim: 18.912700653076172", "MJD: 60482.30215279991<br>Maglim: 19.239900588989258", "MJD: 60483.26519680023<br>Maglim: 19.398000717163086", "MJD: 60483.2784258998<br>Maglim: 19.34000015258789", "MJD: 60484.28006940009<br>Maglim: 19.377300262451172", "MJD: 60484.28100690013<br>Maglim: 19.384599685668945", "MJD: 60489.275891200174<br>Maglim: 19.665000915527344"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685615761936", "labels": ["MJD: 60433.29910880001<br>Maglim: 19.87150001525879", "MJD: 60437.1984490999<br>Maglim: 20.00510025024414", "MJD: 60438.27575229993<br>Maglim: 19.81089973449707", "MJD: 60439.19361109985<br>Maglim: 19.63249969482422", "MJD: 60442.30957179982<br>Maglim: 19.819499969482422", "MJD: 60446.240243100096<br>Maglim: 19.36370086669922", "MJD: 60449.322187500075<br>Maglim: 19.168500900268555", "MJD: 60452.19476850005<br>Maglim: 19.316699981689453", "MJD: 60456.28512729984<br>Maglim: 19.62470054626465", "MJD: 60459.26194440015<br>Maglim: 19.767200469970703", "MJD: 60463.183298599906<br>Maglim: 19.846099853515625", "MJD: 60466.18432869995<br>Maglim: 19.72599983215332", "MJD: 60469.24394680001<br>Maglim: 19.868099212646484", "MJD: 60472.2375810002<br>Maglim: 19.857200622558594", "MJD: 60476.22748839995<br>Maglim: 19.669700622558594", "MJD: 60482.277002300136<br>Maglim: 19.225400924682617", "MJD: 60504.22480319999<br>Maglim: 18.819299697875977", "MJD: 60508.21359949978<br>Maglim: 18.91710090637207"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685615760784", "labels": ["MJD: 60462.22312500002<br>Mag: 19.941726684570312", "MJD: 60462.22312500002<br>Mag: 19.941726684570312", "MJD: 60462.224062500056<br>Mag: 19.767595291137695", "MJD: 60462.224062500056<br>Mag: 19.767595291137695", "MJD: 60462.259386599995<br>Mag: 19.882835388183594", "MJD: 60483.19494209997<br>Mag: 19.89780044555664", "MJD: 60484.26887729997<br>Mag: 19.404499053955078", "MJD: 60486.202129600104<br>Mag: 19.50650978088379", "MJD: 60489.22517360002<br>Mag: 18.89747428894043", "MJD: 60499.19724539993<br>Mag: 18.104995727539062", "MJD: 60500.20608799998<br>Mag: 18.05975341796875", "MJD: 60500.20608799998<br>Mag: 18.05975341796875", "MJD: 60500.22085649986<br>Mag: 18.048690795898438", "MJD: 60501.20278939977<br>Mag: 18.02460289001465", "MJD: 60501.20278939977<br>Mag: 18.02460289001465", "MJD: 60501.21436339989<br>Mag: 18.032550811767578", "MJD: 60502.2035416998<br>Mag: 18.076576232910156", "MJD: 60503.18559029978<br>Mag: 18.048145294189453", "MJD: 60503.18559029978<br>Mag: 18.048145294189453", "MJD: 60503.200069400016<br>Mag: 17.99009895324707", "MJD: 60505.19918979984<br>Mag: 17.97524642944336", "MJD: 60509.20082180016<br>Mag: 18.078153610229492", "MJD: 60510.19565969985<br>Mag: 18.090232849121094"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "interactive_legend", "element_ids": [["el609685615760784"], ["el609685509147856", "el609685509721616", "el609685615761936"]], "labels": ["Alerts", "Limits"], "ax": null, "alpha_unsel": 0.2, "alpha_over": 1.0, "start_visible": [true, true], "font_size": 10, "legend_offset": [0, 0]}]});
+   }(mpld3);
+}else if(typeof define === "function" && define.amd){
+   // require.js is available: use it to load d3/mpld3
+   require.config({paths: {d3: "https://d3js.org/d3.v5"}});
+   require(["d3"], function(d3){
+      window.d3 = d3;
+      mpld3_load_lib("https://mpld3.github.io/js/mpld3.v0.5.10.js", function(){
+         
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("interactive_legend", InteractiveLegend);
+    InteractiveLegend.prototype = Object.create(mpld3.Plugin.prototype);
+    InteractiveLegend.prototype.constructor = InteractiveLegend;
+    InteractiveLegend.prototype.requiredProps = ["element_ids", "labels"];
+    InteractiveLegend.prototype.defaultProps = {"ax":null,
+                                                "alpha_unsel":0.2,
+                                                "alpha_over":1.0,
+                                                "start_visible":true,
+                                                "font_size": 10,
+                                                "legend_offset": [0,0]}
+    function InteractiveLegend(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    InteractiveLegend.prototype.draw = function(){
+        var alpha_unsel = this.props.alpha_unsel;
+        var alpha_over = this.props.alpha_over;
+        var font_size = this.props.font_size;
+        var legend_offset = this.props.legend_offset;
+
+        var legendItems = new Array();
+        for(var i=0; i<this.props.labels.length; i++){
+            var obj = {};
+            obj.label = this.props.labels[i];
+
+            var element_id = this.props.element_ids[i];
+            mpld3_elements = [];
+            for(var j=0; j<element_id.length; j++){
+                var mpld3_element = mpld3.get_element(element_id[j], this.fig);
+
+                // mpld3_element might be null in case of Line2D instances
+                // for we pass the id for both the line and the markers. Either
+                // one might not exist on the D3 side
+                if(mpld3_element){
+                    mpld3_elements.push(mpld3_element);
+                }
+            }
+
+            obj.mpld3_elements = mpld3_elements;
+            obj.visible = this.props.start_visible[i]; // should become be setable from python side
+            legendItems.push(obj);
+            set_alphas(obj, false);
+        }
+
+        // determine the axes with which this legend is associated
+        var ax = this.props.ax
+        if(!ax){
+            ax = this.fig.axes[0];
+        } else{
+            ax = mpld3.get_element(ax, this.fig);
+        }
+
+        // add a legend group to the canvas of the figure
+        var legend = this.fig.canvas.append("svg:g")
+                               .attr("class", "legend");
+
+        // add the rectangles
+        legend.selectAll("rect")
+                .data(legendItems)
+                .enter().append("rect")
+                .attr("height", 0.7*font_size)
+                .attr("width", 1.6*font_size)
+                .attr("x", ax.width + ax.position[0] + 15 + legend_offset[0])
+                .attr("y",function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + legend_offset[1];})
+                .attr("stroke", get_color)
+                .attr("class", "legend-box")
+                .style("fill", function(d, i) {
+                           return d.visible ? get_color(d) : "white";})
+                .on("click", click).on('mouseover', over).on('mouseout', out);
+
+        // add the labels
+        legend.selectAll("text")
+              .data(legendItems)
+              .enter().append("text")
+              .attr("font-size", font_size)
+              .attr("x", function (d) {
+                           return ax.width + ax.position[0] + (1.9*font_size+15) + legend_offset[0];})
+              .attr("y", function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + (0.72*font_size-1) + legend_offset[1];})
+              .text(function(d) { return d.label })
+              .on('mouseover', over).on('mouseout', out);
+
+
+        // specify the action on click
+        function click(d,i){
+            d.visible = !d.visible;
+            d3.select(this)
+              .style("fill",function(d, i) {
+                return d.visible ? get_color(d) : "white";
+              })
+            set_alphas(d, false);
+
+        };
+
+        // specify the action on legend overlay 
+        function over(d,i){
+             set_alphas(d, true);
+        };
+
+        // specify the action on legend overlay 
+        function out(d,i){
+             set_alphas(d, false);
+        };
+
+        // helper function for setting alphas
+        function set_alphas(d, is_over){
+            for(var i=0; i<d.mpld3_elements.length; i++){
+                var type = d.mpld3_elements[i].constructor.name;
+
+                if(type =="mpld3_Line"){
+                    var current_alpha = d.mpld3_elements[i].props.alpha;
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d3.select(d.mpld3_elements[i].path.nodes()[0])
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("stroke-width", is_over ?
+                                alpha_over * d.mpld3_elements[i].props.edgewidth : d.mpld3_elements[i].props.edgewidth);
+                } else if((type=="mpld3_PathCollection")||
+                         (type=="mpld3_Markers")){
+                    var current_alpha = d.mpld3_elements[i].props.alphas[0];
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d.mpld3_elements[i].pathsobj
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("fill-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel));
+                } else{
+                    console.log(type + " not yet supported");
+                }
+            }
+        };
+
+
+        // helper function for determining the color of the rectangles
+        function get_color(d){
+            var type = d.mpld3_elements[0].constructor.name;
+            var color = "black";
+            if(type =="mpld3_Line"){
+                color = d.mpld3_elements[0].props.edgecolor;
+            } else if((type=="mpld3_PathCollection")||
+                      (type=="mpld3_Markers")){
+                color = d.mpld3_elements[0].props.facecolors[0];
+            } else{
+                console.log(type + " not yet supported");
+            }
+            return color;
+        };
+    };
+    
+         mpld3.draw_figure("fig_el6096855095013921574869931", {"width": 1000.0, "height": 600.0, "axes": [{"bbox": [0.08915277777777779, 0.120462962962963, 0.8108472222222223, 0.8023148148148148], "xlim": [2461.7231250000186, 2510.69565969985], "ylim": [20.441726684570312, 17.47524642944336], "xdomain": [2461.7231250000186, 2510.69565969985], "ydomain": [20.441726684570312, 17.47524642944336], "xscale": "linear", "yscale": "linear", "axes": [{"position": "bottom", "nticks": 7, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 0.1}, "visible": true}, {"position": "left", "nticks": 8, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 0.1}, "visible": true}], "axesbg": "#FFFFFF", "axesbgalpha": null, "zoomable": true, "id": "el609685509511120", "lines": [], "paths": [{"data": "data07", "xindex": 0, "yindex": 1, "coordinates": "axes", "pathcodes": ["M", "L", "S", "L", "S", "L", "S", "L", "S", "Z"], "id": "el609685615521808", "dasharray": "none", "alpha": 1, "facecolor": "#FFFFFF", "edgecolor": "#CCCCCC", "edgewidth": 1.0, "zorder": 1000000.0}], "markers": [], "texts": [{"text": "MJD - 58000", "position": [0.5, -0.0608193883439123], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "hanging", "rotation": -0.0, "fontsize": 20.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685509072016"}, {"text": "Magnitude", "position": [-0.056919203165413414, 0.5], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -90.0, "fontsize": 20.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685615944592"}, {"text": "Light Curve for ZTF24aapvieu", "position": [0.5, 1.0173110213502596], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -0.0, "fontsize": 22.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685509441424"}, {"text": "Upper Limit g-band", "position": [0.06337678354259092, 0.9511829197922679], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615642192"}, {"text": "Upper Limit r-band", "position": [0.06337678354259092, 0.9076745527986152], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615530704"}, {"text": "Upper Limit i-band", "position": [0.06337678354259092, 0.8641661858049625], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615227600"}, {"text": "g-band", "position": [0.06337678354259092, 0.82065781881131], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615233104"}], "collections": [{"offsets": "data01", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["rgba(46, 139, 87, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685509147856"}, {"offsets": "data02", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["rgba(220, 20, 60, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685509721616"}, {"offsets": "data03", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DAA520"], "facecolors": ["rgba(218, 165, 32, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685615761936"}, {"offsets": "data04", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685615760784"}, {"offsets": "data05", "xindex": 0, "yindex": 1, "paths": [[[[2462.2231250000186, 19.780987083911896], [2462.2231250000186, 20.10246628522873]], ["M", "L"]], [[[2462.2231250000186, 19.780987083911896], [2462.2231250000186, 20.10246628522873]], ["M", "L"]], [[[2462.224062500056, 19.58044883608818], [2462.224062500056, 19.95474174618721]], ["M", "L"]], [[[2462.224062500056, 19.58044883608818], [2462.224062500056, 19.95474174618721]], ["M", "L"]], [[[2462.259386599995, 19.731957733631134], [2462.259386599995, 20.033713042736053]], ["M", "L"]], [[[2483.1949420999736, 19.589943438768387], [2483.1949420999736, 20.205657452344894]], ["M", "L"]], [[[2484.268877299968, 19.15859904885292], [2484.268877299968, 19.650399059057236]], ["M", "L"]], [[[2486.202129600104, 19.37039887905121], [2486.202129600104, 19.64262068271637]], ["M", "L"]], [[[2489.225173600018, 18.79345991462469], [2489.225173600018, 19.00148866325617]], ["M", "L"]], [[[2499.1972453999333, 18.025060541927814], [2499.1972453999333, 18.18493091315031]], ["M", "L"]], [[[2500.206087999977, 17.96255249530077], [2500.206087999977, 18.15695434063673]], ["M", "L"]], [[[2500.206087999977, 17.96255249530077], [2500.206087999977, 18.15695434063673]], ["M", "L"]], [[[2500.220856499858, 17.96300283819437], [2500.220856499858, 18.134378753602505]], ["M", "L"]], [[[2501.202789399773, 17.96204698830843], [2501.202789399773, 18.087158791720867]], ["M", "L"]], [[[2501.202789399773, 17.96204698830843], [2501.202789399773, 18.087158791720867]], ["M", "L"]], [[[2501.214363399893, 17.96403943002224], [2501.214363399893, 18.101062193512917]], ["M", "L"]], [[[2502.203541699797, 17.999324813485146], [2502.203541699797, 18.153827652335167]], ["M", "L"]], [[[2503.1855902997777, 17.958134174346924], [2503.1855902997777, 18.138156414031982]], ["M", "L"]], [[[2503.1855902997777, 17.958134174346924], [2503.1855902997777, 18.138156414031982]], ["M", "L"]], [[[2503.200069400016, 17.889631286263466], [2503.200069400016, 18.090566620230675]], ["M", "L"]], [[[2505.1991897998378, 17.898011676967144], [2505.1991897998378, 18.052481181919575]], ["M", "L"]], [[[2509.2008218001574, 17.977573804557323], [2509.2008218001574, 18.17873341590166]], ["M", "L"]], [[[2510.19565969985, 18.00461746752262], [2510.19565969985, 18.175848230719566]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(46, 139, 87, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el609685615762832"}, {"offsets": "data06", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["rgba(46, 139, 87, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615533520"}, {"offsets": "data06", "xindex": 0, "yindex": 2, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["rgba(220, 20, 60, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615526992"}, {"offsets": "data06", "xindex": 0, "yindex": 3, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DAA520"], "facecolors": ["rgba(218, 165, 32, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615235728"}, {"offsets": "data06", "xindex": 0, "yindex": 4, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615229072"}], "images": [], "sharex": [], "sharey": []}], "data": {"data01": [[2432.2819906999357, 20.5762996673584], [2433.2157755000517, 20.622800827026367], [2433.2633911999874, 20.80940055847168], [2434.2862963001244, 20.83679962158203], [2434.2872453997843, 20.703899383544922], [2434.3252431000583, 20.758399963378906], [2437.279745399952, 20.57659912109375], [2438.301400499884, 20.542200088500977], [2439.245150499977, 20.486900329589844], [2439.303298600018, 20.11720085144043], [2439.3042477001436, 20.33799934387207], [2440.284560199827, 20.51609992980957], [2440.3293055999093, 20.267799377441406], [2441.219386599958, 20.585100173950195], [2441.299085599836, 20.30500030517578], [2441.3074884000234, 20.136499404907227], [2442.2195255002007, 20.550800323486328], [2443.196562500205, 20.22760009765625], [2443.2845717999153, 20.404699325561523], [2443.2984722000547, 20.398500442504883], [2444.1754282000475, 20.395700454711914], [2444.352534700185, 20.614500045776367], [2445.2590855997987, 20.151399612426758], [2445.2657869998366, 20.02829933166504], [2446.180717600044, 19.808399200439453], [2446.3434490999207, 19.723400115966797], [2447.177326399833, 19.89780044555664], [2447.1790277999826, 19.943500518798828], [2447.277430600021, 19.934999465942383], [2448.1857870002277, 19.704599380493164], [2448.349027799908, 19.22209930419922], [2449.242719899863, 19.62929916381836], [2449.2436689999886, 19.688800811767578], [2449.278287000023, 19.675600051879883], [2450.1847105999477, 19.591299057006836], [2450.3442361000925, 18.898500442504883], [2451.217754600104, 19.533300399780273], [2451.249085600022, 19.39419937133789], [2452.238472199999, 19.622299194335938], [2452.3253704002127, 19.126399993896484], [2455.2623610999435, 19.622499465942383], [2457.1847105999477, 20.359800338745117], [2457.2232638997957, 20.592899322509766], [2457.2242129999213, 20.503599166870117], [2458.201319400221, 20.647199630737305], [2458.2232985999435, 20.692800521850586], [2459.1970254997723, 20.785499572753906], [2459.1979629998095, 20.826000213623047], [2459.2385300998576, 20.685100555419922], [2460.221527799964, 20.600200653076172], [2460.2449536998756, 20.444299697875977], [2461.216504599899, 20.662200927734375], [2461.2538772998378, 20.518600463867188], [2463.1982176001184, 20.611299514770508], [2463.218530099839, 20.687400817871094], [2464.2377431001514, 20.447500228881836], [2464.261411999818, 19.73710060119629], [2469.186168999877, 20.587200164794922], [2469.194664400071, 20.457000732421875], [2470.1851968001574, 20.714500427246094], [2470.202696800232, 20.681299209594727], [2471.1966204000637, 20.621999740600586], [2471.21732639987, 20.556800842285156], [2472.217581000179, 20.452199935913086], [2473.218807899859, 20.10580062866211], [2474.2003240999766, 20.258100509643555], [2474.2149768997915, 20.15239906311035], [2477.2022222001106, 19.88949966430664], [2477.20319439983, 19.798799514770508], [2477.2690624999814, 19.547399520874023], [2479.218645799905, 19.730899810791016], [2480.200868099928, 19.868900299072266], [2480.201840300113, 19.786500930786133], [2480.237905099988, 19.56599998474121], [2481.196238399949, 19.8075008392334], [2481.2659490997903, 19.243099212646484], [2482.216643500142, 19.59950065612793], [2483.2419560002163, 19.385299682617188], [2484.1949420999736, 19.97570037841797], [2484.195879600011, 19.97599983215332], [2486.2011921000667, 20.46030044555664], [2502.1805671001785, 19.822599411010742], [2507.1870602001436, 19.62470054626465], [2507.1998610999435, 19.519500732421875]], "data02": [[2432.319849499967, 20.477699279785156], [2433.2884491002187, 20.61520004272461], [2433.402939800173, 20.327499389648438], [2434.249421299901, 20.723600387573242], [2434.250358799938, 20.65719985961914], [2434.261088000145, 20.51799964904785], [2435.214571800083, 19.592300415039062], [2437.2172685000114, 20.622699737548828], [2438.2167361001484, 20.4906005859375], [2439.258495400194, 20.13610076904297], [2439.2594329002313, 20.363300323486328], [2439.275613400154, 20.403799057006836], [2440.264120399952, 20.561599731445312], [2440.3727778000757, 19.901599884033203], [2441.270046299789, 20.165800094604492], [2441.4154281998053, 19.488000869750977], [2441.4159027999267, 19.173999786376953], [2442.247615700122, 20.534700393676758], [2442.2546064998023, 20.464599609375], [2443.218391200062, 20.387399673461914], [2443.2193403001875, 20.422800064086914], [2443.2422337997705, 20.409900665283203], [2444.26765049994, 20.440000534057617], [2444.333402799908, 20.409500122070312], [2445.2200462999754, 20.09630012512207], [2445.2209838000126, 20.058399200439453], [2445.2481597000733, 19.992399215698242], [2446.260555599816, 19.885299682617188], [2446.2785880002193, 19.786300659179688], [2447.2988542001694, 19.83209991455078], [2447.3405324001797, 19.822200775146484], [2447.3414814998396, 19.91029930114746], [2448.2377198999748, 19.9281005859375], [2448.2807638999075, 19.577800750732422], [2449.3059954000637, 19.733600616455078], [2449.306932900101, 19.81060028076172], [2449.3497338001616, 19.453899383544922], [2450.247037000023, 19.477699279785156], [2450.3635648000054, 18.86079978942871], [2451.3037847001106, 19.553300857543945], [2451.3047337997705, 19.517799377441406], [2451.3447106000967, 19.190799713134766], [2452.1803008997813, 19.378799438476562], [2452.3607522998936, 18.93120002746582], [2455.2821527998894, 19.61949920654297], [2455.2830902999267, 19.511699676513672], [2456.2986110998318, 19.861799240112305], [2456.334432899952, 19.800199508666992], [2457.307187499944, 19.9143009185791], [2457.3206829000264, 19.74340057373047], [2457.321631900035, 19.793500900268555], [2458.1861227001064, 20.522300720214844], [2458.3707292000763, 19.451200485229492], [2459.3432638999075, 19.947900772094727], [2459.3442013999447, 19.929399490356445], [2459.3602546001785, 19.724700927734375], [2460.2626852001995, 20.38920021057129], [2460.2758101997897, 20.219999313354492], [2461.284560199827, 20.321300506591797], [2461.2991781998426, 20.27589988708496], [2462.1928008999676, 20.58799934387207], [2462.202152799815, 20.60740089416504], [2463.242893499788, 20.373300552368164], [2463.259259299841, 20.346099853515625], [2464.218634299934, 18.777799606323242], [2464.2195832999423, 18.892000198364258], [2469.282037000172, 19.91790008544922], [2469.3217823999003, 20.05940055847168], [2470.290960600134, 20.103099822998047], [2470.2946875002235, 20.327299118041992], [2471.288275499828, 20.273399353027344], [2471.3081249999814, 20.278900146484375], [2472.32024310017, 19.856300354003906], [2473.240185199771, 20.01259994506836], [2473.255740699824, 19.957300186157227], [2475.2439468000084, 20.08340072631836], [2477.187743099872, 19.917800903320312], [2477.3081943998113, 19.127700805664062], [2479.291840299964, 19.545299530029297], [2479.3032754999585, 19.371200561523438], [2480.3047801000066, 19.151899337768555], [2480.305729200132, 19.07309913635254], [2481.2782638999633, 19.452999114990234], [2481.296932899859, 18.912700653076172], [2482.302152799908, 19.239900588989258], [2483.265196800232, 19.398000717163086], [2483.2784258998, 19.34000015258789], [2484.2800694000907, 19.377300262451172], [2484.281006900128, 19.384599685668945], [2489.2758912001736, 19.665000915527344]], "data03": [[2433.2991088000126, 19.87150001525879], [2437.198449099902, 20.00510025024414], [2438.275752299931, 19.81089973449707], [2439.1936110998504, 19.63249969482422], [2442.309571799822, 19.819499969482422], [2446.2402431000955, 19.36370086669922], [2449.3221875000745, 19.168500900268555], [2452.1947685000487, 19.316699981689453], [2456.2851272998378, 19.62470054626465], [2459.2619444001466, 19.767200469970703], [2463.1832985999063, 19.846099853515625], [2466.18432869995, 19.72599983215332], [2469.2439468000084, 19.868099212646484], [2472.2375810001977, 19.857200622558594], [2476.227488399949, 19.669700622558594], [2482.277002300136, 19.225400924682617], [2504.2248031999916, 18.819299697875977], [2508.2135994997807, 18.91710090637207]], "data04": [[2462.2231250000186, 19.941726684570312], [2462.2231250000186, 19.941726684570312], [2462.224062500056, 19.767595291137695], [2462.224062500056, 19.767595291137695], [2462.259386599995, 19.882835388183594], [2483.1949420999736, 19.89780044555664], [2484.268877299968, 19.404499053955078], [2486.202129600104, 19.50650978088379], [2489.225173600018, 18.89747428894043], [2499.1972453999333, 18.104995727539062], [2500.206087999977, 18.05975341796875], [2500.206087999977, 18.05975341796875], [2500.220856499858, 18.048690795898438], [2501.202789399773, 18.02460289001465], [2501.202789399773, 18.02460289001465], [2501.214363399893, 18.032550811767578], [2502.203541699797, 18.076576232910156], [2503.1855902997777, 18.048145294189453], [2503.1855902997777, 18.048145294189453], [2503.200069400016, 17.99009895324707], [2505.1991897998378, 17.97524642944336], [2509.2008218001574, 18.078153610229492], [2510.19565969985, 18.090232849121094]], "data05": [[0.0, 0.0]], "data06": [[0.0325448347921413, 0.9587564916330065, 0.9152481246393538, 0.8717397576457011, 0.8282313906520485]], "data07": [[0.011990202291841515, 0.8028851702250432], [0.23237012041588878, 0.8028851702250432], [0.23579589249927208, 0.8028851702250432], [0.23579589249927208, 0.8086555106751299], [0.23579589249927208, 0.9798038084246969], [0.23579589249927208, 0.9855741488747836], [0.23237012041588878, 0.9855741488747836], [0.011990202291841515, 0.9855741488747836], [0.008564430208458235, 0.9855741488747836], [0.008564430208458235, 0.9798038084246969], [0.008564430208458235, 0.8086555106751299], [0.008564430208458235, 0.8028851702250432], [0.011990202291841515, 0.8028851702250432]]}, "id": "el609685509501392", "plugins": [{"type": "reset"}, {"type": "zoom", "button": true, "enabled": false}, {"type": "boxzoom", "button": true, "enabled": false}, {"type": "htmltooltip", "id": "el609685509147856", "labels": ["MJD: 60432.281990699936<br>Maglim: 20.5762996673584", "MJD: 60433.21577550005<br>Maglim: 20.622800827026367", "MJD: 60433.26339119999<br>Maglim: 20.80940055847168", "MJD: 60434.286296300124<br>Maglim: 20.83679962158203", "MJD: 60434.287245399784<br>Maglim: 20.703899383544922", "MJD: 60434.32524310006<br>Maglim: 20.758399963378906", "MJD: 60437.27974539995<br>Maglim: 20.57659912109375", "MJD: 60438.301400499884<br>Maglim: 20.542200088500977", "MJD: 60439.24515049998<br>Maglim: 20.486900329589844", "MJD: 60439.30329860002<br>Maglim: 20.11720085144043", "MJD: 60439.30424770014<br>Maglim: 20.33799934387207", "MJD: 60440.28456019983<br>Maglim: 20.51609992980957", "MJD: 60440.32930559991<br>Maglim: 20.267799377441406", "MJD: 60441.21938659996<br>Maglim: 20.585100173950195", "MJD: 60441.299085599836<br>Maglim: 20.30500030517578", "MJD: 60441.30748840002<br>Maglim: 20.136499404907227", "MJD: 60442.2195255002<br>Maglim: 20.550800323486328", "MJD: 60443.196562500205<br>Maglim: 20.22760009765625", "MJD: 60443.284571799915<br>Maglim: 20.404699325561523", "MJD: 60443.298472200055<br>Maglim: 20.398500442504883", "MJD: 60444.17542820005<br>Maglim: 20.395700454711914", "MJD: 60444.352534700185<br>Maglim: 20.614500045776367", "MJD: 60445.2590855998<br>Maglim: 20.151399612426758", "MJD: 60445.26578699984<br>Maglim: 20.02829933166504", "MJD: 60446.180717600044<br>Maglim: 19.808399200439453", "MJD: 60446.34344909992<br>Maglim: 19.723400115966797", "MJD: 60447.17732639983<br>Maglim: 19.89780044555664", "MJD: 60447.17902779998<br>Maglim: 19.943500518798828", "MJD: 60447.27743060002<br>Maglim: 19.934999465942383", "MJD: 60448.18578700023<br>Maglim: 19.704599380493164", "MJD: 60448.34902779991<br>Maglim: 19.22209930419922", "MJD: 60449.24271989986<br>Maglim: 19.62929916381836", "MJD: 60449.24366899999<br>Maglim: 19.688800811767578", "MJD: 60449.27828700002<br>Maglim: 19.675600051879883", "MJD: 60450.18471059995<br>Maglim: 19.591299057006836", "MJD: 60450.34423610009<br>Maglim: 18.898500442504883", "MJD: 60451.217754600104<br>Maglim: 19.533300399780273", "MJD: 60451.24908560002<br>Maglim: 19.39419937133789", "MJD: 60452.2384722<br>Maglim: 19.622299194335938", "MJD: 60452.32537040021<br>Maglim: 19.126399993896484", "MJD: 60455.26236109994<br>Maglim: 19.622499465942383", "MJD: 60457.18471059995<br>Maglim: 20.359800338745117", "MJD: 60457.223263899796<br>Maglim: 20.592899322509766", "MJD: 60457.22421299992<br>Maglim: 20.503599166870117", "MJD: 60458.20131940022<br>Maglim: 20.647199630737305", "MJD: 60458.22329859994<br>Maglim: 20.692800521850586", "MJD: 60459.19702549977<br>Maglim: 20.785499572753906", "MJD: 60459.19796299981<br>Maglim: 20.826000213623047", "MJD: 60459.23853009986<br>Maglim: 20.685100555419922", "MJD: 60460.221527799964<br>Maglim: 20.600200653076172", "MJD: 60460.244953699876<br>Maglim: 20.444299697875977", "MJD: 60461.2165045999<br>Maglim: 20.662200927734375", "MJD: 60461.25387729984<br>Maglim: 20.518600463867188", "MJD: 60463.19821760012<br>Maglim: 20.611299514770508", "MJD: 60463.21853009984<br>Maglim: 20.687400817871094", "MJD: 60464.23774310015<br>Maglim: 20.447500228881836", "MJD: 60464.26141199982<br>Maglim: 19.73710060119629", "MJD: 60469.18616899988<br>Maglim: 20.587200164794922", "MJD: 60469.19466440007<br>Maglim: 20.457000732421875", "MJD: 60470.18519680016<br>Maglim: 20.714500427246094", "MJD: 60470.20269680023<br>Maglim: 20.681299209594727", "MJD: 60471.196620400064<br>Maglim: 20.621999740600586", "MJD: 60471.21732639987<br>Maglim: 20.556800842285156", "MJD: 60472.21758100018<br>Maglim: 20.452199935913086", "MJD: 60473.21880789986<br>Maglim: 20.10580062866211", "MJD: 60474.20032409998<br>Maglim: 20.258100509643555", "MJD: 60474.21497689979<br>Maglim: 20.15239906311035", "MJD: 60477.20222220011<br>Maglim: 19.88949966430664", "MJD: 60477.20319439983<br>Maglim: 19.798799514770508", "MJD: 60477.26906249998<br>Maglim: 19.547399520874023", "MJD: 60479.218645799905<br>Maglim: 19.730899810791016", "MJD: 60480.20086809993<br>Maglim: 19.868900299072266", "MJD: 60480.20184030011<br>Maglim: 19.786500930786133", "MJD: 60480.23790509999<br>Maglim: 19.56599998474121", "MJD: 60481.19623839995<br>Maglim: 19.8075008392334", "MJD: 60481.26594909979<br>Maglim: 19.243099212646484", "MJD: 60482.21664350014<br>Maglim: 19.59950065612793", "MJD: 60483.241956000216<br>Maglim: 19.385299682617188", "MJD: 60484.19494209997<br>Maglim: 19.97570037841797", "MJD: 60484.19587960001<br>Maglim: 19.97599983215332", "MJD: 60486.20119210007<br>Maglim: 20.46030044555664", "MJD: 60502.18056710018<br>Maglim: 19.822599411010742", "MJD: 60507.18706020014<br>Maglim: 19.62470054626465", "MJD: 60507.19986109994<br>Maglim: 19.519500732421875"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685509721616", "labels": ["MJD: 60432.31984949997<br>Maglim: 20.477699279785156", "MJD: 60433.28844910022<br>Maglim: 20.61520004272461", "MJD: 60433.40293980017<br>Maglim: 20.327499389648438", "MJD: 60434.2494212999<br>Maglim: 20.723600387573242", "MJD: 60434.25035879994<br>Maglim: 20.65719985961914", "MJD: 60434.261088000145<br>Maglim: 20.51799964904785", "MJD: 60435.21457180008<br>Maglim: 19.592300415039062", "MJD: 60437.21726850001<br>Maglim: 20.622699737548828", "MJD: 60438.21673610015<br>Maglim: 20.4906005859375", "MJD: 60439.258495400194<br>Maglim: 20.13610076904297", "MJD: 60439.25943290023<br>Maglim: 20.363300323486328", "MJD: 60439.275613400154<br>Maglim: 20.403799057006836", "MJD: 60440.26412039995<br>Maglim: 20.561599731445312", "MJD: 60440.372777800076<br>Maglim: 19.901599884033203", "MJD: 60441.27004629979<br>Maglim: 20.165800094604492", "MJD: 60441.415428199805<br>Maglim: 19.488000869750977", "MJD: 60441.41590279993<br>Maglim: 19.173999786376953", "MJD: 60442.24761570012<br>Maglim: 20.534700393676758", "MJD: 60442.2546064998<br>Maglim: 20.464599609375", "MJD: 60443.21839120006<br>Maglim: 20.387399673461914", "MJD: 60443.21934030019<br>Maglim: 20.422800064086914", "MJD: 60443.24223379977<br>Maglim: 20.409900665283203", "MJD: 60444.26765049994<br>Maglim: 20.440000534057617", "MJD: 60444.33340279991<br>Maglim: 20.409500122070312", "MJD: 60445.220046299975<br>Maglim: 20.09630012512207", "MJD: 60445.22098380001<br>Maglim: 20.058399200439453", "MJD: 60445.24815970007<br>Maglim: 19.992399215698242", "MJD: 60446.260555599816<br>Maglim: 19.885299682617188", "MJD: 60446.27858800022<br>Maglim: 19.786300659179688", "MJD: 60447.29885420017<br>Maglim: 19.83209991455078", "MJD: 60447.34053240018<br>Maglim: 19.822200775146484", "MJD: 60447.34148149984<br>Maglim: 19.91029930114746", "MJD: 60448.237719899975<br>Maglim: 19.9281005859375", "MJD: 60448.28076389991<br>Maglim: 19.577800750732422", "MJD: 60449.305995400064<br>Maglim: 19.733600616455078", "MJD: 60449.3069329001<br>Maglim: 19.81060028076172", "MJD: 60449.34973380016<br>Maglim: 19.453899383544922", "MJD: 60450.24703700002<br>Maglim: 19.477699279785156", "MJD: 60450.363564800005<br>Maglim: 18.86079978942871", "MJD: 60451.30378470011<br>Maglim: 19.553300857543945", "MJD: 60451.30473379977<br>Maglim: 19.517799377441406", "MJD: 60451.3447106001<br>Maglim: 19.190799713134766", "MJD: 60452.18030089978<br>Maglim: 19.378799438476562", "MJD: 60452.360752299894<br>Maglim: 18.93120002746582", "MJD: 60455.28215279989<br>Maglim: 19.61949920654297", "MJD: 60455.28309029993<br>Maglim: 19.511699676513672", "MJD: 60456.29861109983<br>Maglim: 19.861799240112305", "MJD: 60456.33443289995<br>Maglim: 19.800199508666992", "MJD: 60457.307187499944<br>Maglim: 19.9143009185791", "MJD: 60457.32068290003<br>Maglim: 19.74340057373047", "MJD: 60457.321631900035<br>Maglim: 19.793500900268555", "MJD: 60458.186122700106<br>Maglim: 20.522300720214844", "MJD: 60458.370729200076<br>Maglim: 19.451200485229492", "MJD: 60459.34326389991<br>Maglim: 19.947900772094727", "MJD: 60459.344201399945<br>Maglim: 19.929399490356445", "MJD: 60459.36025460018<br>Maglim: 19.724700927734375", "MJD: 60460.2626852002<br>Maglim: 20.38920021057129", "MJD: 60460.27581019979<br>Maglim: 20.219999313354492", "MJD: 60461.28456019983<br>Maglim: 20.321300506591797", "MJD: 60461.29917819984<br>Maglim: 20.27589988708496", "MJD: 60462.19280089997<br>Maglim: 20.58799934387207", "MJD: 60462.202152799815<br>Maglim: 20.60740089416504", "MJD: 60463.24289349979<br>Maglim: 20.373300552368164", "MJD: 60463.25925929984<br>Maglim: 20.346099853515625", "MJD: 60464.218634299934<br>Maglim: 18.777799606323242", "MJD: 60464.21958329994<br>Maglim: 18.892000198364258", "MJD: 60469.28203700017<br>Maglim: 19.91790008544922", "MJD: 60469.3217823999<br>Maglim: 20.05940055847168", "MJD: 60470.290960600134<br>Maglim: 20.103099822998047", "MJD: 60470.29468750022<br>Maglim: 20.327299118041992", "MJD: 60471.28827549983<br>Maglim: 20.273399353027344", "MJD: 60471.30812499998<br>Maglim: 20.278900146484375", "MJD: 60472.32024310017<br>Maglim: 19.856300354003906", "MJD: 60473.24018519977<br>Maglim: 20.01259994506836", "MJD: 60473.255740699824<br>Maglim: 19.957300186157227", "MJD: 60475.24394680001<br>Maglim: 20.08340072631836", "MJD: 60477.18774309987<br>Maglim: 19.917800903320312", "MJD: 60477.30819439981<br>Maglim: 19.127700805664062", "MJD: 60479.291840299964<br>Maglim: 19.545299530029297", "MJD: 60479.30327549996<br>Maglim: 19.371200561523438", "MJD: 60480.30478010001<br>Maglim: 19.151899337768555", "MJD: 60480.30572920013<br>Maglim: 19.07309913635254", "MJD: 60481.27826389996<br>Maglim: 19.452999114990234", "MJD: 60481.29693289986<br>Maglim: 18.912700653076172", "MJD: 60482.30215279991<br>Maglim: 19.239900588989258", "MJD: 60483.26519680023<br>Maglim: 19.398000717163086", "MJD: 60483.2784258998<br>Maglim: 19.34000015258789", "MJD: 60484.28006940009<br>Maglim: 19.377300262451172", "MJD: 60484.28100690013<br>Maglim: 19.384599685668945", "MJD: 60489.275891200174<br>Maglim: 19.665000915527344"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685615761936", "labels": ["MJD: 60433.29910880001<br>Maglim: 19.87150001525879", "MJD: 60437.1984490999<br>Maglim: 20.00510025024414", "MJD: 60438.27575229993<br>Maglim: 19.81089973449707", "MJD: 60439.19361109985<br>Maglim: 19.63249969482422", "MJD: 60442.30957179982<br>Maglim: 19.819499969482422", "MJD: 60446.240243100096<br>Maglim: 19.36370086669922", "MJD: 60449.322187500075<br>Maglim: 19.168500900268555", "MJD: 60452.19476850005<br>Maglim: 19.316699981689453", "MJD: 60456.28512729984<br>Maglim: 19.62470054626465", "MJD: 60459.26194440015<br>Maglim: 19.767200469970703", "MJD: 60463.183298599906<br>Maglim: 19.846099853515625", "MJD: 60466.18432869995<br>Maglim: 19.72599983215332", "MJD: 60469.24394680001<br>Maglim: 19.868099212646484", "MJD: 60472.2375810002<br>Maglim: 19.857200622558594", "MJD: 60476.22748839995<br>Maglim: 19.669700622558594", "MJD: 60482.277002300136<br>Maglim: 19.225400924682617", "MJD: 60504.22480319999<br>Maglim: 18.819299697875977", "MJD: 60508.21359949978<br>Maglim: 18.91710090637207"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685615760784", "labels": ["MJD: 60462.22312500002<br>Mag: 19.941726684570312", "MJD: 60462.22312500002<br>Mag: 19.941726684570312", "MJD: 60462.224062500056<br>Mag: 19.767595291137695", "MJD: 60462.224062500056<br>Mag: 19.767595291137695", "MJD: 60462.259386599995<br>Mag: 19.882835388183594", "MJD: 60483.19494209997<br>Mag: 19.89780044555664", "MJD: 60484.26887729997<br>Mag: 19.404499053955078", "MJD: 60486.202129600104<br>Mag: 19.50650978088379", "MJD: 60489.22517360002<br>Mag: 18.89747428894043", "MJD: 60499.19724539993<br>Mag: 18.104995727539062", "MJD: 60500.20608799998<br>Mag: 18.05975341796875", "MJD: 60500.20608799998<br>Mag: 18.05975341796875", "MJD: 60500.22085649986<br>Mag: 18.048690795898438", "MJD: 60501.20278939977<br>Mag: 18.02460289001465", "MJD: 60501.20278939977<br>Mag: 18.02460289001465", "MJD: 60501.21436339989<br>Mag: 18.032550811767578", "MJD: 60502.2035416998<br>Mag: 18.076576232910156", "MJD: 60503.18559029978<br>Mag: 18.048145294189453", "MJD: 60503.18559029978<br>Mag: 18.048145294189453", "MJD: 60503.200069400016<br>Mag: 17.99009895324707", "MJD: 60505.19918979984<br>Mag: 17.97524642944336", "MJD: 60509.20082180016<br>Mag: 18.078153610229492", "MJD: 60510.19565969985<br>Mag: 18.090232849121094"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "interactive_legend", "element_ids": [["el609685615760784"], ["el609685509147856", "el609685509721616", "el609685615761936"]], "labels": ["Alerts", "Limits"], "ax": null, "alpha_unsel": 0.2, "alpha_over": 1.0, "start_visible": [true, true], "font_size": 10, "legend_offset": [0, 0]}]});
+      });
+    });
+}else{
+    // require.js not available: dynamically load d3 & mpld3
+    mpld3_load_lib("https://d3js.org/d3.v5.js", function(){
+         mpld3_load_lib("https://mpld3.github.io/js/mpld3.v0.5.10.js", function(){
+                 
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    HtmlTooltipPlugin.prototype = Object.create(mpld3.Plugin.prototype);
+    HtmlTooltipPlugin.prototype.constructor = HtmlTooltipPlugin;
+    HtmlTooltipPlugin.prototype.requiredProps = ["id"];
+    HtmlTooltipPlugin.prototype.defaultProps = {labels:null,
+                                                target:null,
+                                                hoffset:0,
+                                                voffset:10,
+                                                targets:null};
+    function HtmlTooltipPlugin(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+        var obj = mpld3.get_element(this.props.id);
+        var labels = this.props.labels;
+        var targets = this.props.targets;
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "mpld3-tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden");
+
+        obj.elements()
+            .on("mouseover", function(d, i){
+                tooltip.html(labels[i])
+                    .style("visibility", "visible");
+            })
+            .on("mousemove", function(d, i){
+                tooltip
+                .style("top", d3.event.pageY + this.props.voffset + "px")
+                .style("left",d3.event.pageX + this.props.hoffset + "px");
+            }.bind(this))
+            .on("mousedown.callout", function(d, i){
+                window.open(targets[i],"_blank");
+            })
+            .on("mouseout", function(d, i){
+                tooltip.style("visibility", "hidden");
+            });
+    };
+    
+    mpld3.register_plugin("interactive_legend", InteractiveLegend);
+    InteractiveLegend.prototype = Object.create(mpld3.Plugin.prototype);
+    InteractiveLegend.prototype.constructor = InteractiveLegend;
+    InteractiveLegend.prototype.requiredProps = ["element_ids", "labels"];
+    InteractiveLegend.prototype.defaultProps = {"ax":null,
+                                                "alpha_unsel":0.2,
+                                                "alpha_over":1.0,
+                                                "start_visible":true,
+                                                "font_size": 10,
+                                                "legend_offset": [0,0]}
+    function InteractiveLegend(fig, props){
+        mpld3.Plugin.call(this, fig, props);
+    };
+
+    InteractiveLegend.prototype.draw = function(){
+        var alpha_unsel = this.props.alpha_unsel;
+        var alpha_over = this.props.alpha_over;
+        var font_size = this.props.font_size;
+        var legend_offset = this.props.legend_offset;
+
+        var legendItems = new Array();
+        for(var i=0; i<this.props.labels.length; i++){
+            var obj = {};
+            obj.label = this.props.labels[i];
+
+            var element_id = this.props.element_ids[i];
+            mpld3_elements = [];
+            for(var j=0; j<element_id.length; j++){
+                var mpld3_element = mpld3.get_element(element_id[j], this.fig);
+
+                // mpld3_element might be null in case of Line2D instances
+                // for we pass the id for both the line and the markers. Either
+                // one might not exist on the D3 side
+                if(mpld3_element){
+                    mpld3_elements.push(mpld3_element);
+                }
+            }
+
+            obj.mpld3_elements = mpld3_elements;
+            obj.visible = this.props.start_visible[i]; // should become be setable from python side
+            legendItems.push(obj);
+            set_alphas(obj, false);
+        }
+
+        // determine the axes with which this legend is associated
+        var ax = this.props.ax
+        if(!ax){
+            ax = this.fig.axes[0];
+        } else{
+            ax = mpld3.get_element(ax, this.fig);
+        }
+
+        // add a legend group to the canvas of the figure
+        var legend = this.fig.canvas.append("svg:g")
+                               .attr("class", "legend");
+
+        // add the rectangles
+        legend.selectAll("rect")
+                .data(legendItems)
+                .enter().append("rect")
+                .attr("height", 0.7*font_size)
+                .attr("width", 1.6*font_size)
+                .attr("x", ax.width + ax.position[0] + 15 + legend_offset[0])
+                .attr("y",function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + legend_offset[1];})
+                .attr("stroke", get_color)
+                .attr("class", "legend-box")
+                .style("fill", function(d, i) {
+                           return d.visible ? get_color(d) : "white";})
+                .on("click", click).on('mouseover', over).on('mouseout', out);
+
+        // add the labels
+        legend.selectAll("text")
+              .data(legendItems)
+              .enter().append("text")
+              .attr("font-size", font_size)
+              .attr("x", function (d) {
+                           return ax.width + ax.position[0] + (1.9*font_size+15) + legend_offset[0];})
+              .attr("y", function(d,i) {
+                           return ax.position[1] + i * (font_size+5) + 10 + (0.72*font_size-1) + legend_offset[1];})
+              .text(function(d) { return d.label })
+              .on('mouseover', over).on('mouseout', out);
+
+
+        // specify the action on click
+        function click(d,i){
+            d.visible = !d.visible;
+            d3.select(this)
+              .style("fill",function(d, i) {
+                return d.visible ? get_color(d) : "white";
+              })
+            set_alphas(d, false);
+
+        };
+
+        // specify the action on legend overlay 
+        function over(d,i){
+             set_alphas(d, true);
+        };
+
+        // specify the action on legend overlay 
+        function out(d,i){
+             set_alphas(d, false);
+        };
+
+        // helper function for setting alphas
+        function set_alphas(d, is_over){
+            for(var i=0; i<d.mpld3_elements.length; i++){
+                var type = d.mpld3_elements[i].constructor.name;
+
+                if(type =="mpld3_Line"){
+                    var current_alpha = d.mpld3_elements[i].props.alpha;
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d3.select(d.mpld3_elements[i].path.nodes()[0])
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("stroke-width", is_over ?
+                                alpha_over * d.mpld3_elements[i].props.edgewidth : d.mpld3_elements[i].props.edgewidth);
+                } else if((type=="mpld3_PathCollection")||
+                         (type=="mpld3_Markers")){
+                    var current_alpha = d.mpld3_elements[i].props.alphas[0];
+                    var current_alpha_unsel = current_alpha * alpha_unsel;
+                    var current_alpha_over = current_alpha * alpha_over;
+                    d.mpld3_elements[i].pathsobj
+                        .style("stroke-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel))
+                        .style("fill-opacity", is_over ? current_alpha_over :
+                                                (d.visible ? current_alpha : current_alpha_unsel));
+                } else{
+                    console.log(type + " not yet supported");
+                }
+            }
+        };
+
+
+        // helper function for determining the color of the rectangles
+        function get_color(d){
+            var type = d.mpld3_elements[0].constructor.name;
+            var color = "black";
+            if(type =="mpld3_Line"){
+                color = d.mpld3_elements[0].props.edgecolor;
+            } else if((type=="mpld3_PathCollection")||
+                      (type=="mpld3_Markers")){
+                color = d.mpld3_elements[0].props.facecolors[0];
+            } else{
+                console.log(type + " not yet supported");
+            }
+            return color;
+        };
+    };
+    
+                 mpld3.draw_figure("fig_el6096855095013921574869931", {"width": 1000.0, "height": 600.0, "axes": [{"bbox": [0.08915277777777779, 0.120462962962963, 0.8108472222222223, 0.8023148148148148], "xlim": [2461.7231250000186, 2510.69565969985], "ylim": [20.441726684570312, 17.47524642944336], "xdomain": [2461.7231250000186, 2510.69565969985], "ydomain": [20.441726684570312, 17.47524642944336], "xscale": "linear", "yscale": "linear", "axes": [{"position": "bottom", "nticks": 7, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 0.1}, "visible": true}, {"position": "left", "nticks": 8, "tickvalues": null, "tickformat_formatter": "", "tickformat": null, "scale": "linear", "fontsize": 10.0, "grid": {"gridOn": true, "color": "#B0B0B0", "dasharray": "none", "alpha": 0.1}, "visible": true}], "axesbg": "#FFFFFF", "axesbgalpha": null, "zoomable": true, "id": "el609685509511120", "lines": [], "paths": [{"data": "data07", "xindex": 0, "yindex": 1, "coordinates": "axes", "pathcodes": ["M", "L", "S", "L", "S", "L", "S", "L", "S", "Z"], "id": "el609685615521808", "dasharray": "none", "alpha": 1, "facecolor": "#FFFFFF", "edgecolor": "#CCCCCC", "edgewidth": 1.0, "zorder": 1000000.0}], "markers": [], "texts": [{"text": "MJD - 58000", "position": [0.5, -0.0608193883439123], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "hanging", "rotation": -0.0, "fontsize": 20.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685509072016"}, {"text": "Magnitude", "position": [-0.056919203165413414, 0.5], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -90.0, "fontsize": 20.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685615944592"}, {"text": "Light Curve for ZTF24aapvieu", "position": [0.5, 1.0173110213502596], "coordinates": "axes", "h_anchor": "middle", "v_baseline": "auto", "rotation": -0.0, "fontsize": 22.0, "color": "#000000", "alpha": 1, "zorder": 3, "id": "el609685509441424"}, {"text": "Upper Limit g-band", "position": [0.06337678354259092, 0.9511829197922679], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615642192"}, {"text": "Upper Limit r-band", "position": [0.06337678354259092, 0.9076745527986152], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615530704"}, {"text": "Upper Limit i-band", "position": [0.06337678354259092, 0.8641661858049625], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615227600"}, {"text": "g-band", "position": [0.06337678354259092, 0.82065781881131], "coordinates": "axes", "h_anchor": "start", "v_baseline": "auto", "rotation": -0.0, "fontsize": 10.0, "color": "#000000", "alpha": 1, "zorder": 1000003.0, "id": "el609685615233104"}], "collections": [{"offsets": "data01", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["rgba(46, 139, 87, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685509147856"}, {"offsets": "data02", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["rgba(220, 20, 60, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685509721616"}, {"offsets": "data03", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DAA520"], "facecolors": ["rgba(218, 165, 32, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685615761936"}, {"offsets": "data04", "xindex": 0, "yindex": 1, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "data", "pathcoordinates": "display", "zorder": 1, "id": "el609685615760784"}, {"offsets": "data05", "xindex": 0, "yindex": 1, "paths": [[[[2462.2231250000186, 19.780987083911896], [2462.2231250000186, 20.10246628522873]], ["M", "L"]], [[[2462.2231250000186, 19.780987083911896], [2462.2231250000186, 20.10246628522873]], ["M", "L"]], [[[2462.224062500056, 19.58044883608818], [2462.224062500056, 19.95474174618721]], ["M", "L"]], [[[2462.224062500056, 19.58044883608818], [2462.224062500056, 19.95474174618721]], ["M", "L"]], [[[2462.259386599995, 19.731957733631134], [2462.259386599995, 20.033713042736053]], ["M", "L"]], [[[2483.1949420999736, 19.589943438768387], [2483.1949420999736, 20.205657452344894]], ["M", "L"]], [[[2484.268877299968, 19.15859904885292], [2484.268877299968, 19.650399059057236]], ["M", "L"]], [[[2486.202129600104, 19.37039887905121], [2486.202129600104, 19.64262068271637]], ["M", "L"]], [[[2489.225173600018, 18.79345991462469], [2489.225173600018, 19.00148866325617]], ["M", "L"]], [[[2499.1972453999333, 18.025060541927814], [2499.1972453999333, 18.18493091315031]], ["M", "L"]], [[[2500.206087999977, 17.96255249530077], [2500.206087999977, 18.15695434063673]], ["M", "L"]], [[[2500.206087999977, 17.96255249530077], [2500.206087999977, 18.15695434063673]], ["M", "L"]], [[[2500.220856499858, 17.96300283819437], [2500.220856499858, 18.134378753602505]], ["M", "L"]], [[[2501.202789399773, 17.96204698830843], [2501.202789399773, 18.087158791720867]], ["M", "L"]], [[[2501.202789399773, 17.96204698830843], [2501.202789399773, 18.087158791720867]], ["M", "L"]], [[[2501.214363399893, 17.96403943002224], [2501.214363399893, 18.101062193512917]], ["M", "L"]], [[[2502.203541699797, 17.999324813485146], [2502.203541699797, 18.153827652335167]], ["M", "L"]], [[[2503.1855902997777, 17.958134174346924], [2503.1855902997777, 18.138156414031982]], ["M", "L"]], [[[2503.1855902997777, 17.958134174346924], [2503.1855902997777, 18.138156414031982]], ["M", "L"]], [[[2503.200069400016, 17.889631286263466], [2503.200069400016, 18.090566620230675]], ["M", "L"]], [[[2505.1991897998378, 17.898011676967144], [2505.1991897998378, 18.052481181919575]], ["M", "L"]], [[[2509.2008218001574, 17.977573804557323], [2509.2008218001574, 18.17873341590166]], ["M", "L"]], [[[2510.19565969985, 18.00461746752262], [2510.19565969985, 18.175848230719566]], ["M", "L"]]], "pathtransforms": [], "alphas": [0.5], "edgecolors": ["rgba(46, 139, 87, 0.5)"], "facecolors": [], "edgewidths": [1.5], "offsetcoordinates": "display", "pathcoordinates": "data", "zorder": 2, "id": "el609685615762832"}, {"offsets": "data06", "xindex": 0, "yindex": 1, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["rgba(46, 139, 87, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615533520"}, {"offsets": "data06", "xindex": 0, "yindex": 2, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DC143C"], "facecolors": ["rgba(220, 20, 60, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615526992"}, {"offsets": "data06", "xindex": 0, "yindex": 3, "paths": [[[[0.0, 0.5], [-0.5, -0.5], [0.5, -0.5]], ["M", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#DAA520"], "facecolors": ["rgba(218, 165, 32, 0.05)"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615235728"}, {"offsets": "data06", "xindex": 0, "yindex": 4, "paths": [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]], ["M", "L", "L", "L", "Z"]]], "pathtransforms": [[8.333333333333334, 0.0, 0.0, 8.333333333333334, 0.0, 0.0]], "alphas": [null], "edgecolors": ["#2E8B57"], "facecolors": ["#2E8B57"], "edgewidths": [1.0], "offsetcoordinates": "axes", "pathcoordinates": "display", "zorder": 1000001.0, "id": "el609685615229072"}], "images": [], "sharex": [], "sharey": []}], "data": {"data01": [[2432.2819906999357, 20.5762996673584], [2433.2157755000517, 20.622800827026367], [2433.2633911999874, 20.80940055847168], [2434.2862963001244, 20.83679962158203], [2434.2872453997843, 20.703899383544922], [2434.3252431000583, 20.758399963378906], [2437.279745399952, 20.57659912109375], [2438.301400499884, 20.542200088500977], [2439.245150499977, 20.486900329589844], [2439.303298600018, 20.11720085144043], [2439.3042477001436, 20.33799934387207], [2440.284560199827, 20.51609992980957], [2440.3293055999093, 20.267799377441406], [2441.219386599958, 20.585100173950195], [2441.299085599836, 20.30500030517578], [2441.3074884000234, 20.136499404907227], [2442.2195255002007, 20.550800323486328], [2443.196562500205, 20.22760009765625], [2443.2845717999153, 20.404699325561523], [2443.2984722000547, 20.398500442504883], [2444.1754282000475, 20.395700454711914], [2444.352534700185, 20.614500045776367], [2445.2590855997987, 20.151399612426758], [2445.2657869998366, 20.02829933166504], [2446.180717600044, 19.808399200439453], [2446.3434490999207, 19.723400115966797], [2447.177326399833, 19.89780044555664], [2447.1790277999826, 19.943500518798828], [2447.277430600021, 19.934999465942383], [2448.1857870002277, 19.704599380493164], [2448.349027799908, 19.22209930419922], [2449.242719899863, 19.62929916381836], [2449.2436689999886, 19.688800811767578], [2449.278287000023, 19.675600051879883], [2450.1847105999477, 19.591299057006836], [2450.3442361000925, 18.898500442504883], [2451.217754600104, 19.533300399780273], [2451.249085600022, 19.39419937133789], [2452.238472199999, 19.622299194335938], [2452.3253704002127, 19.126399993896484], [2455.2623610999435, 19.622499465942383], [2457.1847105999477, 20.359800338745117], [2457.2232638997957, 20.592899322509766], [2457.2242129999213, 20.503599166870117], [2458.201319400221, 20.647199630737305], [2458.2232985999435, 20.692800521850586], [2459.1970254997723, 20.785499572753906], [2459.1979629998095, 20.826000213623047], [2459.2385300998576, 20.685100555419922], [2460.221527799964, 20.600200653076172], [2460.2449536998756, 20.444299697875977], [2461.216504599899, 20.662200927734375], [2461.2538772998378, 20.518600463867188], [2463.1982176001184, 20.611299514770508], [2463.218530099839, 20.687400817871094], [2464.2377431001514, 20.447500228881836], [2464.261411999818, 19.73710060119629], [2469.186168999877, 20.587200164794922], [2469.194664400071, 20.457000732421875], [2470.1851968001574, 20.714500427246094], [2470.202696800232, 20.681299209594727], [2471.1966204000637, 20.621999740600586], [2471.21732639987, 20.556800842285156], [2472.217581000179, 20.452199935913086], [2473.218807899859, 20.10580062866211], [2474.2003240999766, 20.258100509643555], [2474.2149768997915, 20.15239906311035], [2477.2022222001106, 19.88949966430664], [2477.20319439983, 19.798799514770508], [2477.2690624999814, 19.547399520874023], [2479.218645799905, 19.730899810791016], [2480.200868099928, 19.868900299072266], [2480.201840300113, 19.786500930786133], [2480.237905099988, 19.56599998474121], [2481.196238399949, 19.8075008392334], [2481.2659490997903, 19.243099212646484], [2482.216643500142, 19.59950065612793], [2483.2419560002163, 19.385299682617188], [2484.1949420999736, 19.97570037841797], [2484.195879600011, 19.97599983215332], [2486.2011921000667, 20.46030044555664], [2502.1805671001785, 19.822599411010742], [2507.1870602001436, 19.62470054626465], [2507.1998610999435, 19.519500732421875]], "data02": [[2432.319849499967, 20.477699279785156], [2433.2884491002187, 20.61520004272461], [2433.402939800173, 20.327499389648438], [2434.249421299901, 20.723600387573242], [2434.250358799938, 20.65719985961914], [2434.261088000145, 20.51799964904785], [2435.214571800083, 19.592300415039062], [2437.2172685000114, 20.622699737548828], [2438.2167361001484, 20.4906005859375], [2439.258495400194, 20.13610076904297], [2439.2594329002313, 20.363300323486328], [2439.275613400154, 20.403799057006836], [2440.264120399952, 20.561599731445312], [2440.3727778000757, 19.901599884033203], [2441.270046299789, 20.165800094604492], [2441.4154281998053, 19.488000869750977], [2441.4159027999267, 19.173999786376953], [2442.247615700122, 20.534700393676758], [2442.2546064998023, 20.464599609375], [2443.218391200062, 20.387399673461914], [2443.2193403001875, 20.422800064086914], [2443.2422337997705, 20.409900665283203], [2444.26765049994, 20.440000534057617], [2444.333402799908, 20.409500122070312], [2445.2200462999754, 20.09630012512207], [2445.2209838000126, 20.058399200439453], [2445.2481597000733, 19.992399215698242], [2446.260555599816, 19.885299682617188], [2446.2785880002193, 19.786300659179688], [2447.2988542001694, 19.83209991455078], [2447.3405324001797, 19.822200775146484], [2447.3414814998396, 19.91029930114746], [2448.2377198999748, 19.9281005859375], [2448.2807638999075, 19.577800750732422], [2449.3059954000637, 19.733600616455078], [2449.306932900101, 19.81060028076172], [2449.3497338001616, 19.453899383544922], [2450.247037000023, 19.477699279785156], [2450.3635648000054, 18.86079978942871], [2451.3037847001106, 19.553300857543945], [2451.3047337997705, 19.517799377441406], [2451.3447106000967, 19.190799713134766], [2452.1803008997813, 19.378799438476562], [2452.3607522998936, 18.93120002746582], [2455.2821527998894, 19.61949920654297], [2455.2830902999267, 19.511699676513672], [2456.2986110998318, 19.861799240112305], [2456.334432899952, 19.800199508666992], [2457.307187499944, 19.9143009185791], [2457.3206829000264, 19.74340057373047], [2457.321631900035, 19.793500900268555], [2458.1861227001064, 20.522300720214844], [2458.3707292000763, 19.451200485229492], [2459.3432638999075, 19.947900772094727], [2459.3442013999447, 19.929399490356445], [2459.3602546001785, 19.724700927734375], [2460.2626852001995, 20.38920021057129], [2460.2758101997897, 20.219999313354492], [2461.284560199827, 20.321300506591797], [2461.2991781998426, 20.27589988708496], [2462.1928008999676, 20.58799934387207], [2462.202152799815, 20.60740089416504], [2463.242893499788, 20.373300552368164], [2463.259259299841, 20.346099853515625], [2464.218634299934, 18.777799606323242], [2464.2195832999423, 18.892000198364258], [2469.282037000172, 19.91790008544922], [2469.3217823999003, 20.05940055847168], [2470.290960600134, 20.103099822998047], [2470.2946875002235, 20.327299118041992], [2471.288275499828, 20.273399353027344], [2471.3081249999814, 20.278900146484375], [2472.32024310017, 19.856300354003906], [2473.240185199771, 20.01259994506836], [2473.255740699824, 19.957300186157227], [2475.2439468000084, 20.08340072631836], [2477.187743099872, 19.917800903320312], [2477.3081943998113, 19.127700805664062], [2479.291840299964, 19.545299530029297], [2479.3032754999585, 19.371200561523438], [2480.3047801000066, 19.151899337768555], [2480.305729200132, 19.07309913635254], [2481.2782638999633, 19.452999114990234], [2481.296932899859, 18.912700653076172], [2482.302152799908, 19.239900588989258], [2483.265196800232, 19.398000717163086], [2483.2784258998, 19.34000015258789], [2484.2800694000907, 19.377300262451172], [2484.281006900128, 19.384599685668945], [2489.2758912001736, 19.665000915527344]], "data03": [[2433.2991088000126, 19.87150001525879], [2437.198449099902, 20.00510025024414], [2438.275752299931, 19.81089973449707], [2439.1936110998504, 19.63249969482422], [2442.309571799822, 19.819499969482422], [2446.2402431000955, 19.36370086669922], [2449.3221875000745, 19.168500900268555], [2452.1947685000487, 19.316699981689453], [2456.2851272998378, 19.62470054626465], [2459.2619444001466, 19.767200469970703], [2463.1832985999063, 19.846099853515625], [2466.18432869995, 19.72599983215332], [2469.2439468000084, 19.868099212646484], [2472.2375810001977, 19.857200622558594], [2476.227488399949, 19.669700622558594], [2482.277002300136, 19.225400924682617], [2504.2248031999916, 18.819299697875977], [2508.2135994997807, 18.91710090637207]], "data04": [[2462.2231250000186, 19.941726684570312], [2462.2231250000186, 19.941726684570312], [2462.224062500056, 19.767595291137695], [2462.224062500056, 19.767595291137695], [2462.259386599995, 19.882835388183594], [2483.1949420999736, 19.89780044555664], [2484.268877299968, 19.404499053955078], [2486.202129600104, 19.50650978088379], [2489.225173600018, 18.89747428894043], [2499.1972453999333, 18.104995727539062], [2500.206087999977, 18.05975341796875], [2500.206087999977, 18.05975341796875], [2500.220856499858, 18.048690795898438], [2501.202789399773, 18.02460289001465], [2501.202789399773, 18.02460289001465], [2501.214363399893, 18.032550811767578], [2502.203541699797, 18.076576232910156], [2503.1855902997777, 18.048145294189453], [2503.1855902997777, 18.048145294189453], [2503.200069400016, 17.99009895324707], [2505.1991897998378, 17.97524642944336], [2509.2008218001574, 18.078153610229492], [2510.19565969985, 18.090232849121094]], "data05": [[0.0, 0.0]], "data06": [[0.0325448347921413, 0.9587564916330065, 0.9152481246393538, 0.8717397576457011, 0.8282313906520485]], "data07": [[0.011990202291841515, 0.8028851702250432], [0.23237012041588878, 0.8028851702250432], [0.23579589249927208, 0.8028851702250432], [0.23579589249927208, 0.8086555106751299], [0.23579589249927208, 0.9798038084246969], [0.23579589249927208, 0.9855741488747836], [0.23237012041588878, 0.9855741488747836], [0.011990202291841515, 0.9855741488747836], [0.008564430208458235, 0.9855741488747836], [0.008564430208458235, 0.9798038084246969], [0.008564430208458235, 0.8086555106751299], [0.008564430208458235, 0.8028851702250432], [0.011990202291841515, 0.8028851702250432]]}, "id": "el609685509501392", "plugins": [{"type": "reset"}, {"type": "zoom", "button": true, "enabled": false}, {"type": "boxzoom", "button": true, "enabled": false}, {"type": "htmltooltip", "id": "el609685509147856", "labels": ["MJD: 60432.281990699936<br>Maglim: 20.5762996673584", "MJD: 60433.21577550005<br>Maglim: 20.622800827026367", "MJD: 60433.26339119999<br>Maglim: 20.80940055847168", "MJD: 60434.286296300124<br>Maglim: 20.83679962158203", "MJD: 60434.287245399784<br>Maglim: 20.703899383544922", "MJD: 60434.32524310006<br>Maglim: 20.758399963378906", "MJD: 60437.27974539995<br>Maglim: 20.57659912109375", "MJD: 60438.301400499884<br>Maglim: 20.542200088500977", "MJD: 60439.24515049998<br>Maglim: 20.486900329589844", "MJD: 60439.30329860002<br>Maglim: 20.11720085144043", "MJD: 60439.30424770014<br>Maglim: 20.33799934387207", "MJD: 60440.28456019983<br>Maglim: 20.51609992980957", "MJD: 60440.32930559991<br>Maglim: 20.267799377441406", "MJD: 60441.21938659996<br>Maglim: 20.585100173950195", "MJD: 60441.299085599836<br>Maglim: 20.30500030517578", "MJD: 60441.30748840002<br>Maglim: 20.136499404907227", "MJD: 60442.2195255002<br>Maglim: 20.550800323486328", "MJD: 60443.196562500205<br>Maglim: 20.22760009765625", "MJD: 60443.284571799915<br>Maglim: 20.404699325561523", "MJD: 60443.298472200055<br>Maglim: 20.398500442504883", "MJD: 60444.17542820005<br>Maglim: 20.395700454711914", "MJD: 60444.352534700185<br>Maglim: 20.614500045776367", "MJD: 60445.2590855998<br>Maglim: 20.151399612426758", "MJD: 60445.26578699984<br>Maglim: 20.02829933166504", "MJD: 60446.180717600044<br>Maglim: 19.808399200439453", "MJD: 60446.34344909992<br>Maglim: 19.723400115966797", "MJD: 60447.17732639983<br>Maglim: 19.89780044555664", "MJD: 60447.17902779998<br>Maglim: 19.943500518798828", "MJD: 60447.27743060002<br>Maglim: 19.934999465942383", "MJD: 60448.18578700023<br>Maglim: 19.704599380493164", "MJD: 60448.34902779991<br>Maglim: 19.22209930419922", "MJD: 60449.24271989986<br>Maglim: 19.62929916381836", "MJD: 60449.24366899999<br>Maglim: 19.688800811767578", "MJD: 60449.27828700002<br>Maglim: 19.675600051879883", "MJD: 60450.18471059995<br>Maglim: 19.591299057006836", "MJD: 60450.34423610009<br>Maglim: 18.898500442504883", "MJD: 60451.217754600104<br>Maglim: 19.533300399780273", "MJD: 60451.24908560002<br>Maglim: 19.39419937133789", "MJD: 60452.2384722<br>Maglim: 19.622299194335938", "MJD: 60452.32537040021<br>Maglim: 19.126399993896484", "MJD: 60455.26236109994<br>Maglim: 19.622499465942383", "MJD: 60457.18471059995<br>Maglim: 20.359800338745117", "MJD: 60457.223263899796<br>Maglim: 20.592899322509766", "MJD: 60457.22421299992<br>Maglim: 20.503599166870117", "MJD: 60458.20131940022<br>Maglim: 20.647199630737305", "MJD: 60458.22329859994<br>Maglim: 20.692800521850586", "MJD: 60459.19702549977<br>Maglim: 20.785499572753906", "MJD: 60459.19796299981<br>Maglim: 20.826000213623047", "MJD: 60459.23853009986<br>Maglim: 20.685100555419922", "MJD: 60460.221527799964<br>Maglim: 20.600200653076172", "MJD: 60460.244953699876<br>Maglim: 20.444299697875977", "MJD: 60461.2165045999<br>Maglim: 20.662200927734375", "MJD: 60461.25387729984<br>Maglim: 20.518600463867188", "MJD: 60463.19821760012<br>Maglim: 20.611299514770508", "MJD: 60463.21853009984<br>Maglim: 20.687400817871094", "MJD: 60464.23774310015<br>Maglim: 20.447500228881836", "MJD: 60464.26141199982<br>Maglim: 19.73710060119629", "MJD: 60469.18616899988<br>Maglim: 20.587200164794922", "MJD: 60469.19466440007<br>Maglim: 20.457000732421875", "MJD: 60470.18519680016<br>Maglim: 20.714500427246094", "MJD: 60470.20269680023<br>Maglim: 20.681299209594727", "MJD: 60471.196620400064<br>Maglim: 20.621999740600586", "MJD: 60471.21732639987<br>Maglim: 20.556800842285156", "MJD: 60472.21758100018<br>Maglim: 20.452199935913086", "MJD: 60473.21880789986<br>Maglim: 20.10580062866211", "MJD: 60474.20032409998<br>Maglim: 20.258100509643555", "MJD: 60474.21497689979<br>Maglim: 20.15239906311035", "MJD: 60477.20222220011<br>Maglim: 19.88949966430664", "MJD: 60477.20319439983<br>Maglim: 19.798799514770508", "MJD: 60477.26906249998<br>Maglim: 19.547399520874023", "MJD: 60479.218645799905<br>Maglim: 19.730899810791016", "MJD: 60480.20086809993<br>Maglim: 19.868900299072266", "MJD: 60480.20184030011<br>Maglim: 19.786500930786133", "MJD: 60480.23790509999<br>Maglim: 19.56599998474121", "MJD: 60481.19623839995<br>Maglim: 19.8075008392334", "MJD: 60481.26594909979<br>Maglim: 19.243099212646484", "MJD: 60482.21664350014<br>Maglim: 19.59950065612793", "MJD: 60483.241956000216<br>Maglim: 19.385299682617188", "MJD: 60484.19494209997<br>Maglim: 19.97570037841797", "MJD: 60484.19587960001<br>Maglim: 19.97599983215332", "MJD: 60486.20119210007<br>Maglim: 20.46030044555664", "MJD: 60502.18056710018<br>Maglim: 19.822599411010742", "MJD: 60507.18706020014<br>Maglim: 19.62470054626465", "MJD: 60507.19986109994<br>Maglim: 19.519500732421875"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685509721616", "labels": ["MJD: 60432.31984949997<br>Maglim: 20.477699279785156", "MJD: 60433.28844910022<br>Maglim: 20.61520004272461", "MJD: 60433.40293980017<br>Maglim: 20.327499389648438", "MJD: 60434.2494212999<br>Maglim: 20.723600387573242", "MJD: 60434.25035879994<br>Maglim: 20.65719985961914", "MJD: 60434.261088000145<br>Maglim: 20.51799964904785", "MJD: 60435.21457180008<br>Maglim: 19.592300415039062", "MJD: 60437.21726850001<br>Maglim: 20.622699737548828", "MJD: 60438.21673610015<br>Maglim: 20.4906005859375", "MJD: 60439.258495400194<br>Maglim: 20.13610076904297", "MJD: 60439.25943290023<br>Maglim: 20.363300323486328", "MJD: 60439.275613400154<br>Maglim: 20.403799057006836", "MJD: 60440.26412039995<br>Maglim: 20.561599731445312", "MJD: 60440.372777800076<br>Maglim: 19.901599884033203", "MJD: 60441.27004629979<br>Maglim: 20.165800094604492", "MJD: 60441.415428199805<br>Maglim: 19.488000869750977", "MJD: 60441.41590279993<br>Maglim: 19.173999786376953", "MJD: 60442.24761570012<br>Maglim: 20.534700393676758", "MJD: 60442.2546064998<br>Maglim: 20.464599609375", "MJD: 60443.21839120006<br>Maglim: 20.387399673461914", "MJD: 60443.21934030019<br>Maglim: 20.422800064086914", "MJD: 60443.24223379977<br>Maglim: 20.409900665283203", "MJD: 60444.26765049994<br>Maglim: 20.440000534057617", "MJD: 60444.33340279991<br>Maglim: 20.409500122070312", "MJD: 60445.220046299975<br>Maglim: 20.09630012512207", "MJD: 60445.22098380001<br>Maglim: 20.058399200439453", "MJD: 60445.24815970007<br>Maglim: 19.992399215698242", "MJD: 60446.260555599816<br>Maglim: 19.885299682617188", "MJD: 60446.27858800022<br>Maglim: 19.786300659179688", "MJD: 60447.29885420017<br>Maglim: 19.83209991455078", "MJD: 60447.34053240018<br>Maglim: 19.822200775146484", "MJD: 60447.34148149984<br>Maglim: 19.91029930114746", "MJD: 60448.237719899975<br>Maglim: 19.9281005859375", "MJD: 60448.28076389991<br>Maglim: 19.577800750732422", "MJD: 60449.305995400064<br>Maglim: 19.733600616455078", "MJD: 60449.3069329001<br>Maglim: 19.81060028076172", "MJD: 60449.34973380016<br>Maglim: 19.453899383544922", "MJD: 60450.24703700002<br>Maglim: 19.477699279785156", "MJD: 60450.363564800005<br>Maglim: 18.86079978942871", "MJD: 60451.30378470011<br>Maglim: 19.553300857543945", "MJD: 60451.30473379977<br>Maglim: 19.517799377441406", "MJD: 60451.3447106001<br>Maglim: 19.190799713134766", "MJD: 60452.18030089978<br>Maglim: 19.378799438476562", "MJD: 60452.360752299894<br>Maglim: 18.93120002746582", "MJD: 60455.28215279989<br>Maglim: 19.61949920654297", "MJD: 60455.28309029993<br>Maglim: 19.511699676513672", "MJD: 60456.29861109983<br>Maglim: 19.861799240112305", "MJD: 60456.33443289995<br>Maglim: 19.800199508666992", "MJD: 60457.307187499944<br>Maglim: 19.9143009185791", "MJD: 60457.32068290003<br>Maglim: 19.74340057373047", "MJD: 60457.321631900035<br>Maglim: 19.793500900268555", "MJD: 60458.186122700106<br>Maglim: 20.522300720214844", "MJD: 60458.370729200076<br>Maglim: 19.451200485229492", "MJD: 60459.34326389991<br>Maglim: 19.947900772094727", "MJD: 60459.344201399945<br>Maglim: 19.929399490356445", "MJD: 60459.36025460018<br>Maglim: 19.724700927734375", "MJD: 60460.2626852002<br>Maglim: 20.38920021057129", "MJD: 60460.27581019979<br>Maglim: 20.219999313354492", "MJD: 60461.28456019983<br>Maglim: 20.321300506591797", "MJD: 60461.29917819984<br>Maglim: 20.27589988708496", "MJD: 60462.19280089997<br>Maglim: 20.58799934387207", "MJD: 60462.202152799815<br>Maglim: 20.60740089416504", "MJD: 60463.24289349979<br>Maglim: 20.373300552368164", "MJD: 60463.25925929984<br>Maglim: 20.346099853515625", "MJD: 60464.218634299934<br>Maglim: 18.777799606323242", "MJD: 60464.21958329994<br>Maglim: 18.892000198364258", "MJD: 60469.28203700017<br>Maglim: 19.91790008544922", "MJD: 60469.3217823999<br>Maglim: 20.05940055847168", "MJD: 60470.290960600134<br>Maglim: 20.103099822998047", "MJD: 60470.29468750022<br>Maglim: 20.327299118041992", "MJD: 60471.28827549983<br>Maglim: 20.273399353027344", "MJD: 60471.30812499998<br>Maglim: 20.278900146484375", "MJD: 60472.32024310017<br>Maglim: 19.856300354003906", "MJD: 60473.24018519977<br>Maglim: 20.01259994506836", "MJD: 60473.255740699824<br>Maglim: 19.957300186157227", "MJD: 60475.24394680001<br>Maglim: 20.08340072631836", "MJD: 60477.18774309987<br>Maglim: 19.917800903320312", "MJD: 60477.30819439981<br>Maglim: 19.127700805664062", "MJD: 60479.291840299964<br>Maglim: 19.545299530029297", "MJD: 60479.30327549996<br>Maglim: 19.371200561523438", "MJD: 60480.30478010001<br>Maglim: 19.151899337768555", "MJD: 60480.30572920013<br>Maglim: 19.07309913635254", "MJD: 60481.27826389996<br>Maglim: 19.452999114990234", "MJD: 60481.29693289986<br>Maglim: 18.912700653076172", "MJD: 60482.30215279991<br>Maglim: 19.239900588989258", "MJD: 60483.26519680023<br>Maglim: 19.398000717163086", "MJD: 60483.2784258998<br>Maglim: 19.34000015258789", "MJD: 60484.28006940009<br>Maglim: 19.377300262451172", "MJD: 60484.28100690013<br>Maglim: 19.384599685668945", "MJD: 60489.275891200174<br>Maglim: 19.665000915527344"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685615761936", "labels": ["MJD: 60433.29910880001<br>Maglim: 19.87150001525879", "MJD: 60437.1984490999<br>Maglim: 20.00510025024414", "MJD: 60438.27575229993<br>Maglim: 19.81089973449707", "MJD: 60439.19361109985<br>Maglim: 19.63249969482422", "MJD: 60442.30957179982<br>Maglim: 19.819499969482422", "MJD: 60446.240243100096<br>Maglim: 19.36370086669922", "MJD: 60449.322187500075<br>Maglim: 19.168500900268555", "MJD: 60452.19476850005<br>Maglim: 19.316699981689453", "MJD: 60456.28512729984<br>Maglim: 19.62470054626465", "MJD: 60459.26194440015<br>Maglim: 19.767200469970703", "MJD: 60463.183298599906<br>Maglim: 19.846099853515625", "MJD: 60466.18432869995<br>Maglim: 19.72599983215332", "MJD: 60469.24394680001<br>Maglim: 19.868099212646484", "MJD: 60472.2375810002<br>Maglim: 19.857200622558594", "MJD: 60476.22748839995<br>Maglim: 19.669700622558594", "MJD: 60482.277002300136<br>Maglim: 19.225400924682617", "MJD: 60504.22480319999<br>Maglim: 18.819299697875977", "MJD: 60508.21359949978<br>Maglim: 18.91710090637207"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "htmltooltip", "id": "el609685615760784", "labels": ["MJD: 60462.22312500002<br>Mag: 19.941726684570312", "MJD: 60462.22312500002<br>Mag: 19.941726684570312", "MJD: 60462.224062500056<br>Mag: 19.767595291137695", "MJD: 60462.224062500056<br>Mag: 19.767595291137695", "MJD: 60462.259386599995<br>Mag: 19.882835388183594", "MJD: 60483.19494209997<br>Mag: 19.89780044555664", "MJD: 60484.26887729997<br>Mag: 19.404499053955078", "MJD: 60486.202129600104<br>Mag: 19.50650978088379", "MJD: 60489.22517360002<br>Mag: 18.89747428894043", "MJD: 60499.19724539993<br>Mag: 18.104995727539062", "MJD: 60500.20608799998<br>Mag: 18.05975341796875", "MJD: 60500.20608799998<br>Mag: 18.05975341796875", "MJD: 60500.22085649986<br>Mag: 18.048690795898438", "MJD: 60501.20278939977<br>Mag: 18.02460289001465", "MJD: 60501.20278939977<br>Mag: 18.02460289001465", "MJD: 60501.21436339989<br>Mag: 18.032550811767578", "MJD: 60502.2035416998<br>Mag: 18.076576232910156", "MJD: 60503.18559029978<br>Mag: 18.048145294189453", "MJD: 60503.18559029978<br>Mag: 18.048145294189453", "MJD: 60503.200069400016<br>Mag: 17.99009895324707", "MJD: 60505.19918979984<br>Mag: 17.97524642944336", "MJD: 60509.20082180016<br>Mag: 18.078153610229492", "MJD: 60510.19565969985<br>Mag: 18.090232849121094"], "targets": null, "hoffset": 0, "voffset": 10}, {"type": "interactive_legend", "element_ids": [["el609685615760784"], ["el609685509147856", "el609685509721616", "el609685615761936"]], "labels": ["Alerts", "Limits"], "ax": null, "alpha_unsel": 0.2, "alpha_over": 1.0, "start_visible": [true, true], "font_size": 10, "legend_offset": [0, 0]}]});
+            })
+         });
+}
+</script>

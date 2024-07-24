@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}User Classifications{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Classifications</h2>
+    {% if classifications %}
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Object</th>
+                <th>Classification</th>
+                <th>Modify</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for classification in classifications %}
+            <tr>
+                <td><a href="{{ url_for('classify_source', source_id=classification.source_id) }}">{{ classification.source_id }}</a></td>
+                <td>{{ classification.classification }}</td>
+                <td>
+                    <button type="button" class="btn btn-info btn-sm" onclick="window.location.href='{{ url_for('classify_source', source_id=classification.source_id) }}'">Edit</button>
+                    <form action="{{ url_for('delete_classification', classification_id=classification.id) }}" method="post" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+               
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        No classifications yet, <a href="{{ url_for('random_transient') }}" class="alert-link">click here</a> to start classifying.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -131,7 +131,30 @@
     iframe {
         border: none;
     }
-    
+    .position-relative {
+    position: relative;
+}
+
+    /* Position the zoom buttons absolutely within the container */
+    .zoom-buttons {
+        position: absolute;
+        bottom: 30px; /* Adjust as needed */
+        right: 30px; /* Adjust as needed */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    /* Ensure the zoom buttons are styled appropriately */
+    .zoom-buttons .btn {
+        padding: 2px 5px; /* Adjust padding to decrease height */
+        font-size: 12px; /* Adjust font size to make the button smaller */
+        height: auto; /* Ensure the height is auto-adjusted */
+        border-radius: 4px; /* Adjust border radius if needed */
+        margin-bottom: 5px; /* Adjust spacing between the buttons */
+        width: 100px; /* Set a specific width for the buttons */
+        background: white;
+    }
 </style>
 
 <body>
@@ -158,32 +181,91 @@
 
     <!-- Main content container -->
     <div class="container-fluid">
-        <!-- Name -->
-        <!-- <p></p>
-        <h1>{{ source_id }}</h1> -->
         <!-- Left section with primary data and Light Curve -->
         <div class="row">
                 <!-- Location -->
                 <div class="col-lg-8">
                     <p></p>
+                    <!-- Name -->
                     <h1>{{ source_id }}</h1>
                     <p><div class="btn-group" role="group" aria-label="Basic example">
                         <a class="btn btn-outline-secondary" href="https://fritz.science/source/{{ source_id }}" target="_blank">Fritz</a>
+                        <a class="btn btn-outline-secondary" href="https://alerce.online/object/{{ source_id }}" target="_blank">Alerce</a>
+                        <a class="btn btn-outline-secondary" href="https://lasair-ztf.lsst.ac.uk/objects/{{ source_id }}" target="_blank">Lasair</a>
                     </div></p>
-                    <p><strong>RA:</strong> {{ ra }}</p>
-                    <p><strong>Dec:</strong> {{ dec }}</p>
-                    <p><strong>Scatter Separation:</strong> {{ scat_sep|round(4) }}</p>
-                    <p><strong>Galactic (l, b):</strong> {{ galactic_l|round(4) }}, {{ galactic_b|round(4) }}</p>
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info-tab-pane" aria-selected="true">Info</button>
+                        </li>
+                        {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="DRB-tab" data-bs-toggle="tab" data-bs-target="#DRB" type="button" role="tab" aria-controls="DRB-tab-pane" aria-selected="false">DRB</button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <div class="tab-content" id="myTabContent">
+                        <p></p>
+                        <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab" tabindex="0">
+                            <p><strong>RA:</strong> {{ ra }}</p>
+                            <p><strong>Dec:</strong> {{ dec }}</p>
+                            <p><strong>Scatter Separation:</strong> {{ scat_sep|round(4) }}</p>
+                            <p><strong>Galactic (l, b):</strong> {{ galactic_l|round(4) }}, {{ galactic_b|round(4) }}</p>
+                            <p><strong>Time from first to last detection:</strong> {{ span|round(4) }} days</p>
+                        </div>
+                        {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
+                        <div class="tab-pane fade" id="DRB" role="tabpanel" aria-labelledby="DRB-tab" tabindex="0">
+                            <p><strong>Min:</strong> {{ min_drb|round(4) }}</p>
+                            <p><strong>Max:</strong> {{ max_drb|round(4) }}</p>
+                            <p><strong>Median:</strong> {{ med_drb|round(4) }}</p>
+                            <p><strong>Average:</strong> {{ avg_drb|round(4) }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
                     <!-- Cutouts from ZTF -->
                     {% if ztf_cutout %}
-                        <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img-thumbnail">
+                    <ul class="nav nav-tabs" id="plotTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="first-tab" data-bs-toggle="tab" data-bs-target="#first" type="button" role="tab" aria-controls="first-tab-pane" aria-selected="true">First</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="last-tab" data-bs-toggle="tab" data-bs-target="#last" type="button" role="tab" aria-controls="last-tab-pane" aria-selected="false">Last</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="median-tab" data-bs-toggle="tab" data-bs-target="#median" type="button" role="tab" aria-controls="median-tab-pane" aria-selected="false">Median</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="sn-tab" data-bs-toggle="tab" data-bs-target="#sn" type="button" role="tab" aria-controls="sn-tab-pane" aria-selected="false">Highest S/N</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="highdrb-tab" data-bs-toggle="tab" data-bs-target="#highdrb" type="button" role="tab" aria-controls="highdrb-tab-pane" aria-selected="false">Highest DRB</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="cutoutTabsContent">
+                        <p></p>
+                        <div class="tab-pane fade show active" id="first" role="tabpanel" aria-labelledby="first-tab" tabindex="0">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
+                        <div class="tab-pane fade" id="last" role="tabpanel" aria-labelledby="last-tab" tabindex="0">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
+                        <div class="tab-pane fade" id="median" role="tabpanel" aria-labelledby="median-tab" tabindex="0">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
+                        <div class="tab-pane fade" id="sn" role="tabpanel" aria-labelledby="sn-tab" tabindex="0">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[3]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
+                        <div class="tab-pane fade" id="highdrb" role="tabpanel" aria-labelledby="highdrb-tab" tabindex="0">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[4]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
                     {% endif %}
+                    </div> 
                     <!-- Buttons to Switch ZTF Cutouts -->
-                    <div class="btn-group-vertical mt-2 justify-content-center" role="toolbar" aria-label="ZTF Image Switcher">
+                    <!-- <div class="btn-group-vertical mt-2 justify-content-center" role="toolbar" aria-label="ZTF Image Switcher">
                         {% for i in range(1, 4) %}
                             <button id="btn-ztf{{ i }}" class="btn btn-outline-secondary btn-ztf" onclick="switchZTFImage('ztf{{ i }}')">Alert {{ i }}</button>
                         {% endfor %}
-                    </div>
+                    </div> -->
                 </div>
                         
                 
@@ -200,11 +282,9 @@
                         {% if ps1_cutout %}
                             <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}" class="img-thumbnail" style="max-width: 100%; height: auto;">
                         {% elif ls_cutout %}
-                        {% if ls_cutout %}
                             <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ls_cutout) }}" alt="LS Cutout for {{ source_id }}" class="img-thumbnail" style="max-width: 100%; height: auto;">
                         {% else %}
                         <p>No Image</p>
-                        {% endif %}
                         {% endif %}
 
                     </div>
@@ -223,153 +303,168 @@
                 <!-- Light Curve Plot -->
             <div class="container-fluid">
                 <div class="row">
+                    
                     <div class="col-7-5">
-                        <iframe id="light-curve-small" src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="90%" height="420" style="border: 0px solid black"></iframe>
-                        <iframe id="light-curve-large" src="{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}" width="100%" height="620" style="display: none; border: 0px solid black"></iframe>
-                        <br> 
-                        <div class="btn-toolbar">
-                            <div class = "vlass-button"></div>
-                                <div>
-                                    <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
-                                        <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
-                                    </form>
-                                </div>
-                            <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
+                        <ul class="nav nav-tabs" id="plotTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="lc-tab" data-bs-toggle="tab" data-bs-target="#lc" type="button" role="tab" aria-controls="lc-tab-pane" aria-selected="true">Photometry</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="xmatch-tab" data-bs-toggle="tab" data-bs-target="#xmatch" type="button" role="tab" aria-controls="xmatch-tab-pane" aria-selected="false">Cross Match</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="wise-tab" data-bs-toggle="tab" data-bs-target="#wise" type="button" role="tab" aria-controls="wise-tab-pane" aria-selected="false">WISE</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="plotTabsContent">
+                            <p></p>
+                            <div class="tab-pane fade show active" id="lc" role="tabpanel" aria-labelledby="lc-tab" tabindex="0">
+                                <div class="position-relative">
+                                    <iframe id="light-curve-small" src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="90%" height="520" style="border: 0px solid black"></iframe>
+                                    <iframe id="light-curve-large" src="{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}" width="100%" height="620" style="display: none; border: 0px solid black"></iframe>
+                                    <div class="zoom-buttons">
+                                        <button id="detections" class="btn btn-outline-primary">Detections Span</button>
+                                        <button id="all" class="btn btn-outline-primary">All</button>
+                                    </div>
+                                </div>  
+                            </div>
+                            <div class="tab-pane fade" id="xmatch" role="tabpanel" aria-labelledby="xmatch-tab" tabindex="0">
+                                <div class="row">
+                                    <div class="col-7">
+                                        <iframe id="polar-plot-small" src="{{ url_for('static', filename='light_curves/' + polar_plot.split('/')[-1]) }}" width="100%" height="520"></iframe>
+                                        <iframe id="polar-plot-large" src="{{ url_for('static', filename='light_curves/' + polar_big_plot.split('/')[-1]) }}" width="100%" height="620"></iframe>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="container-fluid" style="margin-top: 50px">
+                                            <!-- SDSS Data -->
+                                            {% if sdss_data %}
+                                            <p><strong>SDSS (10 arcsec):</strong> Found SDSS spec-z: z={{ sdss_data.ssmagnr|round(2) }}; peak abs mag = {{ sdss_data.ssdistnr|round(2) }}</p>
+                                            {% else %}
+                                            <p><strong>SDSS (10 arcsec):</strong> No data found</p>
+                                            {% endif %}
+                                            <!-- Legacy Survey Data-->
+                                            {% if legacy_survey_data.empty %}
+                                            <p><strong>LegacySurvey:</strong> 0 sources in 3 arcsec</p>
+                                            {% else %}
+                                            {% set closest = legacy_survey_data.iloc[0] %}
+                                            <p><strong>LegacySurvey:</strong> {{ legacy_survey_data.shape[0] }} sources in 3 arcsec</p>
+                                            <p>Closest: d = {{ closest.sep_arcsec|round(2) }} arcsec, {{ closest.pa_degree|round(1) }} deg (east of north)</p>
+                                            <p>photoz={{ closest.z_phot_median|round(2) }} (68% bounds {{ closest.z_phot_l68|round(2) }}, {{ closest.z_phot_u68|round(2) }}), type={{ closest.type }}</p>
+                                            {% endif %}
+                                                <!-- PS1 Data -->
+                                                {% if not pan_starrs_df.empty %}
+                                                <p><strong>PS1:</strong> {{ pan_starrs_df.shape[0] }} source{{ pan_starrs_df.shape[0] > 1 and 's' or '' }} in 3 arcsec</p>
+                                                {% for index, row in pan_starrs_df.iterrows() %}
+                                                    <p>Source {{ loop.index }}: d = {{ row.distpsnr1|round(2) }} arcsec, sgscore1={{ row.sgscore1 }}</p>
+                                                {% endfor %}
+                                            {% else %}
+                                                <p><strong>PS1:</strong> No data found</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="btn-toolbar mt-2 " role="toolbar" aria-label="Zoom Controls" style="margin-left: 15px" >
+                                            <button id="zoom-in" class="btn btn-outline-primary">2x2</button>
+                                            <button id="zoom-out" class="btn btn-outline-primary">10x10</button>
+                                        </div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="tab-pane fade show" id="wise" role="tabpanel" aria-labelledby="wise-tab" tabindex="0">
+                                {% if wise_plot %}
+                                    <iframe id="wise-plot" src="{{ url_for('static', filename='wise_plots/' + wise_plot.split('/')[-1]) }}" width="100%" height="620"></iframe>
+                                {% else %}
+                                <p>No WISE Data</p>
+                                {% endif %}
+                            </div>
                         </div>
+
+                        
                     </div>
                     <div class="col-4-5">
-                        <iframe id="polar-plot-small" src="{{ url_for('static', filename='light_curves/' + polar_plot.split('/')[-1]) }}" width="85%" height="420"></iframe>
-                        <iframe id="polar-plot-large" src="{{ url_for('static', filename='light_curves/' + polar_big_plot.split('/')[-1]) }}" width="100%" height="520"></iframe>
-                        <div class="btn-toolbar mt-2 justify-content-center" role="toolbar" aria-label="Zoom Controls" style="margin-left: -60px;">
-                            <button id="zoom-in" class="btn btn-outline-primary">2x2</button>
-                            <button id="zoom-out" class="btn btn-outline-primary">10x10</button>
-                        </div>
-                        <div class="container-fluid">
-                        <!-- SDSS Data -->
-                        {% if sdss_data %}
-                        <p><strong>SDSS (10 arcsec):</strong> Found SDSS spec-z: z={{ sdss_data.ssmagnr|round(2) }}; peak abs mag = {{ sdss_data.ssdistnr|round(2) }}</p>
-                        {% else %}
-                        <p><strong>SDSS (10 arcsec):</strong> No data found</p>
-                        {% endif %}
-                        <!-- Legacy Survey Data-->
-                        {% if legacy_survey_data.empty %}
-                        <p><strong>LegacySurvey:</strong> 0 sources in 3 arcsec</p>
-                        {% else %}
-                        {% set closest = legacy_survey_data.iloc[0] %}
-                        <p><strong>LegacySurvey:</strong> {{ legacy_survey_data.shape[0] }} sources in 3 arcsec</p>
-                        <p>Closest: d = {{ closest.sep_arcsec|round(2) }} arcsec, {{ closest.pa_degree|round(1) }} deg (east of north)</p>
-                        <p>photoz={{ closest.z_phot_median|round(2) }} (68% bounds {{ closest.z_phot_l68|round(2) }}, {{ closest.z_phot_u68|round(2) }}), type={{ closest.type }}</p>
-                        {% endif %}
-                            <!-- PS1 Data -->
-                            {% if not pan_starrs_df.empty %}
-                            <p><strong>PS1:</strong> {{ pan_starrs_df.shape[0] }} source{{ pan_starrs_df.shape[0] > 1 and 's' or '' }} in 3 arcsec</p>
-                            {% for index, row in pan_starrs_df.iterrows() %}
-                                <p>Source {{ loop.index }}: d = {{ row.distpsnr1|round(2) }} arcsec, sgscore1={{ row.sgscore1 }}</p>
-                            {% endfor %}
-                        {% else %}
-                            <p><strong>PS1:</strong> No data found</p>
-                        {% endif %}
-                    </div>
-                    </div>
-                </div>
-            </div>
-    
-                <div id="image-section" class="vlass-images">
-                    {% for image in vlass_images %}
-                        <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
-                    {% endfor %}
-                </div>
-
-                <!-- Form for setting the classification for each transient -->
-                <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
-                    <input type="hidden" name="classification" id="classification">
-                    <input type="hidden" name="confidence" id="confidence">  
-                        <div class="classify-text">
-                            <h3>Classify</h3>
-                        </div> 
-                        <!-- Transient Classification buttons -->
-                        <!-- <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-                            <div class="input-group">
-                                <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
-                                    <button type="button" onclick="setClassification('FBOT')" class="btn btn-outline-primary">FBOT</button>
-                                    <button type="button" onclick="setClassification('Afterglow')" class="btn btn-outline-primary">Afterglow</button>
-                                    <button type="button" data-toggle="collapse" data-target="#supernova-subtypes" onclick="setClassification('Supernova')" class="btn btn-outline-primary">Supernova</button>
-                                    <button type="button" onclick="setClassification('Quasar')" class="btn btn-outline-primary">Quasar</button>
-                                    <button type="button" onclick="setClassification('Star')" class="btn btn-outline-primary">Star</button>
-                                    <button type="button" onclick="setClassification('Junk (Artifact)')" class="btn btn-outline-primary">Junk (Artifact)</button>
-                                    <button type="button" onclick="setClassification('Unclear')" class="btn btn-outline-primary">Unclear</button>
-                                </div>
-                            </div>
-                        </div> -->
-                
-                        <!-- Transient Classification buttons -->
-                        <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-                            <div class="input-group">
-                                <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
-                                    <button type="button" onclick="setClassification(this, 'SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
-                                    <button type="button" onclick="setClassification(this, 'AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
-                                    <button type="button" onclick="setClassification(this, 'CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
-                                    <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
-                                    <button type="button" onclick="setClassification(this, 'Fast')" class="btn btn-outline-primary" title="Very fast candidate transient">Fast</button>
-                                    <button type="button" onclick="setClassification(this, 'Slow')" class="btn btn-outline-primary" title="Very slow candidate transient">Slow</button>
-                                    <button type="button" onclick="setBold(this)" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button>
-                                </div>
-                            </div>
-                        </div>
+                        <br/><br/>
+                        <!-- Form for setting the classification for each transient -->
+                        <form method="post" action="{{ url_for('classify', source_id=source_id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="classification" id="classification">
+                            <input type="hidden" name="confidence" id="confidence">  
+                                
+                                <div class="classify-text">
+                                    <h3>Classify</h3>
+                                </div> 
                         
-                        <!-- Other Buttons -->
-                        <div class="collapse" id="other-types">
-                            <div class="dropdown container-fluid">
-                                <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
-                                    Other Types
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'QSO')">QSO</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
-                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
-                                </ul>
-                            </div>
-                        </div>
-                
-                        <!-- Supernova Subclass Buttons -->
-                        <!-- <div class="collapse" id="supernova-subtypes">
-                            <div class="card card-body">
-                                <h5>Supernova Subtypes</h5>
-                                <div class="btn-group mb-2" role="group" aria-label="Supernova subtypes">
-                                    <button type="button" onclick="setSubtype('Type Ia')" class="btn btn-outline-warning">Type Ia</button>
-                                    <button type="button" onclick="setSubtype('Type Ib')" class="btn btn-outline-warning">Type Ib</button>
-                                    <button type="button" onclick="setSubtype('Type Ic')" class="btn btn-outline-warning">Type Ic</button>
-                                    <button type="button" onclick="setSubtype('Type II-P')" class="btn btn-outline-warning">Type II-P</button>
-                                    <button type="button" onclick="setSubtype('Type II-L')" class="btn btn-outline-warning">Type II-L</button>
+                                <!-- Transient Classification buttons -->
+                                <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
+                                    <div class="input-group">
+                                        <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
+                                            <button type="button" onclick="setClassification(this, 'SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
+                                            <button type="button" onclick="setClassification(this, 'AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
+                                            <button type="button" onclick="setClassification(this, 'CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
+                                            <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
+                                            <button type="button" onclick="setClassification(this, 'Fast')" class="btn btn-outline-primary" title="Very fast candidate transient">Fast</button>
+                                            <button type="button" onclick="setClassification(this, 'Slow')" class="btn btn-outline-primary" title="Very slow candidate transient">Slow</button>
+                                            <button type="button" onclick="setBold(this)" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div> -->
-                
-                        <!-- Confidence Level Buttons -->
-                        <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
-                            <div class="input-group">
-                                <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
-                                    <button type="button" onclick="setConfidence(this, 'Not confident')" class="btn btn-outline-secondary">Not confident</button>
-                                    <button type="button" onclick="setConfidence(this, 'Confident')" class="btn btn-outline-secondary">Confident</button>
-                                    <button type="button" onclick="setConfidence(this, 'Certain')" class="btn btn-outline-secondary">Certain</button>
+                                
+                                <!-- Other Buttons -->
+                                <div class="collapse" id="other-types">
+                                    <div class="dropdown container-fluid">
+                                        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                                            Other Types
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'QSO')">QSO</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
+                                        </ul>
+                                    </div>
                                 </div>
+                        
+                                <!-- Confidence Level Buttons -->
+                                <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
+                                    <div class="d-flex align-items-center w-100">
+                                        <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
+                                            <button type="button" onclick="setConfidence(this, 'Not confident')" class="btn btn-outline-secondary">Not confident</button>
+                                            <button type="button" onclick="setConfidence(this, 'Confident')" class="btn btn-outline-secondary">Confident</button>
+                                            <button type="button" onclick="setConfidence(this, 'Certain')" class="btn btn-outline-secondary">Certain</button>
+                                        </div>
+                                        <div class="ms-auto" style="margin-left: 20px; margin-top: -8px;">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="btn-toolbar container-fluid mt-3" role="toolbar" style="margin-left: -35px">
+                                <div class = "vlass-button"></div>
+                                    <div>
+                                        <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
+                                            <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
+                                        </form>
+                                    </div>
+                                <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
                             </div>
                         </div>
-                        <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-                            <button type="submit" class="btn btn-primary mt-3">Submit</button>
-                        </div>
-                    </form>
+                    </div>
+                </div>
+       
+            
+            <div id="image-section" class="vlass-images">
+                {% for image in vlass_images %}
+                    <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
+                {% endfor %}
+            </div>
             
     </div>
     
@@ -382,6 +477,7 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script> 
         // Scripts for setting classifications/confidence levels 
         function setClassification(button, value) {
@@ -449,25 +545,25 @@
             } 
         }
 
-        function switchZTFImage(cutout) {
-            var ztfCutouts = {
-                'ztf1': "{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}",
-                'ztf2': "{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}",
-                'ztf3': "{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}"
-            };
-            var imgElement = document.getElementById('ztf-image');
+        // function switchZTFImage(cutout) {
+        //     var ztfCutouts = {
+        //         'ztf1': "{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}",
+        //         'ztf2': "{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}",
+        //         'ztf3': "{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}"
+        //     };
+        //     var imgElement = document.getElementById('ztf-image');
 
-            imgElement.src = ztfCutouts[cutout];
-            imgElement.alt = 'ZTF Cutout for {{ source_id }}';
+        //     imgElement.src = ztfCutouts[cutout];
+        //     imgElement.alt = 'ZTF Cutout for {{ source_id }}';
 
-           // Update button styles
-           document.querySelectorAll('.btn-ztf').forEach(btn => {
-                btn.classList.remove('btn-secondary');
-                btn.classList.add('btn-outline-secondary');
-            });
-            document.getElementById('btn-' + cutout).classList.add('btn-secondary');
-            document.getElementById('btn-' + cutout).classList.remove('btn-outline-secondary');
-        }
+        //    // Update button styles
+        //    document.querySelectorAll('.btn-ztf').forEach(btn => {
+        //         btn.classList.remove('btn-secondary');
+        //         btn.classList.add('btn-outline-secondary');
+        //     });
+        //     document.getElementById('btn-' + cutout).classList.add('btn-secondary');
+        //     document.getElementById('btn-' + cutout).classList.remove('btn-outline-secondary');
+        // }
     
     function adjustIframe() {
         var smallScreenIframeLC = document.getElementById('light-curve-small');
@@ -491,17 +587,27 @@
     function zoomPolarPlot(zoomLevel) {
     var smallPolarPlotIframe = document.getElementById('polar-plot-small');
     var largePolarPlotIframe = document.getElementById('polar-plot-large');
+    var smallLightCurveIframe = document.getElementById('light-curve-small');
+    var largeLightCurveIframe = document.getElementById('light-curve-large');
+    var smallLightSrc = smallLightCurveIframe.src;
+    var largeLightSrc = largeLightCurveIframe.src;
     var smallSrc = smallPolarPlotIframe.src;
     var largeSrc = largePolarPlotIframe.src;
 
         if (zoomLevel === 'in') {
             smallPolarPlotIframe.src = smallSrc.replace(/polar_plot_out\.html/, 'polar_plot.html');
             largePolarPlotIframe.src = largeSrc.replace(/big_polar_plot_out\.html/, 'big_polar_plot.html');
+            smallLightCurveIframe.src = smallLightSrc.replace(/light_curve_zoomed\.html/, 'light_curve.html');
+            largeLightCurveIframe.src = largeLightSrc.replace(/big_light_curve_zoomed\.html/, 'big_light_curve.html');
         } else if (zoomLevel === 'out') {
             smallPolarPlotIframe.src = smallSrc.replace(/polar_plot\.html/, 'polar_plot_out.html');
             largePolarPlotIframe.src = largeSrc.replace(/big_polar_plot\.html/, 'big_polar_plot_out.html');
+            smallLightCurveIframe.src = smallLightSrc.replace(/light_curve\.html/, 'light_curve_zoomed.html');
+            largeLightCurveIframe.src = largeLightSrc.replace(/big_light_curve\.html/, 'big_light_curve_zoomed.html');
         }
     }
+
+
 
     document.getElementById('zoom-in').addEventListener('click', function() {
         zoomPolarPlot('in');
@@ -510,6 +616,25 @@
     document.getElementById('zoom-out').addEventListener('click', function() {
         zoomPolarPlot('out');
     });
+
+    document.getElementById('all').addEventListener('click', function() {
+        zoomPolarPlot('in');
+    });
+
+    document.getElementById('detections').addEventListener('click', function() {
+        zoomPolarPlot('out');
+    });
+
+    const triggerTabList = document.querySelectorAll('#myTab button');
+    triggerTabList.forEach(triggerEl => {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+
+        triggerEl.addEventListener('click', event => {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+
     // Initial check
     adjustIframe();
     // Listen for resize events
