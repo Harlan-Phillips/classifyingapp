@@ -237,9 +237,11 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="sn-tab" data-bs-toggle="tab" data-bs-target="#sn" type="button" role="tab" aria-controls="sn-tab-pane" aria-selected="false">Highest S/N</button>
                         </li>
+                        {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="highdrb-tab" data-bs-toggle="tab" data-bs-target="#highdrb" type="button" role="tab" aria-controls="highdrb-tab-pane" aria-selected="false">Highest DRB</button>
                         </li>
+                        {% endif %}
                     </ul>
                     <div class="tab-content" id="cutoutTabsContent">
                         <p></p>
@@ -255,9 +257,11 @@
                         <div class="tab-pane fade" id="sn" role="tabpanel" aria-labelledby="sn-tab" tabindex="0">
                             <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[3]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
                         </div>
+                        {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
                         <div class="tab-pane fade" id="highdrb" role="tabpanel" aria-labelledby="highdrb-tab" tabindex="0">
                             <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[4]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
                         </div>
+                        {% endif %}
                     {% endif %}
                     </div> 
                     <!-- Buttons to Switch ZTF Cutouts -->

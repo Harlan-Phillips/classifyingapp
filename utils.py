@@ -15,6 +15,7 @@ import os
 from collections import Counter, defaultdict
 import random
 import time
+import os
 
 # Image handling modules
 from PIL import Image
@@ -36,13 +37,23 @@ from ztfquery.utils import stamps
 
 import mastcasjobs
 
+def read_secrets():
+    secrets_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'secrets.txt')
+    with open(secrets_file, 'r') as f:
+        secrets = f.read().splitlines()
+    return secrets
+
+secrets = read_secrets()
+username_kowalski = secrets[0]
+password_kowalski = secrets[1]
+wsid_mastcasjobs = secrets[2]
+password_mastcasjobs = secrets[3]
+
 def logon():
     """ Log onto Kowalski """
-    username = "user"
-    password = "pass"
     s = Kowalski(
         protocol='https', host='kowalski.caltech.edu', port=443,
-            verbose=False, username=username, password=password)
+        verbose=False, username=username_kowalski, password=password_kowalski)
     return s
 
 def get_dets(s, name):
@@ -560,7 +571,7 @@ def filter_and_plot_alerts(s, output_dir, object_id):
         last_detection = df_sorted.iloc[-1]
         median_detection = df_sorted.iloc[len(df_sorted) // 2]
         highest_sn_detection = df.loc[df['scorr'].idxmax()]
-        highest_drb_detection = df.loc[df['drb'].idxmax()]
+        highest_drb_detection = df.loc[df['drb'].idxmax()] if 'drb' in df else None
 
         # Plot cutouts for each detection
         key_detections = {
@@ -568,8 +579,10 @@ def filter_and_plot_alerts(s, output_dir, object_id):
             'last': last_detection,
             'median': median_detection,
             'highest_snr': highest_sn_detection,
-            'highest_drb': highest_drb_detection
         }
+
+        if highest_drb_detection is not None:
+            key_detections['highest_drb'] = highest_drb_detection
 
         for key, detection in key_detections.items():
             alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
@@ -1236,10 +1249,8 @@ def get_ps1_host(s, name):
 
 def get_ps1_photoz(ra, dec, radius=10):
     """ Find the photoz for a PS1 object within 10 arcseconds """
-    wsid = "user"
-    pwd = "pass"
     jobs = mastcasjobs.MastCasJobs(
-            userid=wsid, password=pwd, context="HLSP_PS1_STRM")
+            userid=wsid_mastcasjobs, password=password_mastcasjobs, context="HLSP_PS1_STRM")
     query = """select o.objID, o.uniquePspsOBid, o.raMean, o.decMean,
             o.class, o.prob_Galaxy, o.prob_Star, o.prob_QSO,
             o.extrapolation_Class, o.cellDistance_Class, o.cellID_Class,

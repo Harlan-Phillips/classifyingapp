@@ -35,6 +35,12 @@
                 <ul class="navbar-nav mr-auto mb-2 mb-lg-0">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
+                        <form class="d-flex position-relative search-bar" method="POST" action="{{ url_for('index') }}">
+                            {{ search_form.hidden_tag() }}
+                            <input class="form-control me-2" id="search-bar" type="search" placeholder="Search" aria-label="Search" name="source_id">
+                        </form>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('list_transients') }}">Transients</a>
                     </li>
                     <li class="nav-item">
@@ -42,12 +48,6 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('random_transient') }}">Random</a>
-                    </li>
-                    <li class="nav-item">
-                        <form class="d-flex position-relative search-bar" method="POST" action="{{ url_for('index') }}">
-                            {{ search_form.hidden_tag() }}
-                            <input class="form-control me-2" id="search-bar" type="search" placeholder="Search" aria-label="Search" name="source_id">
-                        </form>
                     </li>
                     {% endif %}
                 </ul>
