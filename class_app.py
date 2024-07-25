@@ -25,7 +25,7 @@ from wtforms.validators import DataRequired, Email, EqualTo
 # Imports from local files
 from models import db, User, Transient, Classification
 from utils import (
-    get_pos, get_galactic, get_lc, logon, plot_ztf_cutout, 
+    get_pos, get_galactic, get_lc, logon,  
     plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
     xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
     plot_big_light_curve, plot_big_polar_coordinates, 

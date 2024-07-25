@@ -494,22 +494,28 @@ def make_triplet(alert, normalize=False):
     triplet[:, :, 2] = cutout_dict['difference']
     return triplet
 
-def plot_triplet(triplet):
-    """
-    Plot the triplet images (science, template, difference) with enhanced settings.
-    """
-    fig, axes = plt.subplots(1, 3, figsize=(6.3, 2.1))
+
+def plot_triplet(tr):
+    """ From Dima's Kowalski tutorial """
+    fig,axarr = plt.subplots(1,3,figsize=(5.5, 2.1), dpi=120)
     titles = ['Science', 'Reference', 'Difference']
-
-    # Normalize the images for better contrast
-    for ax, img, title in zip(axes, triplet.transpose((2, 0, 1)), titles):
-        img = (img - np.min(img)) / (np.max(img) - np.min(img))
-        ax.imshow(img, cmap='gray', origin='lower')
-        ax.set_title(title)
+    u_scale_factor = [40, 40, 10]
+    l_scale_factor = [30, 40, 1]
+    for ii,ax in enumerate(axarr):
         ax.axis('off')
-
-    plt.tight_layout()
+        data = tr[:,:,ii]
+        dat = data.flatten()
+        sig = np.median(np.abs(dat-np.median(dat)))
+        median = np.median(data)
+        ax.imshow(
+            data, origin='upper', cmap=plt.cm.bone,
+            vmin=median-l_scale_factor[ii]*sig,
+            vmax=median+u_scale_factor[ii]*sig)
+        #norm=LogNorm())
+        ax.set_title(titles[ii], fontsize = 12)
+    fig.subplots_adjust(wspace=0)
     return fig  # Return the figure to allow saving
+
 
 def plot_ztf_cutout(s, alert, cutout_type='science'):
     """ Plot the ZTF cutouts: science, reference, difference """

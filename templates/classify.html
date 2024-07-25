@@ -324,7 +324,7 @@
                             <p></p>
                             <div class="tab-pane fade show active" id="lc" role="tabpanel" aria-labelledby="lc-tab" tabindex="0">
                                 <div class="position-relative">
-                                    <iframe id="light-curve-small" src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="90%" height="520" style="border: 0px solid black"></iframe>
+                                    <iframe id="light-curve-small" src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="100%" height="520" style="border: 0px solid black"></iframe>
                                     <iframe id="light-curve-large" src="{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}" width="100%" height="620" style="display: none; border: 0px solid black"></iframe>
                                     <div class="zoom-buttons">
                                         <button id="detections" class="btn btn-outline-primary">Detections Span</button>
@@ -334,11 +334,11 @@
                             </div>
                             <div class="tab-pane fade" id="xmatch" role="tabpanel" aria-labelledby="xmatch-tab" tabindex="0">
                                 <div class="row">
-                                    <div class="col-7">
+                                    <div class="col-8">
                                         <iframe id="polar-plot-small" src="{{ url_for('static', filename='light_curves/' + polar_plot.split('/')[-1]) }}" width="100%" height="520"></iframe>
                                         <iframe id="polar-plot-large" src="{{ url_for('static', filename='light_curves/' + polar_big_plot.split('/')[-1]) }}" width="100%" height="620"></iframe>
                                     </div>
-                                    <div class="col-5">
+                                    <div class="col-4">
                                         <div class="container-fluid" style="margin-top: 50px">
                                             <!-- SDSS Data -->
                                             {% if sdss_data %}
