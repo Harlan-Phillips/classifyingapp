@@ -1,5 +1,5 @@
 # Astropy modules
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, GeocentricTrueEcliptic
 from astropy.io import fits
 from astropy import units as u
 from astropy.time import Time
@@ -44,6 +44,7 @@ def read_secrets():
     return secrets
 
 secrets = read_secrets()
+
 username_kowalski = secrets[0]
 password_kowalski = secrets[1]
 wsid_mastcasjobs = secrets[2]
@@ -92,6 +93,17 @@ def get_dets(s, name):
     except:
         return []
     
+def alert_table(detections):
+    flattened_data = [item['candidate'] for item in detections]
+    df = pd.DataFrame(flattened_data)
+
+    # If you need to convert to CSV for any reason
+    csv_data = df.to_csv(index=False)
+
+    print(df)
+    # Display the DataFrame
+    return df
+        
 def get_drb(s,name,dets):
     """ Calculate the median position from alerts, and the scatter """
     det_alerts = dets
@@ -172,6 +184,22 @@ def get_galactic(ra,dec):
     galactic_l = c.galactic.l.deg
     galactic_b = c.galactic.b.deg
     return galactic_l, galactic_b
+
+def get_ecliptic(ra, dec):
+    """ Convert to ecliptic coordinates, ra and dec given in decimal degrees """
+    # Create a SkyCoord object with RA and Dec
+    c = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+    
+    obstime = Time(58000, format='mjd')
+
+    # Convert to Geocentric True Ecliptic coordinates with obstime
+    ecliptic_coord = c.transform_to(GeocentricTrueEcliptic(obstime=obstime))
+    
+    # Extract ecliptic longitude and latitude
+    ecliptic_lon = ecliptic_coord.lon.deg
+    ecliptic_lat = ecliptic_coord.lat.deg
+    
+    return ecliptic_lon, ecliptic_lat
 
 
 def get_lc(s, name):
@@ -373,94 +401,6 @@ def get_prv_dets_forced(s, name):
             return query_result['default']['data'][0]['fp_hists']
     return None
 
-
-# def make_triplet(alert, normalize=False):
-#     """
-#     Get the science, reference, and difference image for a given alert
-#     Takes in an alert packet
-#     """
-#     cutout_dict = dict()
-
-#     for cutout in ('science', 'template', 'difference'):
-#         tmpstr = 'cutout' + cutout.capitalize()
-#         cutout_data = alert[tmpstr]['stampData']
-
-#         # unzip
-#         with gzip.open(io.BytesIO(cutout_data), 'rb') as f:
-#             with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
-#                 data = hdu[0].data
-#                 # replace nans with zeros
-#                 cutout_dict[cutout] = np.nan_to_num(data)
-#                 # normalize
-#                 if normalize:
-#                     cutout_dict[cutout] /= np.linalg.norm(cutout_dict[cutout])
-
-#         # pad to 63x63 if smaller
-#         shape = cutout_dict[cutout].shape
-#         if shape != (63, 63):
-#             cutout_dict[cutout] = np.pad(cutout_dict[cutout], [(0, 63 - shape[0]), (0, 63 - shape[1])],
-#                                          mode='constant', constant_values=1e-9)
-
-#     triplet = np.zeros((63, 63, 3))
-#     triplet[:, :, 0] = cutout_dict['science']
-#     triplet[:, :, 1] = cutout_dict['template']
-#     triplet[:, :, 2] = cutout_dict['difference']
-#     return triplet
-
-# def plot_triplet(triplet):
-#     """
-#     Plot the triplet images (science, template, difference) with enhanced settings.
-#     """
-#     fig, axes = plt.subplots(1, 3, figsize=(6.3, 2.1))
-#     titles = ['Science', 'Reference', 'Difference']
-
-#     # Normalize the images for better contrast
-#     for ax, img, title in zip(axes, triplet.transpose((2, 0, 1)), titles):
-#         # Normalize the image for better display quality
-#         img = (img - np.min(img)) / (np.max(img) - np.min(img))
-#         ax.imshow(img, cmap='gray', origin='lower')
-#         ax.set_title(title)
-#         ax.axis('off')
-
-#     plt.tight_layout()
-#     return fig  # Return the figure to allow saving
-
-# def plot_ztf_cutout(s, ddir, name):
-#     """ Plot the ZTF cutouts: science, reference, difference """
-#     fnames = []
-#     need_query = False
-
-#     for i in range(3):
-#         fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
-#         if not os.path.isfile(fname):
-#             need_query = True
-#         fnames.append(fname)
-
-#     if need_query:
-#         q0 = {
-#             "query_type": "find",
-#             "query": {
-#                 "catalog": "ZTF_alerts",
-#                 "filter": {"objectId": name}
-#             },
-#             "kwargs": {
-#                 "limit": 3,
-#             }
-#         }
-#         out = s.query(q0)
-        
-#         for i, alert in enumerate(out["default"]["data"]):
-#             fname = "%s/%s_triplet%d.png" % (ddir, name, i + 1)
-#             if not os.path.isfile(fname):
-#                 print(f"Processing {name} - Creating {fname}")
-#                 tr = make_triplet(alert)
-#                 fig = plot_triplet(tr)
-#                 fig.savefig(fname, bbox_inches="tight")
-#                 plt.close(fig)
-
-#     return fnames
-
-
 def make_triplet(alert, normalize=False):
     """
     Get the science, reference, and difference image for a given alert
@@ -578,6 +518,11 @@ def filter_and_plot_alerts(s, output_dir, object_id):
         median_detection = df_sorted.iloc[len(df_sorted) // 2]
         highest_sn_detection = df.loc[df['scorr'].idxmax()]
         highest_drb_detection = df.loc[df['drb'].idxmax()] if 'drb' in df else None
+        # lowest_drb_detection = df.loc[df['drb'].idxmin()] if 'drb' in df else None
+
+        # Select brightest g-band and r-band
+        brightest_g_detection = df.loc[(df['fid'] == 1) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 1].empty else None
+        brightest_r_detection = df.loc[(df['fid'] == 2) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 2].empty else None
 
         # Plot cutouts for each detection
         key_detections = {
@@ -589,6 +534,13 @@ def filter_and_plot_alerts(s, output_dir, object_id):
 
         if highest_drb_detection is not None:
             key_detections['highest_drb'] = highest_drb_detection
+            #key_detections['lowest_drb'] = lowest_drb_detection
+        
+        #if brightest_g_detection is not None:
+         #   key_detections['brightest_g'] = brightest_g_detection
+        
+       # if brightest_r_detection is not None:
+        #    key_detections['brightest_r'] = brightest_r_detection
 
         for key, detection in key_detections.items():
             alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
@@ -719,7 +671,7 @@ def plot_light_curve(lc, source_id, span=None):
         scatter.set_edgecolors(edgecolors)
 
         # Storing scatter plot references and labels for non-detections
-        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
+        labels = [f'MJD: {mjd + 58000:.5f}<br>Maglim: {maglim:.5f}<br>Filter: {filter_name}-band' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
         non_det_scatter_dict[scatter] = labels
         non_det_elements.append(scatter)
 
@@ -741,7 +693,7 @@ def plot_light_curve(lc, source_id, span=None):
                              fmt='none', color=color_map[filter_name], alpha=0.5)
         
         # Storing scatter plot references and labels
-        labels = [f'MJD: {mjd + 58000}<br>Mag: {mag}' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
+        labels = [f'MJD: {mjd + 58000:.5f}<br>Mag: {mag:.5f}<br>Filter: {filter_name}-band' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
         scatter_dict[scatter] = labels
     
    
@@ -776,6 +728,7 @@ def plot_light_curve(lc, source_id, span=None):
     
 
     # Finalize the plot
+    ax.tick_params(axis='both', which='major', labelsize=16)
     ax.set_xlabel('MJD - 58000', fontsize=16)
     ax.set_ylabel('Magnitude', fontsize=16)
     ax.set_title(f'Light Curve for {source_id}', fontsize=18)
@@ -887,7 +840,7 @@ def plot_big_light_curve(lc, source_id, span=None):
         scatter.set_edgecolors(edgecolors)
         
         # Storing scatter plot references and labels for non-detections
-        labels = [f'MJD: {mjd + 58000}<br>Maglim: {maglim}' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
+        labels = [f'MJD: {mjd + 58000:.5f}<br>Mag: {maglim:.5f}<br>Filter: {filter_name}-band' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
         non_det_scatter_dict[scatter] = labels
         non_det_elements.append(scatter)
 
@@ -909,7 +862,7 @@ def plot_big_light_curve(lc, source_id, span=None):
                              fmt='none', color=color_map[filter_name], alpha=0.5)
         
         # Storing scatter plot references and labels
-        labels = [f'MJD: {mjd + 58000}<br>Mag: {mag}' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
+        labels = [f'MJD: {mjd + 58000:.5f}<br>Mag: {mag:.5f}<br>Filter: {filter_name}-band' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
         scatter_dict[scatter] = labels
 
     # Adding tooltips for non-detections
@@ -942,6 +895,7 @@ def plot_big_light_curve(lc, source_id, span=None):
                 ax.set_xlim(detection_dates.min() - 0.5, detection_dates.max() + 0.5)
 
     # Finalize the plot
+    ax.tick_params(axis='both', which='major', labelsize=18)
     ax.set_xlabel('MJD - 58000', fontsize=20)
     ax.set_ylabel('Magnitude', fontsize=20)
     ax.set_title(f'Light Curve for {source_id}', fontsize=22)
@@ -955,8 +909,21 @@ def plot_big_light_curve(lc, source_id, span=None):
 
     custom_css = """
     <style>
-    body {font-size: 20px;}
-    .mpld3-tooltip {font-size: 18px;}
+    body {font-size: 16px;}
+    .mpld3-legend text { 
+        font-size: 18px; 
+        fill: #000000; 
+    }
+    .mpld3-legend rect { 
+        fill: #FFFFE0; 
+        stroke: #000000; 
+        opacity: 0.8; 
+    }
+    .mpld3-tooltip {
+        background-color: white;
+        color: black;
+        font-size: 20px;
+    }
     </style>
     """
     html_str = custom_css + html_str
@@ -1091,8 +1058,8 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
             
         
     # Central source
-    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient')  # Reduce marker size to 100
-    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient']))
+    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient Avg.')  # Reduce marker size to 100
+    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient Avg.']))
 
     # Add concentric circles
     circle1 = plt.Circle((0, 0), 3, color='blue', fill=False, alpha=0.1)  # Increase radius to 3 arcseconds
@@ -1183,8 +1150,8 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
             
         
     # Central source
-    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient')  # Reduce marker size to 100
-    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient']))
+    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient Avg.')  # Reduce marker size to 100
+    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient Avg.']))
 
     # Add concentric circles
     circle1 = plt.Circle((0, 0), 3, color='blue', fill=False, alpha=0.1)  # Increase radius to 3 arcseconds

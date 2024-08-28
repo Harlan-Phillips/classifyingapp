@@ -29,7 +29,8 @@ from utils import (
     plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
     xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
     plot_big_light_curve, plot_big_polar_coordinates, 
-    analyze_ps1_photoz, get_drb, get_span, plot_wise, filter_and_plot_alerts
+    analyze_ps1_photoz, get_drb, get_span, plot_wise, filter_and_plot_alerts, alert_table,
+    get_ecliptic
 )
 from vlass_utils import get_vlass_data, run_search
 
@@ -53,7 +54,7 @@ class_app.config['SECRET_KEY'] = 'your_secret_key_here'
 
 # Initialize CSRF Protection
 class_app.config['SECRET_KEY'] = 'your_secret_key_here'
-class_app.config['WTF_CSRF_ENABLED'] = True
+class_app.config['WTF_CSRF_ENABLED'] = True 
 
 csrf = CSRFProtect(class_app)
 
@@ -199,7 +200,7 @@ def classify(source_id):
     # Save to database
     db.session.commit()
     
-    flash('Your classification has been recorded.', 'success')
+    flash(f'Your classification for {source_id} as "{classification}" has been recorded.', 'success')
     return redirect(url_for('random_transient'))
 
 @class_app.route('/classify/<source_id>', methods=['GET'])
@@ -216,9 +217,14 @@ def classify_source(source_id):
         galactic_l, galactic_b = get_galactic(ra, dec)
         logging.debug(f"Galactic Coordinates - l: {galactic_l}, b: {galactic_b}")
 
+        ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
         
         dets = get_dets(kowalski_session, source_id) # Extract data from get_dets
         logging.debug(f"Detections: {dets}")
+
+        alerts_raw = alert_table(dets)
+        alerts_raw = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
+        alert_count = len(alerts_raw)
 
         med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, dets)
         logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
@@ -308,7 +314,7 @@ def classify_source(source_id):
         seen_sgscore1 = set()
         for det in dets:
             candidate = det['candidate']
-            if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and 'sgscore1' in candidate and candidate['sgscore1'] != -999.0:
+            if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and 'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and candidate['distpsnr1'] <= 3:
                 if candidate['sgscore1'] not in seen_sgscore1:
                     pan_starrs_data.append({
                         'distpsnr1': candidate['distpsnr1'],
@@ -407,7 +413,11 @@ def classify_source(source_id):
                            polar_big_plot=polar_big_plot_path,
                            polar_big_plot_out=polar_big_plot_path_out,
                            polar_plot_out=polar_plot_path_out,
-                           wise_plot=wise_filename
+                           wise_plot=wise_filename,
+                           raw_alerts=alerts_raw,
+                           alert_count=alert_count,
+                           ecliptic_lat=ecliptic_lat,
+                           ecliptic_lon=ecliptic_lon
                           )
     
 @class_app.route('/retrieve_vlass_data/<source_id>', methods=['POST'])

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <title>Transient Data</title>
@@ -155,6 +158,24 @@
         width: 100px; /* Set a specific width for the buttons */
         background: white;
     }
+    .table-responsive {
+        overflow-x: auto;
+        max-height: 400px;  /* Set a specific height for the table */
+    }
+
+    .table th, .table td {
+        white-space: nowrap;  /* Ensure text doesn't wrap */
+        overflow: hidden;
+        text-overflow: ellipsis;  /* Display ellipsis (...) for overflowed text */
+        max-width: 150px;  /* You can adjust this width based on your needs */
+    }
+
+    thead th {
+        position: sticky;
+        top: 0;
+        background-color: white;  /* Keep the header background white */
+        z-index: 1;
+    }
 </style>
 
 <body>
@@ -203,14 +224,76 @@
                         </li>
                         {% endif %}
                     </ul>
+
                     <div class="tab-content" id="myTabContent">
                         <p></p>
                         <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab" tabindex="0">
-                            <p><strong>RA:</strong> {{ ra }}</p>
-                            <p><strong>Dec:</strong> {{ dec }}</p>
-                            <p><strong>Scatter Separation:</strong> {{ scat_sep|round(4) }}</p>
-                            <p><strong>Galactic (l, b):</strong> {{ galactic_l|round(4) }}, {{ galactic_b|round(4) }}</p>
-                            <p><strong>Time from first to last detection:</strong> {{ span|round(4) }} days</p>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p><strong>RA:</strong> {{ ra }} <strong>Dec:</strong> {{ dec }}</p>
+                                    
+                                    <!-- Galactic Latitude Check -->
+                                    <p><strong>Galactic (l, b):</strong> 
+                                        {{ galactic_l|round(4) }}, 
+                                        {% if galactic_b < 12 %}
+                                            <span style="color:red;"><strong>{{ galactic_b|round(4) }}</strong></span>
+                                        {% else %}
+                                            {{ galactic_b|round(4) }}
+                                        {% endif %}
+                                    </p>
+                            
+                                    <!-- Ecliptic Latitude Check -->
+                                    <p><strong>Ecliptic (λ, β):</strong> 
+                                        {{ ecliptic_lon|round(4) }}, 
+                                        {% if ecliptic_lat < 8 %}
+                                            <span style="color:red;"><strong>{{ ecliptic_lat|round(4) }}</strong></span>
+                                        {% else %}
+                                            {{ ecliptic_lat|round(4) }}
+                                        {% endif %}
+                                    </p>
+                            
+                                    <!-- PS1 Crossmatch Check -->
+                                    {% if not pan_starrs_df.empty %}
+                                        {% set closest_source = pan_starrs_df.loc[pan_starrs_df['distpsnr1'].idxmin()] %}
+                                        <p><strong>PS1 Crossmatch:</strong> 
+                                            {% if closest_source['distpsnr1'] <= 2 and closest_source['sgscore1'] > 0.5 %}
+                                                <span style="color:red;"><strong>{{ closest_source['distpsnr1']|round(4) }}</strong></span>, 
+                                                sg-score: <span style="color:red;"><strong>{{ closest_source['sgscore1']|round(4) }}</strong></span>
+                                            {% elif closest_source['distpsnr1'] <= 1 and closest_source['sgscore1'] == 0.5 %}
+                                                <span style="color:red;"><strong>{{ closest_source['distpsnr1']|round(4) }}</strong></span>, 
+                                                sg-score: <span style="color:red;"><strong>{{ closest_source['sgscore1']|round(4) }}</strong></span>
+                                            {% else %}
+                                                {{ closest_source['distpsnr1']|round(4) }}, sg-score: {{ closest_source['sgscore1']|round(4) }}
+                                            {% endif %}
+                                        </p>
+                                    {% else %}
+                                        <p><strong>PS1 Crossmatch:</strong> No data found</p>
+                                    {% endif %}
+                                </div>
+                            
+                                <div class="col-6">
+                                    <!-- Number of Alerts -->
+                                    <p><strong>Number of alerts:</strong> {{ alert_count }} </p>
+                            
+                                    <!-- Scatter Separation Check -->
+                                    <p><strong>Scatter Separation:</strong> 
+                                        {% if scat_sep > 0.3 %}
+                                            <span style="color:red;"><strong>{{ scat_sep|round(4) }}</strong></span>
+                                        {% else %}
+                                            {{ scat_sep|round(4) }}
+                                        {% endif %}
+                                    </p>
+                            
+                                    <!-- Time from First to Last Detection Check -->
+                                    <p><strong>Time from first to last detection:</strong> 
+                                        {% if span < 0.5 %}
+                                            <span style="color:red;"><strong>{{ span|round(4) }}</strong></span> days
+                                        {% else %}
+                                            {{ span|round(4) }} days
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
                         <div class="tab-pane fade" id="DRB" role="tabpanel" aria-labelledby="DRB-tab" tabindex="0">
@@ -284,9 +367,9 @@
                     {% endif %}
                     <div class="text-center">
                         {% if ps1_cutout %}
-                            <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}" class="img-thumbnail" style="max-width: 100%; height: auto;">
+                            <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}" class="img" style="width:60%;">
                         {% elif ls_cutout %}
-                            <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ls_cutout) }}" alt="LS Cutout for {{ source_id }}" class="img-thumbnail" style="max-width: 100%; height: auto;">
+                            <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ls_cutout) }}" alt="LS Cutout for {{ source_id }}" class="img" style="width:60%">
                         {% else %}
                         <p>No Image</p>
                         {% endif %}
@@ -316,8 +399,13 @@
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="xmatch-tab" data-bs-toggle="tab" data-bs-target="#xmatch" type="button" role="tab" aria-controls="xmatch-tab-pane" aria-selected="false">Cross Match</button>
                             </li>
+                            {% if wise_plot %}
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="wise-tab" data-bs-toggle="tab" data-bs-target="#wise" type="button" role="tab" aria-controls="wise-tab-pane" aria-selected="false">WISE</button>
+                            </li>
+                            {% endif %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="table-tab" data-bs-toggle="tab" data-bs-target="#table" type="button" role="tab" aria-controls="table-tab-pane" aria-selected="false">Alert Packets</button>
                             </li>
                         </ul>
                         <div class="tab-content" id="plotTabsContent">
@@ -344,23 +432,23 @@
                                             {% if sdss_data %}
                                             <p><strong>SDSS (10 arcsec):</strong> Found SDSS spec-z: z={{ sdss_data.ssmagnr|round(2) }}; peak abs mag = {{ sdss_data.ssdistnr|round(2) }}</p>
                                             {% else %}
-                                            <p><strong>SDSS (10 arcsec):</strong> No data found</p>
+                                            <!-- <p><strong>SDSS (10 arcsec):</strong> No data found</p> -->
                                             {% endif %}
                                             <!-- Legacy Survey Data-->
                                             {% if legacy_survey_data.empty %}
-                                            <p><strong>LegacySurvey:</strong> 0 sources in 3 arcsec</p>
+                                            <p><strong>LegacySurvey:</strong> 0 sources in 10 arcsec</p>
                                             {% else %}
                                             {% set closest = legacy_survey_data.iloc[0] %}
-                                            <p><strong>LegacySurvey:</strong> {{ legacy_survey_data.shape[0] }} sources in 3 arcsec</p>
+                                            <p><strong>LegacySurvey:</strong> {{ legacy_survey_data.shape[0] }} sources in 10 arcsec</p>
                                             <p>Closest: d = {{ closest.sep_arcsec|round(2) }} arcsec, {{ closest.pa_degree|round(1) }} deg (east of north)</p>
                                             <p>photoz={{ closest.z_phot_median|round(2) }} (68% bounds {{ closest.z_phot_l68|round(2) }}, {{ closest.z_phot_u68|round(2) }}), type={{ closest.type }}</p>
                                             {% endif %}
-                                                <!-- PS1 Data -->
-                                                {% if not pan_starrs_df.empty %}
-                                                <p><strong>PS1:</strong> {{ pan_starrs_df.shape[0] }} source{{ pan_starrs_df.shape[0] > 1 and 's' or '' }} in 3 arcsec</p>
-                                                {% for index, row in pan_starrs_df.iterrows() %}
-                                                    <p>Source {{ loop.index }}: d = {{ row.distpsnr1|round(2) }} arcsec, sgscore1={{ row.sgscore1 }}</p>
-                                                {% endfor %}
+                                            <!-- PS1 Data -->
+                                            {% if not pan_starrs_df.empty %}
+                                            <p><strong>PS1:</strong> {{ pan_starrs_df.shape[0] }} source{{ pan_starrs_df.shape[0] > 1 and 's' or '' }} in 3 arcsec</p>
+                                            {% for index, row in pan_starrs_df.iterrows() %}
+                                                <p>Source {{ loop.index }}: d = {{ row.distpsnr1|round(2) }} arcsec, sgscore1={{ row.sgscore1 }}</p>
+                                            {% endfor %}
                                             {% else %}
                                                 <p><strong>PS1:</strong> No data found</p>
                                             {% endif %}
@@ -372,12 +460,50 @@
                                     </div>
                                 </div> 
                             </div>
+                            {% if wise_plot %}
                             <div class="tab-pane fade show" id="wise" role="tabpanel" aria-labelledby="wise-tab" tabindex="0">
-                                {% if wise_plot %}
-                                    <iframe id="wise-plot" src="{{ url_for('static', filename='wise_plots/' + wise_plot.split('/')[-1]) }}" width="100%" height="620"></iframe>
-                                {% else %}
-                                <p>No WISE Data</p>
-                                {% endif %}
+                                <iframe id="wise-plot" src="{{ url_for('static', filename='wise_plots/' + wise_plot.split('/')[-1]) }}" width="100%" height="620"></iframe>
+                            </div>
+                            {% endif %}
+                            <div class="tab-pane fade show" id="table" role="tabpanel" aria-labelledby="table-tab" tabindex="0">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover table-sm" style="table-layout: fixed;">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">JD</th>
+                                                <th scope="col">FID</th>
+                                                <th scope="col">Program ID</th>
+                                                <th scope="col">Field</th>
+                                                <th scope="col">RA</th>
+                                                <th scope="col">Dec</th>
+                                                <th scope="col">MagPSF</th>
+                                                <th scope="col">SigMagPSF</th>
+                                                <th scope="col">SSDistNR</th>
+                                                <th scope="col">SSMagNR</th>
+                                                <th scope="col">SGScore1</th>
+                                                <th scope="col">DistPSNR1</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for alert in raw_alerts %}
+                                            <tr>
+                                                <td data-toggle="tooltip" title="{{ alert.jd }}">{{ alert.jd }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.fid }}">{{ alert.fid }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.programid }}">{{ alert.programid }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.field }}">{{ alert.field }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.ra }}">{{ alert.ra }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.dec }}">{{ alert.dec }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.magpsf }}">{{ alert.magpsf }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.sigmapsf }}">{{ alert.sigmapsf }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.ssdistnr }}">{{ alert.ssdistnr }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.ssmagnr }}">{{ alert.ssmagnr }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.sgscore1 }}">{{ alert.sgscore1 }}</td>
+                                                <td data-toggle="tooltip" title="{{ alert.distpsnr1 }}">{{ alert.distpsnr1 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>                                
                             </div>
                         </div>
 
@@ -405,13 +531,36 @@
                                             <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
                                             <button type="button" onclick="setClassification(this, 'Fast')" class="btn btn-outline-primary" title="Very fast candidate transient">Fast</button>
                                             <button type="button" onclick="setClassification(this, 'Slow')" class="btn btn-outline-primary" title="Very slow candidate transient">Slow</button>
-                                            <button type="button" onclick="setBold(this)" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button>
+                                            <!-- <button type="button" onclick="setBold(this)" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button> -->
+                                            <div class="dropdown container-fluid">
+                                                <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)">
+                                                    Other Types
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'QSO')">QSO</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
+                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Other Buttons -->
-                                <div class="collapse" id="other-types">
+                                <!-- <div class="collapse" id="other-types">
                                     <div class="dropdown container-fluid">
                                         <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
                                             Other Types
@@ -430,19 +579,20 @@
                                             <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
                                             <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
                                             <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
                                             <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
                                             <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
                                         </ul>
                                     </div>
-                                </div>
+                                </div> -->
                         
                                 <!-- Confidence Level Buttons -->
                                 <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
                                     <div class="d-flex align-items-center w-100">
                                         <div class="btn-group mb-2 me-2" role="group" aria-label="Confidence levels">
-                                            <button type="button" onclick="setConfidence(this, 'Not confident')" class="btn btn-outline-secondary">Not confident</button>
+                                            <button type="button" onclick="setConfidence(this, 'Uncertain')" class="btn btn-outline-secondary">Uncertain</button>
+                                            <button type="button" onclick="setConfidence(this, 'Probable')" class="btn btn-outline-secondary">Probable</button>
                                             <button type="button" onclick="setConfidence(this, 'Confident')" class="btn btn-outline-secondary">Confident</button>
-                                            <button type="button" onclick="setConfidence(this, 'Certain')" class="btn btn-outline-secondary">Certain</button>
                                         </div>
                                         <div class="ms-auto" style="margin-left: 20px; margin-top: -8px;">
                                             <button type="submit" class="btn btn-primary">Submit</button>
@@ -643,6 +793,15 @@
     adjustIframe();
     // Listen for resize events
     window.addEventListener('resize', adjustIframe);
+
+    $(document).ready(function() {
+        $('.table').DataTable({
+            "scrollY": "400px",  // Set vertical scrolling height
+            "scrollCollapse": true,
+            "paging": false,  // Disable pagination
+            "autoWidth": false  // Disable automatic column width calculation
+        });
+    });
     </script>
 </body>
 </html>
