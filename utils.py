@@ -50,6 +50,27 @@ password_kowalski = secrets[1]
 wsid_mastcasjobs = secrets[2]
 password_mastcasjobs = secrets[3]
 
+# Reading data from CSV
+column_names = ['stars_x', 'stars_y', 'ellipticals_x', 'ellipticals_y', 'spirals_x', 'spirals_y',
+                'LIRGs_x', 'LIRGs_y', 'qsos_x', 'qsos_y']
+data = pd.read_csv('wpd_datasets.csv', names=column_names, skiprows=1)
+
+# Extracting the data for each group
+stars_x = data['stars_x'].dropna().tolist()
+stars_y = data['stars_y'].dropna().tolist()
+
+ellipticals_x = data['ellipticals_x'].dropna().tolist()
+ellipticals_y = data['ellipticals_y'].dropna().tolist()
+
+spirals_x = data['spirals_x'].dropna().tolist()
+spirals_y = data['spirals_y'].dropna().tolist()
+
+LIRGs_x = data['LIRGs_x'].dropna().tolist()
+LIRGs_y = data['LIRGs_y'].dropna().tolist()
+
+qsos_x = data['qsos_x'].dropna().tolist()
+qsos_y = data['qsos_y'].dropna().tolist()
+
 def logon():
     """ Log onto Kowalski """
     s = Kowalski(
@@ -518,11 +539,13 @@ def filter_and_plot_alerts(s, output_dir, object_id):
         median_detection = df_sorted.iloc[len(df_sorted) // 2]
         highest_sn_detection = df.loc[df['scorr'].idxmax()]
         highest_drb_detection = df.loc[df['drb'].idxmax()] if 'drb' in df else None
-        # lowest_drb_detection = df.loc[df['drb'].idxmin()] if 'drb' in df else None
+        lowest_drb_detection = df.loc[df['drb'].idxmin()] if 'drb' in df else None
 
         # Select brightest g-band and r-band
-        brightest_g_detection = df.loc[(df['fid'] == 1) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 1].empty else None
-        brightest_r_detection = df.loc[(df['fid'] == 2) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 2].empty else None
+        brightest_g_index = df.loc[(df['fid'] == 1) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 1].empty else None
+        brightest_g_detection = df.loc[brightest_g_index] if brightest_g_index is not None else None
+        brightest_r_index= df.loc[(df['fid'] == 2) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 2].empty else None
+        brightest_r_detection = df.loc[brightest_r_index] if brightest_r_index is not None else None
 
         # Plot cutouts for each detection
         key_detections = {
@@ -534,15 +557,20 @@ def filter_and_plot_alerts(s, output_dir, object_id):
 
         if highest_drb_detection is not None:
             key_detections['highest_drb'] = highest_drb_detection
-            #key_detections['lowest_drb'] = lowest_drb_detection
+            key_detections['lowest_drb'] = lowest_drb_detection
         
-        #if brightest_g_detection is not None:
-         #   key_detections['brightest_g'] = brightest_g_detection
+        if brightest_g_detection is not None:
+           key_detections['brightest_g'] = brightest_g_detection
         
-       # if brightest_r_detection is not None:
-        #    key_detections['brightest_r'] = brightest_r_detection
+        if brightest_r_detection is not None:
+            key_detections['brightest_r'] = brightest_r_detection
 
         for key, detection in key_detections.items():
+            print(f"Key: {key}")
+            print(f"JD: {detection['jd']}")
+            print(f"FID: {detection['fid']}")
+            print(f"DRB: {detection.get('drb', 'N/A')}")  # Safely get 'drb' in case it's not present
+            print("-" * 40)
             alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
             triplet = make_triplet(alert)
             fig = plot_triplet(triplet)
@@ -639,8 +667,6 @@ def plot_light_curve(lc, source_id, span=None):
     # Define colors and symbols
     color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
     marker_map = {'g': 's', 'r': 'o', 'i': 's'}
-    
-
     
     # Creating a dictionary to store scatter plot references
     scatter_dict = {}
@@ -1314,6 +1340,7 @@ def wise_xmatch(s, ra, dec, radius=3):
         return None, None, None
 
 def plot_wise(s, name, ra, dec, output_path):
+    # WISE data (RA, Dec, WISE magnitudes)
     ra, dec, wmag = wise_xmatch(s, ra, dec)
 
     if not ra or not dec or not wmag:
@@ -1323,28 +1350,39 @@ def plot_wise(s, name, ra, dec, output_path):
     if len(wmag) != 3:
         print("WISE magnitudes are incomplete.")
         return None
-    
+
     w1_w2 = wmag[0] - wmag[1]
     w2_w3 = wmag[1] - wmag[2]
 
-    x = np.linspace(-1, 5, 400)
-    y1 = 0.5 + (x - 3) * 0.1
-    y2 = -1.5 * x + 3.25
-
     fig, ax = plt.subplots(figsize=(8, 6))
-    scatter = ax.scatter(w1_w2, w2_w3, color='blue', label='WISE Source')
-    line1, = ax.plot(x, y1, label='y1 = 0.5 + (x-3) * 0.1', color='red', linestyle='--')
-    line2, = ax.plot(x, y2, label='y2 = -1.5 * x + 3.25', color='green', linestyle='--')
 
+    # Plot the WISE source data
+    scatter = ax.scatter(w1_w2, w2_w3, color='blue', label='WISE Source')
+
+    # Plot the data from the CSV
+    plt.fill(stars_x, stars_y, label='Stars', alpha=0.3)
+    plt.fill(ellipticals_x, ellipticals_y, label='Ellipticals', alpha=0.3)
+    plt.fill(spirals_x, spirals_y, label='Spirals', alpha=0.3)
+    plt.fill(LIRGs_x, LIRGs_y, label='LIRGs', alpha=0.3)
+    plt.fill(qsos_x, qsos_y, label='QSOs/Seyferts', alpha=0.3)
+
+    # Adding text labels for each group
+    plt.text(0.376, 0.376, 'Stars', fontsize=16, color='black', ha='center')
+    plt.text(0.696, 0.114, 'Ellipticals', fontsize=16, color='black', ha='center')
+    plt.text(2.036, 0.196, 'Spirals', fontsize=16, color='black', ha='center')
+    plt.text(4.895, 0.456, 'LIRGs', fontsize=16, color='black', ha='center')
+    plt.text(3.07, 1.276, 'QSOs/Seyferts', fontsize=16, color='black', ha='center')
+
+    # Set axis labels and title
     ax.set_xlabel('W1 - W2', fontsize=14)
     ax.set_ylabel('W2 - W3', fontsize=14)
     ax.set_title(f'WISE Color-Color Plot\n(RA: {ra:.5f}, Dec: {dec:.5f})', fontsize=16)
     ax.legend()
-    ax.grid(True)
+    ax.grid(alpha =.1)
 
+    # Tooltips and interactive plot
     tooltip = plugins.PointHTMLTooltip(scatter, labels=[f"RA: {ra:.5f}, Dec: {dec:.5f}<br>W1-W2: {w1_w2:.2f}, W2-W3: {w2_w3:.2f}"], css="background-color: white; color: black; font-size: 14px;")
     plugins.connect(fig, tooltip)
-    plugins.connect(fig, plugins.InteractiveLegendPlugin([scatter, line1, line2], ['Source', 'y1', 'y2']))
 
     html_str = mpld3.fig_to_html(fig)
     

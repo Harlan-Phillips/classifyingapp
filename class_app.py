@@ -7,11 +7,12 @@ from datetime import datetime
 from io import BytesIO
 import time
 import logging
+import threading
 
 import pandas as pd
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
+from flask import Flask, current_app, g, copy_current_request_context, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 from flask_sqlalchemy import SQLAlchemy
@@ -54,7 +55,7 @@ class_app.config['SECRET_KEY'] = 'your_secret_key_here'
 
 # Initialize CSRF Protection
 class_app.config['SECRET_KEY'] = 'your_secret_key_here'
-class_app.config['WTF_CSRF_ENABLED'] = True 
+class_app.config['WTF_CSRF_ENABLED'] = False 
 
 csrf = CSRFProtect(class_app)
 
@@ -63,6 +64,8 @@ db.init_app(class_app)
 login_manager = LoginManager()
 login_manager.init_app(class_app)
 login_manager.login_view = 'login'
+
+prefetched_data_store = {}
 
 # Define forms for search, registration, and login
 class SearchForm(FlaskForm):
@@ -210,6 +213,8 @@ def classify_source(source_id):
     try:
         logging.debug(f"Attempting to classify source: {source_id}")
         
+        threading.Thread(target=prefetch_next_transient_data, args=(kowalski_session,)).start()
+
         # Fetch positional and galactic data        
         ra, dec, scat_sep = get_pos(kowalski_session, source_id)
         logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
@@ -239,9 +244,12 @@ def classify_source(source_id):
         ztf_cutout_paths = [
             os.path.join(cutout_dir, f"{source_id}_first.png"),
             os.path.join(cutout_dir, f"{source_id}_last.png"),
-            os.path.join(cutout_dir, f"{source_id}_highest_drb.png"),
+            os.path.join(cutout_dir, f"{source_id}_highest_snr.png"),
             os.path.join(cutout_dir, f"{source_id}_median.png"),
-            os.path.join(cutout_dir, f"{source_id}_highest_snr.png")
+            os.path.join(cutout_dir, f"{source_id}_highest_drb.png"),
+            os.path.join(cutout_dir, f"{source_id}_brightest_g.png"),
+            os.path.join(cutout_dir, f"{source_id}_brightest_r.png"),
+            os.path.join(cutout_dir, f"{source_id}_lowest_drb.png")
         ]
         ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
         ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
@@ -273,11 +281,9 @@ def classify_source(source_id):
         ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout_paths if os.path.exists(path)]
         logging.debug(f"ZTF Cutout Basenames: {ztf_cutout_basenames}")
 
-        if len(ztf_cutout_basenames) != 5:
+        if len(ztf_cutout_basenames) != 8:
             ztf_cutout = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
             ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
-        
-        
 
         if os.path.exists(ps1_cutout_path):
             ps1_cutout_basename = f"{source_id}_ps1.png"
@@ -550,6 +556,11 @@ def export_test_transients():
 @login_required
 def random_transient():
     """Redirect to a random transient classification page."""
+    # If prefetched data is available, use it
+    if 'prefetched_data' in prefetched_data_store:
+        next_source_id = prefetched_data_store['prefetched_data']['source_id']
+        return redirect(url_for('classify_source', source_id=next_source_id))
+    
     test_transients_ids = load_test_transients_ids()
     if not test_transients_ids:
         flash('No test transients available.', 'danger')
@@ -583,6 +594,31 @@ def delete_classification(classification_id):
     
     flash('Classification deleted successfully.', 'success')
     return redirect(url_for('user_classifications'))
+
+# @copy_current_request_context
+def prefetch_next_transient_data(kowalski_session):
+    """Prefetches data for the next random transient."""
+    app = current_app._get_current_object()  # Get the current app instance
+
+    with app.app_context():
+        try:
+            next_source_id = random.choice(load_test_transients_ids())
+            
+            # Call the PS1 data fetching functions here
+            ra, dec, scat_sep = get_pos(kowalski_session, next_source_id)
+            ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, next_source_id, ra, dec, 3) 
+            
+            # Store the prefetched data in the global variable
+            prefetched_data_store['prefetched_data'] = {
+                'source_id': next_source_id,
+                'ra': ra,
+                'dec': dec,
+                'ra_ps1': ra_ps1,
+                'dec_ps1': dec_ps1
+            }
+
+        except Exception as e:
+            print(f"Error in prefetching data: {e}")
 
 if __name__ == '__main__':
     # Initialize databases and load transients from csv

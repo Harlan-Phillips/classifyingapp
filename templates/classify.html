@@ -9,6 +9,7 @@
     <title>Transient Data</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.2.3/dist/lux/bootstrap.min.css"> -->
 </head>
 
 <style>
@@ -257,13 +258,13 @@
                                         {% set closest_source = pan_starrs_df.loc[pan_starrs_df['distpsnr1'].idxmin()] %}
                                         <p><strong>PS1 Crossmatch:</strong> 
                                             {% if closest_source['distpsnr1'] <= 2 and closest_source['sgscore1'] > 0.5 %}
-                                                <span style="color:red;"><strong>{{ closest_source['distpsnr1']|round(4) }}</strong></span>, 
+                                                <span style="color:red;"><strong>{{ closest_source['distpsnr1']|round(4) }}</strong></span> arcsec, 
                                                 sg-score: <span style="color:red;"><strong>{{ closest_source['sgscore1']|round(4) }}</strong></span>
                                             {% elif closest_source['distpsnr1'] <= 1 and closest_source['sgscore1'] == 0.5 %}
-                                                <span style="color:red;"><strong>{{ closest_source['distpsnr1']|round(4) }}</strong></span>, 
+                                                <span style="color:red;"><strong>{{ closest_source['distpsnr1']|round(4) }}</strong></span> arcsec, 
                                                 sg-score: <span style="color:red;"><strong>{{ closest_source['sgscore1']|round(4) }}</strong></span>
                                             {% else %}
-                                                {{ closest_source['distpsnr1']|round(4) }}, sg-score: {{ closest_source['sgscore1']|round(4) }}
+                                                {{ closest_source['distpsnr1']|round(4) }} arcsec, sg-score: {{ closest_source['sgscore1']|round(4) }}
                                             {% endif %}
                                         </p>
                                     {% else %}
@@ -324,6 +325,20 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="highdrb-tab" data-bs-toggle="tab" data-bs-target="#highdrb" type="button" role="tab" aria-controls="highdrb-tab-pane" aria-selected="false">Highest DRB</button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="lowdrb-tab" data-bs-toggle="tab" data-bs-target="#lowdrb" type="button" role="tab" aria-controls="lowdrb-tab-pane" aria-selected="false">Lowest DRB</button>
+                        </li>
+                        {% endif %}
+                        {% if ztf_cutout|length > 5 and ztf_cutout[5] %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="brightg-tab" data-bs-toggle="tab" data-bs-target="#brightg" type="button" role="tab" aria-controls="brightg-tab-pane" aria-selected="false">Brightest g-band</button>
+                        </li>
+                        {% endif %}
+                
+                        {% if ztf_cutout|length > 6 and ztf_cutout[6] %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="brightr-tab" data-bs-toggle="tab" data-bs-target="#brightr" type="button" role="tab" aria-controls="brightr-tab-pane" aria-selected="false">Brightest r-band</button>
+                        </li>
                         {% endif %}
                     </ul>
                     <div class="tab-content" id="cutoutTabsContent">
@@ -335,24 +350,32 @@
                             <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
                         </div>
                         <div class="tab-pane fade" id="median" role="tabpanel" aria-labelledby="median-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[3]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
                         </div>
                         <div class="tab-pane fade" id="sn" role="tabpanel" aria-labelledby="sn-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[3]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
                         </div>
                         {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
                         <div class="tab-pane fade" id="highdrb" role="tabpanel" aria-labelledby="highdrb-tab" tabindex="0">
                             <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[4]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
                         </div>
+                        <div class="tab-pane fade" id="lowdrb" role="tabpanel" aria-labelledby="lowdrb-tab" tabindex="0">
+                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[-1]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
+                        {% endif %}
+                        {% if ztf_cutout|length > 5 and ztf_cutout[5] %}
+                        <div class="tab-pane fade" id="brightg" role="tabpanel" aria-labelledby="brightg-tab" tabindex="0">
+                            <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[5]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
+                        {% endif %}
+                        
+                        {% if ztf_cutout|length > 6 and ztf_cutout[6] %}
+                        <div class="tab-pane fade" id="brightr" role="tabpanel" aria-labelledby="brightr-tab" tabindex="0">
+                            <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[6]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                        </div>
                         {% endif %}
                     {% endif %}
                     </div> 
-                    <!-- Buttons to Switch ZTF Cutouts -->
-                    <!-- <div class="btn-group-vertical mt-2 justify-content-center" role="toolbar" aria-label="ZTF Image Switcher">
-                        {% for i in range(1, 4) %}
-                            <button id="btn-ztf{{ i }}" class="btn btn-outline-secondary btn-ztf" onclick="switchZTFImage('ztf{{ i }}')">Alert {{ i }}</button>
-                        {% endfor %}
-                    </div> -->
                 </div>
                         
                 
