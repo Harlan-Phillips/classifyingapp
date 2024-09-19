@@ -7,12 +7,12 @@ from datetime import datetime
 from io import BytesIO
 import time
 import logging
-import threading
+from celery import shared_task
 
 import pandas as pd
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from flask import Flask, current_app, g, copy_current_request_context, render_template, request, redirect, url_for, flash, session, send_file, make_response
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 from flask_sqlalchemy import SQLAlchemy
@@ -31,10 +31,12 @@ from utils import (
     xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
     plot_big_light_curve, plot_big_polar_coordinates, 
     analyze_ps1_photoz, get_drb, get_span, plot_wise, filter_and_plot_alerts, alert_table,
-    get_ecliptic
+    get_ecliptic, make_celery, fetch_transient_data
 )
 from vlass_utils import get_vlass_data, run_search
 
+from threading import Thread
+from cachetools import TTLCache
 
 # Initialize the Kowalski session
 kowalski_session = logon()
@@ -53,6 +55,17 @@ class_app = Flask(__name__)
 class_app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///' + os.path.join(basedir, 'class_app.db')
 class_app.config['SECRET_KEY'] = 'your_secret_key_here'
 
+# Create Celery instance for background info fetching
+class_app.config.update(
+    CELERY_BROKER_URL='redis://localhost:6379/0',
+    CELERY_RESULT_BACKEND='redis://localhost:6379/0'
+)
+
+celery = make_celery(class_app)
+
+# Create a cache to store prefetched transient data
+transient_cache = TTLCache(maxsize=10, ttl=600)
+
 # Initialize CSRF Protection
 class_app.config['SECRET_KEY'] = 'your_secret_key_here'
 class_app.config['WTF_CSRF_ENABLED'] = False 
@@ -64,8 +77,6 @@ db.init_app(class_app)
 login_manager = LoginManager()
 login_manager.init_app(class_app)
 login_manager.login_view = 'login'
-
-prefetched_data_store = {}
 
 # Define forms for search, registration, and login
 class SearchForm(FlaskForm):
@@ -209,143 +220,36 @@ def classify(source_id):
 @class_app.route('/classify/<source_id>', methods=['GET'])
 @login_required
 def classify_source(source_id):
-    """Render the classification page for a given source."""   
+    """Render the classification page for a given source."""
     try:
-        logging.debug(f"Attempting to classify source: {source_id}")
-        
-        threading.Thread(target=prefetch_next_transient_data, args=(kowalski_session,)).start()
+        # Fetch the data for the current transient
+        data = fetch_transient_data(kowalski_session, source_id)
+        if not data:
+            flash('An error occurred while fetching the transient data.')
+            return redirect(url_for('index'))
 
-        # Fetch positional and galactic data        
-        ra, dec, scat_sep = get_pos(kowalski_session, source_id)
-        logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
-        
-        galactic_l, galactic_b = get_galactic(ra, dec)
-        logging.debug(f"Galactic Coordinates - l: {galactic_l}, b: {galactic_b}")
-
-        ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
-        
-        dets = get_dets(kowalski_session, source_id) # Extract data from get_dets
-        logging.debug(f"Detections: {dets}")
-
-        alerts_raw = alert_table(dets)
-        alerts_raw = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
-        alert_count = len(alerts_raw)
-
-        med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, dets)
-        logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
-
-
-        cutout_dir = os.path.join(basedir, 'static', 'cutouts')
-        light_cur = os.path.join(basedir, 'static', 'light_curves')
-        wise_dir = os.path.join(basedir, 'static', 'wise_plots')
-        wise_plot_path = os.path.join(wise_dir, f"{source_id}_wise_plot.html")
-        light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
-        big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
-        ztf_cutout_paths = [
-            os.path.join(cutout_dir, f"{source_id}_first.png"),
-            os.path.join(cutout_dir, f"{source_id}_last.png"),
-            os.path.join(cutout_dir, f"{source_id}_highest_snr.png"),
-            os.path.join(cutout_dir, f"{source_id}_median.png"),
-            os.path.join(cutout_dir, f"{source_id}_highest_drb.png"),
-            os.path.join(cutout_dir, f"{source_id}_brightest_g.png"),
-            os.path.join(cutout_dir, f"{source_id}_brightest_r.png"),
-            os.path.join(cutout_dir, f"{source_id}_lowest_drb.png")
-        ]
-        ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
-        ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
-
-        # Checking if cutouts exist reducing processing time
-        if os.path.exists(wise_plot_path):
-            wise_filename = f"static/wise_plots/{source_id}_wise_plot.html"
+        dets = data.get('dets')
+        logging.debug(f"dets: {dets}")  
+        if dets:
+            alerts_raw = alert_table(dets)
+            raw_alerts = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
+            logging.debug(f"alerts_raw DataFrame: {alerts_raw}")
+            logging.debug(f"raw_alerts: {raw_alerts}")
         else:
-            wise_filename = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+            raw_alerts = []
 
-        if os.path.exists(light_curve_path):
-            plot_filename = f"static/light_curves/{source_id}_light_curve.html"
-            plot_filename_zoomed = f"static/light_curves/{source_id}_light_curve_zoomed.html"
-        else:
-            light_curve = get_lc(kowalski_session, source_id)
-            plot_filename = plot_light_curve(light_curve, source_id)
-            plot_filename_zoomed = plot_light_curve(light_curve, source_id, "detections")
+        data['raw_alerts'] = raw_alerts
+        data['vlass_images'] = session.pop('vlass_images', [])
 
-        
-        if os.path.exists(big_light_curve_path):
-            plot_big_filename = f"static/light_curves/{source_id}_big_light_curve.html"
-            plot_big_filename_zoomed = f"static/light_curves/{source_id}_big_light_curve_zoomed.html"
+        # Render the current transient page
+        response = render_template('classify.html', **data)
 
-        else:
-            light_curve = get_lc(kowalski_session, source_id)
-            plot_big_filename = plot_big_light_curve(light_curve, source_id) 
-            plot_big_filename_zoomed = plot_big_light_curve(light_curve, source_id, "detections")
+        # Start prefetching the next transient in a separate thread
+        user_id = current_user.get_id()
+        thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+        thread.start()
 
-        ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout_paths if os.path.exists(path)]
-        logging.debug(f"ZTF Cutout Basenames: {ztf_cutout_basenames}")
-
-        if len(ztf_cutout_basenames) != 8:
-            ztf_cutout = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
-            ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
-
-        if os.path.exists(ps1_cutout_path):
-            ps1_cutout_basename = f"{source_id}_ps1.png"
-        else:
-            ps1_cutout = plot_ps1_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-            ps1_cutout_basename = os.path.basename(ps1_cutout) if ps1_cutout else None
-
-        # Retry mechanism to ensure LS cutout is ready
-        ls_cutout_basename = ''
-        for attempt in range(5):  # Retry up to 5 times
-            if os.path.exists(ls_cutout_path):
-                ls_cutout_basename = f"{source_id}_ls.png"
-                break
-            else:
-                ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-                ls_cutout_basename = os.path.basename(ls_cutout) if ls_cutout else ''
-            time.sleep(2)  # Wait for 2 seconds before retrying
-        logging.debug(f"LS Cutout Basename: {ls_cutout_basename}")
-
-        legacy_survey_data = xmatch_ls(ra, dec) # Fetch Legacy Survey data
-        logging.debug(f"Legacy Survey Data: {legacy_survey_data}")
-        
-        # Determine if there is SDSS data
-        sdss_data = None
-        if dets and dets[0]['candidate']['ssdistnr'] != -999.0 and dets[0]['candidate']['ssmagnr'] != -999.0:
-            sdss_data = {
-                'ssdistnr': dets[0]['candidate']['ssdistnr'],
-                'ssmagnr': dets[0]['candidate']['ssmagnr']
-            }
-        logging.debug(f"SDSS Data: {sdss_data}")
-
-        # Aggregate Pan-STARRS data and remove duplicates
-        pan_starrs_data = []
-        seen_sgscore1 = set()
-        for det in dets:
-            candidate = det['candidate']
-            if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and 'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and candidate['distpsnr1'] <= 3:
-                if candidate['sgscore1'] not in seen_sgscore1:
-                    pan_starrs_data.append({
-                        'distpsnr1': candidate['distpsnr1'],
-                        'sgscore1': candidate['sgscore1']
-                    })
-                    seen_sgscore1.add(candidate['sgscore1'])
-        pan_starrs_df = pd.DataFrame(pan_starrs_data)
-        logging.debug(f"Pan-STARRS DataFrame: {pan_starrs_df}")
-
-        # Retrieve VLASS images
-        vlass_images = session.pop('vlass_images', []) 
-
-        # Create the polar plot
-        ztf_alerts = pd.DataFrame([det['candidate'] for det in dets])
-        polar_plot_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
-        polar_big_plot_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
-        polar_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
-        polar_big_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot_out.html')
-        
-        if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out):
-            ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
-            plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
-            plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
-            plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
-            plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
+        return response
 
     except ValueError as e:
         logging.error(f"ValueError: {e}")
@@ -356,76 +260,30 @@ def classify_source(source_id):
         flash(f'An error occurred: {str(e)}')
         return redirect(url_for('index'))
 
-    # Retrieve classifications and determine the most confident classification
-    classifications = Classification.query.filter_by(source_id=source_id).all()
-    classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
-    classified_by_users = []
+def prefetch_transient_data(kowalski_session, user_id):
+    """Prefetch data for the next transient."""
+    with class_app.app_context():  # Push application context manually
+        try:
+            next_source_id = get_random_id()
+            prefetched_data = fetch_transient_data(kowalski_session, next_source_id)
+            if prefetched_data:
+                # Store the prefetched data in the cache instead of session
+                transient_cache[user_id] = {
+                    'data': prefetched_data,
+                    'source_id': next_source_id,
+                    'status': 'complete'
+                }
+        except Exception as e:
+            logging.error(f"Error while prefetching transient data: {e}")
+            transient_cache[user_id] = {'status': 'error'}
 
-    for classification in classifications:
-        classification_counts[classification.classification]['count'] += 1
-        classified_by_users.append(User.query.get(classification.user_id).username)
-        if classification.confidence == 'Not confident':
-            classification_counts[classification.classification]['confidence'] += 1
-        elif classification.confidence == 'Confident':
-            classification_counts[classification.classification]['confidence'] += 2
-        elif classification.confidence == 'Certain':
-            classification_counts[classification.classification]['confidence'] += 3
+@class_app.route('/prefetch_status', methods=['GET'])
+@login_required
+def prefetch_status():
+    user_id = current_user.get_id()
+    status = transient_cache.get(user_id, {}).get('status', 'not_started')
+    return jsonify({'status': status})
 
-    if classification_counts:
-        most_confident_classification = max(
-            classification_counts.items(),
-            key=lambda x: (x[1]['confidence'], x[1]['count'])
-        )[0]
-    else:
-        most_confident_classification = None
-
-    logging.debug(f"Most Confident Classification: {most_confident_classification}")
-
-    coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
-    ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4)
-    dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4)
-
-    logging.debug(f"RA (string): {ra_str}, Dec (string): {dec_str}")
-    
-
-    return render_template('classify.html', 
-                           source_id=source_id, 
-                           ra=ra_str, 
-                           dec=dec_str, 
-                           scat_sep=scat_sep, 
-                           galactic_b=galactic_b, 
-                           galactic_l=galactic_l,
-                           span=get_span(kowalski_session, source_id, dets),
-                           med_drb=med_drb,
-                           min_drb=min_drb,
-                           max_drb=max_drb,
-                           avg_drb=avg_drb,
-                           light_curve=light_curve.to_dict(orient='records') if 'light_curve' in locals() else None,
-                           plot_filename=plot_filename,
-                           plot_filename_zoomed=plot_filename_zoomed,
-                           plot_big_filename=plot_big_filename,
-                           plot_big_filename_zoomed=plot_big_filename_zoomed,
-                           ztf_cutout=ztf_cutout_basenames,
-                           ps1_cutout=ps1_cutout_basename,
-                           ls_cutout=ls_cutout_basename,
-                           classifications=classifications,
-                           most_confident_classification=most_confident_classification,
-                           classified_by_users=classified_by_users,
-                           vlass_images=vlass_images,
-                           legacy_survey_data=legacy_survey_data,
-                           sdss_data=sdss_data,
-                           pan_starrs_df=pan_starrs_df,
-                           polar_plot=polar_plot_path,
-                           polar_big_plot=polar_big_plot_path,
-                           polar_big_plot_out=polar_big_plot_path_out,
-                           polar_plot_out=polar_plot_path_out,
-                           wise_plot=wise_filename,
-                           raw_alerts=alerts_raw,
-                           alert_count=alert_count,
-                           ecliptic_lat=ecliptic_lat,
-                           ecliptic_lon=ecliptic_lon
-                          )
-    
 @class_app.route('/retrieve_vlass_data/<source_id>', methods=['POST'])
 @login_required
 def retrieve_vlass_data(source_id):
@@ -552,22 +410,50 @@ def export_test_transients():
 
     return send_file(output, as_attachment=True, download_name='test_transients.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-@class_app.route('/random_transient')
-@login_required
-def random_transient():
-    """Redirect to a random transient classification page."""
-    # If prefetched data is available, use it
-    if 'prefetched_data' in prefetched_data_store:
-        next_source_id = prefetched_data_store['prefetched_data']['source_id']
-        return redirect(url_for('classify_source', source_id=next_source_id))
-    
+def get_random_id():
     test_transients_ids = load_test_transients_ids()
     if not test_transients_ids:
         flash('No test transients available.', 'danger')
         return redirect(url_for('index'))
-    
     random_source_id = random.choice(test_transients_ids)
-    return redirect(url_for('classify_source', source_id=random_source_id))
+
+    return random_source_id
+
+@class_app.route('/random_transient', methods=['GET'])
+@login_required
+def random_transient():
+    """Fetch a random transient, using prefetched data if available."""
+    user_id = current_user.get_id()
+
+    # Check if we have prefetched data ready in the cache
+    cached_transient = transient_cache.pop(user_id, None)
+    if cached_transient and cached_transient.get('status') == 'complete':
+        # Use the prefetched data
+        source_id = cached_transient['source_id']
+        data = cached_transient['data']
+        
+        dets = data.get('dets')
+        logging.debug(f"dets: {dets}")  
+        if dets:
+            alerts_raw = alert_table(dets)
+            raw_alerts = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
+            logging.debug(f"alerts_raw DataFrame: {alerts_raw}")
+            logging.debug(f"raw_alerts: {raw_alerts}")
+        else:
+            raw_alerts = []
+
+        data['raw_alerts'] = raw_alerts
+        data['vlass_images'] = session.pop('vlass_images', [])
+        
+        # Start prefetching the next transient in a separate thread
+        thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+        thread.start()
+
+        return render_template('classify.html', **data)
+    else:
+        # No prefetched data, fetch a new random transient
+        new_source_id = get_random_id()
+        return redirect(url_for('classify_source', source_id=new_source_id))
 
 @class_app.route('/user_classifications')
 @login_required
@@ -594,31 +480,6 @@ def delete_classification(classification_id):
     
     flash('Classification deleted successfully.', 'success')
     return redirect(url_for('user_classifications'))
-
-# @copy_current_request_context
-def prefetch_next_transient_data(kowalski_session):
-    """Prefetches data for the next random transient."""
-    app = current_app._get_current_object()  # Get the current app instance
-
-    with app.app_context():
-        try:
-            next_source_id = random.choice(load_test_transients_ids())
-            
-            # Call the PS1 data fetching functions here
-            ra, dec, scat_sep = get_pos(kowalski_session, next_source_id)
-            ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, next_source_id, ra, dec, 3) 
-            
-            # Store the prefetched data in the global variable
-            prefetched_data_store['prefetched_data'] = {
-                'source_id': next_source_id,
-                'ra': ra,
-                'dec': dec,
-                'ra_ps1': ra_ps1,
-                'dec_ps1': dec_ps1
-            }
-
-        except Exception as e:
-            print(f"Error in prefetching data: {e}")
 
 if __name__ == '__main__':
     # Initialize databases and load transients from csv

@@ -36,6 +36,25 @@ import json
 from ztfquery.utils import stamps
 
 import mastcasjobs
+from celery  import Celery, shared_task
+
+from flask import session
+import logging
+from models import db, User, Transient, Classification
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+logging.basicConfig(level=logging.DEBUG,  # or INFO
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    handlers=[logging.StreamHandler()])
+
+def make_celery(app):
+    celery = Celery(
+        app.import_name,
+        backend=app.config['CELERY_RESULT_BACKEND'],
+        broker=app.config['CELERY_BROKER_URL']
+    )
+    celery.conf.update(app.config)
+    return celery
 
 def read_secrets():
     secrets_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'secrets.txt')
@@ -1392,3 +1411,247 @@ def plot_wise(s, name, ra, dec, output_path):
 
     plt.close(fig)
     return output_path
+
+def fetch_transient_data(kowalski_session, source_id):
+    """Fetch all the required data for rendering a classification page for a given source."""
+    try:
+        # Fetch positional and galactic data
+        ra, dec, scat_sep = get_pos(kowalski_session, source_id)
+        logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
+
+        # Fetch galactic coordinates
+        galactic_l, galactic_b = get_galactic(ra, dec)
+        logging.debug(f"Galactic Coordinates - l: {galactic_l}, b: {galactic_b}")
+
+        # Fetch ecliptic coordinates
+        ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
+        logging.debug(f"Ecliptic Coordinates - lon: {ecliptic_lon}, lat: {ecliptic_lat}")
+
+        # Fetch detections
+        dets = get_dets(kowalski_session, source_id)
+        logging.debug(f"Detections: {dets}")
+
+        # Transform detections into alerts and count them
+        alerts_raw = alert_table(dets)
+        alerts_raw = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
+        alert_count = len(alerts_raw)
+        logging.debug(f"Alerts: {alerts_raw}, Alert Count: {alert_count}")
+
+        # Fetch DRB (Detection Real-Bogus) values
+        med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, dets)
+        logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
+
+        # Directories for cutouts and plots
+        cutout_dir = os.path.join(basedir, 'static', 'cutouts')
+        light_cur = os.path.join(basedir, 'static', 'light_curves')
+        wise_dir = os.path.join(basedir, 'static', 'wise_plots')
+
+        # WISE plot
+        wise_plot_path = os.path.join(wise_dir, f"{source_id}_wise_plot.html")
+        if os.path.exists(wise_plot_path):
+            wise_filename = f"static/wise_plots/{source_id}_wise_plot.html"
+        else:
+            wise_filename = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+
+        # Light curves
+        light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
+        big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
+
+        if os.path.exists(light_curve_path):
+            plot_filename = f"static/light_curves/{source_id}_light_curve.html"
+            plot_filename_zoomed = f"static/light_curves/{source_id}_light_curve_zoomed.html"
+        else:
+            light_curve = get_lc(kowalski_session, source_id)
+            plot_filename = plot_light_curve(light_curve, source_id)
+            plot_filename_zoomed = plot_light_curve(light_curve, source_id, "detections")
+
+        if os.path.exists(big_light_curve_path):
+            plot_big_filename = f"static/light_curves/{source_id}_big_light_curve.html"
+            plot_big_filename_zoomed = f"static/light_curves/{source_id}_big_light_curve_zoomed.html"
+        else:
+            light_curve = get_lc(kowalski_session, source_id)
+            plot_big_filename = plot_big_light_curve(light_curve, source_id)
+            plot_big_filename_zoomed = plot_big_light_curve(light_curve, source_id, "detections")
+
+        # ZTF cutouts
+        ztf_cutout_paths = [
+            os.path.join(cutout_dir, f"{source_id}_first.png"),
+            os.path.join(cutout_dir, f"{source_id}_last.png"),
+            os.path.join(cutout_dir, f"{source_id}_highest_snr.png"),
+            os.path.join(cutout_dir, f"{source_id}_median.png"),
+            os.path.join(cutout_dir, f"{source_id}_highest_drb.png"),
+            os.path.join(cutout_dir, f"{source_id}_brightest_g.png"),
+            os.path.join(cutout_dir, f"{source_id}_brightest_r.png"),
+            os.path.join(cutout_dir, f"{source_id}_lowest_drb.png")
+        ]
+        ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout_paths if os.path.exists(path)]
+        logging.debug(f"ZTF Cutout Basenames: {ztf_cutout_basenames}")
+
+        if len(ztf_cutout_basenames) != 8:
+            ztf_cutout = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
+            ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
+
+        # Pan-STARRS (PS1) cutouts
+        ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
+        if os.path.exists(ps1_cutout_path):
+            ps1_cutout_basename = f"{source_id}_ps1.png"
+        else:
+            ps1_cutout = plot_ps1_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
+            ps1_cutout_basename = os.path.basename(ps1_cutout) if ps1_cutout else None
+
+        # Legacy Survey (LS) cutouts
+        ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
+        ls_cutout_basename = ''
+        for attempt in range(5):  # Retry up to 5 times
+            if os.path.exists(ls_cutout_path):
+                ls_cutout_basename = f"{source_id}_ls.png"
+                break
+            else:
+                ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
+                ls_cutout_basename = os.path.basename(ls_cutout) if ls_cutout else ''
+            time.sleep(2)  # Wait for 2 seconds before retrying
+        logging.debug(f"LS Cutout Basename: {ls_cutout_basename}")
+
+        legacy_survey_data = xmatch_ls(ra, dec) # Fetch Legacy Survey data
+        
+        legacy_amount = legacy_survey_data.shape[0]
+        if legacy_amount > 0:
+            legacy_closest = legacy_survey_data.iloc[0]
+            legacy_data = [
+                legacy_closest.sep_arcsec.round(2),   # Separation in arcseconds
+                legacy_closest.pa_degree.round(1),    # Position angle in degrees
+                legacy_closest.z_phot_median.round(2),# Photometric redshift median
+                legacy_closest.z_phot_l68.round(2),   # 68% lower bound on photometric redshift
+                legacy_closest.z_phot_u68.round(2),   # 68% upper bound on photometric redshift
+                legacy_closest.type 
+            ]
+        else:
+            legacy_data = []
+        
+        logging.debug(f"Legacy Survey Data: {legacy_survey_data}")
+
+        sdss_data = None
+        if dets and dets[0]['candidate']['ssdistnr'] != -999.0 and dets[0]['candidate']['ssmagnr'] != -999.0:
+            sdss_data = {
+                'ssdistnr': dets[0]['candidate']['ssdistnr'],
+                'ssmagnr': dets[0]['candidate']['ssmagnr']
+            }
+        logging.debug(f"SDSS Data: {sdss_data}")
+
+        # Aggregate Pan-STARRS data and remove duplicates
+        pan_starrs_data = []
+        seen_sgscore1 = set()
+        for det in dets:
+            candidate = det['candidate']
+            # Filter based on your conditions
+            if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and \
+            'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and \
+            candidate['distpsnr1'] <= 3:
+                if candidate['sgscore1'] not in seen_sgscore1:
+                    pan_starrs_data.append({
+                        'distpsnr1': candidate['distpsnr1'],
+                        'sgscore1': candidate['sgscore1']
+                    })
+                    seen_sgscore1.add(candidate['sgscore1'])
+
+        # Create DataFrame only from filtered data
+        pan_starrs_df = pd.DataFrame(pan_starrs_data)
+
+        if not pan_starrs_df.empty:
+            # Find the closest match
+            closest_ps1 = pan_starrs_df.loc[pan_starrs_df['distpsnr1'].idxmin()]
+            ps1_dist = closest_ps1['distpsnr1']
+            ps1_sgs = closest_ps1['sgscore1']
+        else:
+            ps1_dist = None
+            ps1_sgs = None
+
+        # Create the polar plot
+        ztf_alerts = pd.DataFrame([det['candidate'] for det in dets])
+        polar_plot_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
+        polar_big_plot_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
+        polar_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
+        polar_big_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot_out.html')
+        
+        if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out):
+            ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
+            plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
+            plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
+            plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
+            plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
+        # Retrieve classifications and determine the most confident classification
+        classifications = Classification.query.filter_by(source_id=source_id).all()
+        classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
+        classified_by_users = []
+
+        for classification in classifications:
+            classification_counts[classification.classification]['count'] += 1
+            classified_by_users.append(User.query.get(classification.user_id).username)
+            if classification.confidence == 'Not confident':
+                classification_counts[classification.classification]['confidence'] += 1
+            elif classification.confidence == 'Confident':
+                classification_counts[classification.classification]['confidence'] += 2
+            elif classification.confidence == 'Certain':
+                classification_counts[classification.classification]['confidence'] += 3
+
+        if classification_counts:
+            most_confident_classification = max(
+                classification_counts.items(),
+                key=lambda x: (x[1]['confidence'], x[1]['count'])
+            )[0]
+        else:
+            most_confident_classification = None
+
+        logging.debug(f"Most Confident Classification: {most_confident_classification}")
+
+        coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
+        ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4)
+        dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4)
+
+        logging.debug(f"RA (string): {ra_str}, Dec (string): {dec_str}")
+        # Return the core data needed
+        data = {
+            "source_id": source_id,
+            "ra": ra_str,
+            "dec": dec_str,
+            "scat_sep": scat_sep,
+            "galactic_l": galactic_l,
+            "galactic_b": galactic_b,
+            "span": get_span(kowalski_session, source_id, dets),
+            "ecliptic_lon": ecliptic_lon,
+            "ecliptic_lat": ecliptic_lat,
+            "dets": dets,
+            "alert_count": alert_count,  # Match key 'alert_count'
+            "med_drb": med_drb,  # Match key 'med_drb'
+            "min_drb": min_drb,
+            "max_drb": max_drb,
+            "avg_drb": avg_drb,
+            "ps1_dist": ps1_dist,
+            "ps1_sgs": ps1_sgs,
+            "wise_plot": wise_filename,  # Match key 'wise_plot'
+            "plot_filename": plot_filename,  # Match key 'plot_filename'
+            "plot_filename_zoomed": plot_filename_zoomed,  # Match key 'plot_filename_zoomed'
+            "plot_big_filename": plot_big_filename,  # Match key 'plot_big_filename'
+            "plot_big_filename_zoomed": plot_big_filename_zoomed,  # Match key 'plot_big_filename_zoomed'
+            "ztf_cutout": ztf_cutout_basenames,  # Match key 'ztf_cutout'
+            "ps1_cutout": ps1_cutout_basename,  # Match key 'ps1_cutout'
+            "ls_cutout": ls_cutout_basename,  # Match key 'ls_cutout'
+            "legacy_amount": legacy_amount,
+            "legacy_data": legacy_data,
+            "sdss_data": sdss_data,  # Match key 'sdss_data'  # Match key 'pan_starrs_df'
+            "polar_plot": polar_plot_path,  # Match key 'polar_plot'
+            "polar_big_plot": polar_big_plot_path,  # Match key 'polar_big_plot'
+            "polar_plot_out": polar_plot_path_out,  # Match key 'polar_plot_out'
+            "polar_big_plot_out": polar_big_plot_path_out,  # Match key 'polar_big_plot_out'
+            "classifications": classifications,  # Match key 'classifications'
+            "classified_by_users": classified_by_users,  # Match key 'classified_by_users'
+            "most_confident_classification": most_confident_classification,  # Match key 'most_confident_classification'
+            "ra_str": ra_str,  # Match key 'ra_str'
+            "dec_str": dec_str  # Match key 'dec_str'
+        }
+
+        return data
+
+    except Exception as e:
+        logging.error(f"Error while fetching transient data: {str(e)}")
+        return None

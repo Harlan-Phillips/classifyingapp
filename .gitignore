@@ -1,0 +1,13 @@
+/*
+!/.gitignore
+!/class_app.py
+!/models.py
+!/class_app.db
+!/requirements.txt
+!/models.py
+!/test_transients.csv
+!/transients.csv
+!/utils.py
+!/vlass_utils.py
+!/wpd_datasets.csv
+!/templates/

@@ -39,3 +39,8 @@ flask-paginate
 mpld3
 
 mastcasjobs
+
+celery
+redis
+
+cachetools
