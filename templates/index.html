@@ -1,4 +1,8 @@
 <!-- Build off of Base html -->
+<video autoplay muted loop playsinline id="bg-video">
+    <source src="../static/backdrop-transient.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
 {% extends "base.html" %}
 
 <!-- Set own title -->
@@ -16,15 +20,12 @@
     .alert-dark-bg .close {
         color: #fff;
     }
+    
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Setting animated background -->
-<div class="background-container">
-    <div class="stars"></div>
-    <div class="twinkling"></div>
-</div>
 
 <!-- Container for Page Content -->
 <div class="container">
