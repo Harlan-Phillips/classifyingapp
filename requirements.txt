@@ -44,3 +44,5 @@ celery
 redis
 
 cachetools
+dash 
+plotly

@@ -8,6 +8,9 @@ from astropy.time import Time
 import pandas as pd
 import numpy as np
 
+import plotly.graph_objs as go
+import plotly.io as pio
+
 # Compression and file handling modules
 import gzip
 import io
@@ -609,7 +612,16 @@ def plot_ps1_cutout(s,ddir,name,ra,dec):
     if os.path.isfile(fname)==False:
         img = stamps.get_ps_stamp(ra, dec, size=240, color=["y","g","i"])
         plt.figure(figsize=(2.1,2.1), dpi=120)
-        plt.imshow(np.asarray(img))
+        img_array = np.asarray(img)
+        plt.imshow(img_array)
+        center_x = img_array.shape[1] // 2
+        center_y = img_array.shape[0] // 2
+        # Draw horizontal line segments leaving a gap at the center
+        plt.plot([center_x - 20, center_x - 10], [center_y, center_y], color='lightgreen', lw=1)
+        plt.plot([center_x + 10, center_x + 20], [center_y, center_y], color='lightgreen', lw=1)
+        # Draw vertical line segments leaving a gap at the center
+        plt.plot([center_x, center_x], [center_y - 20, center_y - 10], color='lightgreen', lw=1)
+        plt.plot([center_x, center_x], [center_y + 10, center_y + 20], color='lightgreen', lw=1)
         plt.title("PS1 (y/g/i)", fontsize = 12)
         plt.axis('off')
         plt.tight_layout()
@@ -627,6 +639,16 @@ def plot_ls_cutout(s,ddir,name,ra,dec):
         try:
             r = requests.get(url)
             plt.imshow(Image.open(io.BytesIO(r.content)))
+            image = io.BytesIO(r.content)
+            img_array = np.asarray(Image.open(io.BytesIO(r.content)))
+            center_x = img_array.shape[1] // 2
+            center_y = img_array.shape[0] // 2
+            # Draw horizontal line segments leaving a gap at the center
+            plt.plot([center_x - 20, center_x - 10], [center_y, center_y], color='lightgreen', lw=1)
+            plt.plot([center_x + 10, center_x + 20], [center_y, center_y], color='lightgreen', lw=1)
+            # Draw vertical line segments leaving a gap at the center
+            plt.plot([center_x, center_x], [center_y - 20, center_y - 10], color='lightgreen', lw=1)
+            plt.plot([center_x, center_x], [center_y + 10, center_y + 20], color='lightgreen', lw=1)
             plt.title("LegSurv DR9", fontsize = 12)
             plt.axis('off')
             plt.tight_layout()
@@ -650,340 +672,139 @@ matplotlib.use('Agg')  # Use a non-interactive backend
 import matplotlib.pyplot as plt
 
 def plot_light_curve(lc, source_id, span=None):
-    """
-    Plots the light curve of a given source and saves the plot as a PNG file.
-
-    Parameters:
-    lc (DataFrame): A DataFrame containing light curve data with columns 'fid', 'jd', 'mag_final', and 'emag_final'.
-    source_id (str): The identifier of the source whose light curve is being plotted.
-
-    Returns:
-    str: The filename of the saved plot.
-    """
-
+    # Preserve existing data prep logic
     non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
-    
-    if lc['mag_final'].isna().sum() > 0:
-        print("NaN values found in 'mag_final'. Dropping NaN values.")
-        lc = lc.dropna(subset=['mag_final'])
-    
-    if non_dets['maglim'].isna().sum() > 0:
-        print("NaN values found in 'maglim'. Dropping NaN values.")
-        non_dets = non_dets.dropna(subset=['maglim'])
+    lc = lc.dropna(subset=['mag_final']) if lc['mag_final'].isna().sum() > 0 else lc
+    non_dets = non_dets.dropna(subset=['maglim']) if non_dets['maglim'].isna().sum() > 0 else non_dets
 
     # Convert JD to MJD
-    lc['mjd'] = Time(lc['jd'], format='jd').mjd
-    # Reference to MJD 58000
-    lc['mjd'] = lc['mjd'] - 58000
+    from astropy.time import Time
+    lc['mjd'] = Time(lc['jd'], format='jd').mjd - 58000
+    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
 
-    # Convert JD to MJD
-    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd
-    # Reference to MJD 58000
-    non_dets['mjd'] = non_dets['mjd'] - 58000
+    fig = go.Figure()
+    color_map = {1: 'seagreen', 2: 'crimson', 3: 'goldenrod'}
+    symbol_map = {1: 'square', 2: 'circle', 3: 'diamond'}
 
-    fig, ax = plt.subplots(figsize=(10/1.5 + .5, 6/1.2))
-    
-    # Define colors and symbols
-    color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
-    marker_map = {'g': 's', 'r': 'o', 'i': 's'}
-    
-    # Creating a dictionary to store scatter plot references
-    scatter_dict = {}
-
-    non_det_scatter_dict = {}
-    non_det_elements = []
+    # Upper limits
     for band in non_dets['fid'].unique():
-        if band == 1:
-            filter_name = 'g'
-        elif band == 2:
-            filter_name = 'r'
-        elif band == 3:
-            filter_name = 'i'
         band_data = non_dets[non_dets['fid'] == band]
-        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], edgecolor=color_map[filter_name], facecolor=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
-        
-        # Adjusting the transparency separately
-        facecolors = scatter.get_facecolors()
-        edgecolors = scatter.get_edgecolors()
-        
-        for facecolor in facecolors:
-            facecolor[3] = 0.05  # Make facecolor fully transparent
-
-        for edgecolor in edgecolors:
-            edgecolor[3] = 1  # Set edgecolor to be semi-transparent
-
-        scatter.set_facecolors(facecolors)
-        scatter.set_edgecolors(edgecolors)
-
-        # Storing scatter plot references and labels for non-detections
-        labels = [f'MJD: {mjd + 58000:.5f}<br>Maglim: {maglim:.5f}<br>Filter: {filter_name}-band' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
-        non_det_scatter_dict[scatter] = labels
-        non_det_elements.append(scatter)
-
-    # Associating ID to color
+        fig.add_trace(go.Scatter(
+            x=band_data['mjd'],
+            y=band_data['maglim'],
+            mode='markers',
+            marker=dict(color=color_map.get(band, 'gray'), symbol='triangle-down', opacity=0.7, size=10),
+            name=f'Upper Limit'
+        ))
+    
+    # Detections
     for band in lc['fid'].unique():
-        if band == 1:
-            filter_name = 'g'
-        elif band == 2:
-            filter_name = 'r'
-        elif band == 3:
-            filter_name = 'i'
-        
         band_data = lc[lc['fid'] == band]
-        
-        scatter = ax.scatter(band_data['mjd'], band_data['mag_final'],
-                             color=color_map[filter_name], label=f'{filter_name}-band', marker=marker_map[filter_name])
-        
-        ax.errorbar(band_data['mjd'], band_data['mag_final'], yerr=band_data['emag_final'],
-                             fmt='none', color=color_map[filter_name], alpha=0.5)
-        
-        # Storing scatter plot references and labels
-        labels = [f'MJD: {mjd + 58000:.5f}<br>Mag: {mag:.5f}<br>Filter: {filter_name}-band' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
-        scatter_dict[scatter] = labels
+        fig.add_trace(go.Scatter(
+            x=band_data['mjd'],
+            y=band_data['mag_final'],
+            mode='markers',
+            error_y=dict(type='data', array=band_data['emag_final'], visible=True),
+            marker=dict(color=color_map.get(band, 'gray'), symbol=symbol_map.get(band, 'circle'), size=10),
+            name=f'band {band}'
+        ))
+
+    # Flip y-axis
+    y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
+    y_max = lc['mag_final'].max() + 0.5 if not lc['mag_final'].empty else 0
+
+    if span == 'detections' and not lc.empty:
+        diff = lc['mjd'].max() - lc['mjd'].min()
+        if diff < 1:
+            x_min = lc['mjd'].min() - (diff * 1.2)
+            x_max = lc['mjd'].max() + (diff * 1.2)
+        else:
+            x_min = lc['mjd'].min() - 0.5
+            x_max = lc['mjd'].max() + 0.5
+        fig.update_xaxes(range=[x_min, x_max])
     
-   
-    # Adding lavels for non-detections when hovered over
-    for scatter, labels in non_det_scatter_dict.items():
-        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
-        plugins.connect(fig, tooltip)
-    
-    # Adding labels for detections when hovered over
-    for scatter, labels in scatter_dict.items():
-        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
-        plugins.connect(fig, tooltip)
+    fig.update_layout(
+        width=800,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        title=f"Light Curve for {source_id}",
+        xaxis_title="MJD - 58000",
+        yaxis_title="Magnitude",
+        xaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black"),
+        yaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black", range=[y_max, y_min])
+    )
 
-    elements = [list(scatter_dict.keys()), non_det_elements]
-    labels = ['Alerts', 'Limits']
-    plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
-
-    # Safeguard against invalid values for axis limits
-    detection_mags = lc['mag_final']
-    if not detection_mags.empty:
-        ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
-    
-    # Set x-axis limits based on the span parameter
-    if span == 'detections':
-        detection_dates = lc['mjd']
-        if not detection_dates.empty:
-            diff = detection_dates.max() - detection_dates.min()
-            if diff < 1:
-                ax.set_xlim(detection_dates.min() - (diff * 1.2), detection_dates.max() + (diff * 1.2))
-            else:
-                ax.set_xlim(detection_dates.min() - 0.5, detection_dates.max() + 0.5)
-    
-
-    # Finalize the plot
-    ax.tick_params(axis='both', which='major', labelsize=16)
-    ax.set_xlabel('MJD - 58000', fontsize=16)
-    ax.set_ylabel('Magnitude', fontsize=16)
-    ax.set_title(f'Light Curve for {source_id}', fontsize=18)
-    #ax.legend(framealpha=1, facecolor='white')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5,-0.2), fancybox=True, shadow=True, ncol=3)
-    ax.grid(alpha =.1)
-    plt.tight_layout()
-    fig.subplots_adjust(right=0.9)
-
-    # Convert the plot to HTML with mpld3
-    html_str = mpld3.fig_to_html(fig)
-
-    custom_css = """
-    <style>
-    body {font-size: 16px;}
-    .mpld3-legend text { 
-        font-size: 14px; 
-        fill: #000000; 
-    }
-    .mpld3-legend rect { 
-        fill: #FFFFE0; 
-        stroke: #000000; 
-        opacity: 0.8; 
-    }
-    .mpld3-tooltip {
-        background-color: white;
-        color: black;
-        font-size: 16px;
-    }
-    </style>
-    """
-    html_str = custom_css + html_str
-
-    # Save the HTML to a file
     plot_filename = f'static/light_curves/{source_id}_light_curve.html'
     if span == "detections":
         plot_filename = f'static/light_curves/{source_id}_light_curve_zoomed.html'
-
-    with open(plot_filename, 'w') as f:
-        f.write(html_str)
-
-    plt.close(fig)
-
+    pio.write_html(fig, file=plot_filename, auto_open=False, full_html=False)
     return plot_filename
 
 def plot_big_light_curve(lc, source_id, span=None):
-    """
-    Plots the light curve of a given source and saves the plot as a PNG file.
-
-    Parameters:
-    lc (DataFrame): A DataFrame containing light curve data with columns 'fid', 'jd', 'mag_final', and 'emag_final'.
-    source_id (str): The identifier of the source whose light curve is being plotted.
-
-    Returns:
-    str: The filename of the saved plot.
-    """
-    
+    # Preserve existing data prep logic
     non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
+    lc = lc.dropna(subset=['mag_final']) if lc['mag_final'].isna().sum() > 0 else lc
+    non_dets = non_dets.dropna(subset=['maglim']) if non_dets['maglim'].isna().sum() > 0 else non_dets
 
-    if lc['mag_final'].isna().sum() > 0:
-        print("NaN values found in 'mag_final'. Dropping NaN values.")
-        lc = lc.dropna(subset=['mag_final'])
+    from astropy.time import Time
+    lc['mjd'] = Time(lc['jd'], format='jd').mjd - 58000
+    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
 
-    if non_dets['maglim'].isna().sum() > 0:
-        print("NaN values found in 'maglim'. Dropping NaN values.")
-        non_dets = non_dets.dropna(subset=['maglim'])
-    # Convert JD to MJD
-    lc['mjd'] = Time(lc['jd'], format='jd').mjd
-    # Reference to MJD 58000
-    lc['mjd'] = lc['mjd'] - 58000
+    fig = go.Figure()
+    color_map = {1: 'seagreen', 2: 'crimson', 3: 'goldenrod'}
+    symbol_map = {1: 'square', 2: 'circle', 3: 'square'}
 
-    # Convert JD to MJD for non-detections
-    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd
-    # Reference to MJD 58000
-    non_dets['mjd'] = non_dets['mjd'] - 58000
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Define colors and symbols
-    color_map = {'g': 'seagreen', 'r': 'crimson', 'i': 'goldenrod'}
-    marker_map = {'g': 's', 'r': 'o', 'i': 's'}
-    
-    # Creating a dictionary to store scatter plot references
-    scatter_dict = {}
-
-    non_det_scatter_dict = {}
-    non_det_elements = []
+    # Upper limits
     for band in non_dets['fid'].unique():
-        if band == 1:
-            filter_name = 'g'
-        elif band == 2:
-            filter_name = 'r'
-        elif band == 3:
-            filter_name = 'i'
         band_data = non_dets[non_dets['fid'] == band]
-        scatter = ax.scatter(band_data['mjd'], band_data['maglim'], edgecolor=color_map[filter_name], facecolor=color_map[filter_name], marker='^', label=f'Upper Limit {filter_name}-band')
-        
-        # Adjusting the transparency separately
-        facecolors = scatter.get_facecolors()
-        edgecolors = scatter.get_edgecolors()
-        
-        for facecolor in facecolors:
-            facecolor[3] = 0.05  # Make facecolor fully transparent
+        fig.add_trace(go.Scatter(
+            x=band_data['mjd'],
+            y=band_data['maglim'],
+            mode='markers',
+            marker=dict(color=color_map.get(band, 'gray'), symbol='triangle-down', opacity=0.7, size=12),
+            name=f'Upper Limit'
+        ))
 
-        for edgecolor in edgecolors:
-            edgecolor[3] = 1  # Set edgecolor to be semi-transparent
-
-        scatter.set_facecolors(facecolors)
-        scatter.set_edgecolors(edgecolors)
-        
-        # Storing scatter plot references and labels for non-detections
-        labels = [f'MJD: {mjd + 58000:.5f}<br>Mag: {maglim:.5f}<br>Filter: {filter_name}-band' for mjd, maglim in zip(band_data['mjd'], band_data['maglim'])]
-        non_det_scatter_dict[scatter] = labels
-        non_det_elements.append(scatter)
-
-    # Associating ID to color
+    # Detections
     for band in lc['fid'].unique():
-        if band == 1:
-            filter_name = 'g'
-        elif band == 2:
-            filter_name = 'r'
-        elif band == 3:
-            filter_name = 'i'
-        
         band_data = lc[lc['fid'] == band]
-        
-        scatter = ax.scatter(band_data['mjd'], band_data['mag_final'],
-                             color=color_map[filter_name], label=f'{filter_name}-band', marker=marker_map[filter_name])
-        
-        ax.errorbar(band_data['mjd'], band_data['mag_final'], yerr=band_data['emag_final'],
-                             fmt='none', color=color_map[filter_name], alpha=0.5)
-        
-        # Storing scatter plot references and labels
-        labels = [f'MJD: {mjd + 58000:.5f}<br>Mag: {mag:.5f}<br>Filter: {filter_name}-band' for mjd, mag in zip(band_data['mjd'], band_data['mag_final'])]
-        scatter_dict[scatter] = labels
+        fig.add_trace(go.Scatter(
+            x=band_data['mjd'],
+            y=band_data['mag_final'],
+            mode='markers',
+            error_y=dict(type='data', array=band_data['emag_final'], visible=True),
+            marker=dict(color=color_map.get(band, 'gray'), symbol=symbol_map.get(band, 'circle'), size=12),
+            name=f'band {band}'
+        ))
 
-    # Adding tooltips for non-detections
-    for scatter, labels in non_det_scatter_dict.items():
-        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 16px;")
-        plugins.connect(fig, tooltip)
+    y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
+    y_max = lc['mag_final'].max() + 0.5 if not lc['mag_final'].empty else 0
 
-    # Adding tooltip
-    for scatter, labels in scatter_dict.items():
-        tooltip = plugins.PointHTMLTooltip(scatter, labels=labels, css="background-color: white; color: black; font-size: 12px;")
-        plugins.connect(fig, tooltip)
+    if span == 'detections' and not lc.empty:
+        diff = lc['mjd'].max() - lc['mjd'].min()
+        if diff < 1:
+            x_min = lc['mjd'].min() - (diff * 1.2)
+            x_max = lc['mjd'].max() + (diff * 1.2)
+        else:
+            x_min = lc['mjd'].min() - 0.5
+            x_max = lc['mjd'].max() + 0.5
+        fig.update_xaxes(range=[x_min, x_max])
 
-    elements = [list(scatter_dict.keys()), non_det_elements]
-    labels = ['Alerts', 'Limits']
-    plugins.connect(fig, plugins.InteractiveLegendPlugin(elements, labels))
+    fig.update_layout(
+        width=950,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        title=f"Light Curve for {source_id}",
+        xaxis_title="MJD - 58000",
+        yaxis_title="Magnitude",
+        xaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black"),
+        yaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black", range=[y_max, y_min])
+    )
 
-    # Safeguard against invalid values for axis limits
-    detection_mags = lc['mag_final']
-    if not detection_mags.empty:
-        ax.set_ylim(detection_mags.max() + 0.5, detection_mags.min() - 0.5)
-
-    # Set x-axis limits based on the span parameter
-    if span == 'detections':
-        detection_dates = lc['mjd']
-        if not detection_dates.empty:
-            diff = detection_dates.max() - detection_dates.min()
-            if diff < 1:
-                ax.set_xlim(detection_dates.min() - (diff * 1.2), detection_dates.max() + (diff * 1.2))
-            else:    
-                ax.set_xlim(detection_dates.min() - 0.5, detection_dates.max() + 0.5)
-
-    # Finalize the plot
-    ax.tick_params(axis='both', which='major', labelsize=18)
-    ax.set_xlabel('MJD - 58000', fontsize=20)
-    ax.set_ylabel('Magnitude', fontsize=20)
-    ax.set_title(f'Light Curve for {source_id}', fontsize=22)
-    ax.legend(framealpha=1, facecolor='white')
-    ax.grid(alpha=.1)
-    plt.tight_layout()
-    fig.subplots_adjust(right=0.9)
-
-    # Convert the plot to HTML with mpld3
-    html_str = mpld3.fig_to_html(fig)
-
-    custom_css = """
-    <style>
-    body {font-size: 16px;}
-    .mpld3-legend text { 
-        font-size: 18px; 
-        fill: #000000; 
-    }
-    .mpld3-legend rect { 
-        fill: #FFFFE0; 
-        stroke: #000000; 
-        opacity: 0.8; 
-    }
-    .mpld3-tooltip {
-        background-color: white;
-        color: black;
-        font-size: 20px;
-    }
-    </style>
-    """
-    html_str = custom_css + html_str
-
-    # Save the HTML to a file
     plot_filename = f'static/light_curves/{source_id}_big_light_curve.html'
-    
     if span == "detections":
         plot_filename = f'static/light_curves/{source_id}_big_light_curve_zoomed.html'
-
-    with open(plot_filename, 'w') as f:
-        f.write(html_str)
-
-    plt.close(fig)
-
+    pio.write_html(fig, file=plot_filename, auto_open=False, full_html=False)
     return plot_filename
 
 
