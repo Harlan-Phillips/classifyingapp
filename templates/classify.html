@@ -601,8 +601,8 @@
                                     <iframe id="light-curve-small" src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="100%" height="520" style="border: 0px solid black"></iframe>
                                     <iframe id="light-curve-large" src="{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}" width="100%" height="620" style="display: none; border: 0px solid black"></iframe>
                                     <div class="zoom-buttons">
-                                        <button id="detections" class="btn btn-outline-primary">Detections Span</button>
-                                        <button id="all" class="btn btn-outline-primary">All</button>
+                                        <button id="lc-zoom-detections" class="btn btn-outline-primary">Detections Span</button>
+                                        <button id="lc-zoom-all" class="btn btn-outline-primary">All</button>
                                     </div>
                                 </div>  
                             </div>
@@ -927,29 +927,42 @@
     }
     
     function zoomPolarPlot(zoomLevel) {
-    var smallPolarPlotIframe = document.getElementById('polar-plot-small');
-    var largePolarPlotIframe = document.getElementById('polar-plot-large');
-    var smallLightCurveIframe = document.getElementById('light-curve-small');
-    var largeLightCurveIframe = document.getElementById('light-curve-large');
-    var smallLightSrc = smallLightCurveIframe.src;
-    var largeLightSrc = largeLightCurveIframe.src;
-    var smallSrc = smallPolarPlotIframe.src;
-    var largeSrc = largePolarPlotIframe.src;
+        var smallPolarPlotIframe = document.getElementById('polar-plot-small');
+        var largePolarPlotIframe = document.getElementById('polar-plot-large');
+        var smallBaseSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_polar_plot.html') }}";
+        var largeBaseSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_big_polar_plot.html') }}";
+        var smallOutSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_polar_plot_out.html') }}";
+        var largeOutSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_big_polar_plot_out.html') }}";
 
         if (zoomLevel === 'in') {
-            smallPolarPlotIframe.src = smallSrc.replace(/polar_plot_out\.html/, 'polar_plot.html');
-            largePolarPlotIframe.src = largeSrc.replace(/big_polar_plot_out\.html/, 'big_polar_plot.html');
-            smallLightCurveIframe.src = smallLightSrc.replace(/light_curve_zoomed\.html/, 'light_curve.html');
-            largeLightCurveIframe.src = largeLightSrc.replace(/big_light_curve_zoomed\.html/, 'big_light_curve.html');
+            smallPolarPlotIframe.src = smallBaseSrc;
+            largePolarPlotIframe.src = largeBaseSrc;
+            console.log("Zooming polar plot IN");
         } else if (zoomLevel === 'out') {
-            smallPolarPlotIframe.src = smallSrc.replace(/polar_plot\.html/, 'polar_plot_out.html');
-            largePolarPlotIframe.src = largeSrc.replace(/big_polar_plot\.html/, 'big_polar_plot_out.html');
-            smallLightCurveIframe.src = smallLightSrc.replace(/light_curve\.html/, 'light_curve_zoomed.html');
-            largeLightCurveIframe.src = largeLightSrc.replace(/big_light_curve\.html/, 'big_light_curve_zoomed.html');
+            smallPolarPlotIframe.src = smallOutSrc;
+            largePolarPlotIframe.src = largeOutSrc;
+            console.log("Zooming polar plot OUT");
         }
     }
 
-
+    function zoomLightCurve(zoomLevel) {
+        var smallLightCurveIframe = document.getElementById('light-curve-small');
+        var largeLightCurveIframe = document.getElementById('light-curve-large');
+        var smallBaseSrc = "{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}";
+        var largeBaseSrc = "{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}";
+        var smallZoomedSrc = "{{ url_for('static', filename='light_curves/' + plot_filename_zoomed.split('/')[-1]) }}";
+        var largeZoomedSrc = "{{ url_for('static', filename='light_curves/' + plot_big_filename_zoomed.split('/')[-1]) }}";
+        
+        if (zoomLevel === 'all') {
+            smallLightCurveIframe.src = smallBaseSrc;
+            largeLightCurveIframe.src = largeBaseSrc;
+            console.log("Zooming light curve to ALL");
+        } else if (zoomLevel === 'detections') {
+            smallLightCurveIframe.src = smallZoomedSrc;
+            largeLightCurveIframe.src = largeZoomedSrc;
+            console.log("Zooming light curve to DETECTIONS");
+        }
+    }
 
     document.getElementById('zoom-in').addEventListener('click', function() {
         zoomPolarPlot('in');
@@ -959,23 +972,16 @@
         zoomPolarPlot('out');
     });
 
-    document.getElementById('all').addEventListener('click', function() {
-        zoomPolarPlot('in');
+    // Correct the light curve zoom buttons
+    document.getElementById('lc-zoom-all').addEventListener('click', function() {
+        zoomLightCurve('all');
     });
 
-    document.getElementById('detections').addEventListener('click', function() {
-        zoomPolarPlot('out');
+    document.getElementById('lc-zoom-detections').addEventListener('click', function() {
+        zoomLightCurve('detections');
     });
 
-    const triggerTabList = document.querySelectorAll('#myTab button');
-    triggerTabList.forEach(triggerEl => {
-        const tabTrigger = new bootstrap.Tab(triggerEl);
-
-        triggerEl.addEventListener('click', event => {
-            event.preventDefault();
-            tabTrigger.show();
-        });
-    });
+    const triggerTabList = document.querySelectorAll('#myTab button, #plotTabs button'); // Include plotTabs
 
     // Initial check
     adjustIframe();
