@@ -493,9 +493,10 @@ def plot_triplet(tr):
         ax.imshow(
             data, origin='upper', cmap=plt.cm.bone,
             vmin=median-l_scale_factor[ii]*sig,
-            vmax=median+u_scale_factor[ii]*sig)
+            vmax=median+u_scale_factor[ii]*sig) # Corrected vmax index
         #norm=LogNorm())
         ax.set_title(titles[ii], fontsize = 12)
+
     fig.subplots_adjust(wspace=0)
     return fig  # Return the figure to allow saving
 
@@ -519,6 +520,127 @@ def plot_ztf_cutout(s, alert, cutout_type='science'):
     return fig
 
 def filter_and_plot_alerts(s, output_dir, object_id):
+    
+    # Define the desired order and keys for plots
+    plot_keys_definitions = {
+        'first': 'First Detection',
+        'last': 'Last Detection',
+        'median': 'Median Detection',
+        'highest_snr': 'Highest S/N',
+        'highest_drb': 'Highest DRB',
+        'lowest_drb': 'Lowest DRB',
+        'brightest_g': 'Brightest g-band',
+        'brightest_r': 'Brightest r-band'
+    }
+    plot_keys_ordered = list(plot_keys_definitions.keys())
+    # Initialize results with None placeholders for each key in order
+    plot_files_map = {key: None for key in plot_keys_ordered}
+
+    # Check if any files are missing to determine if querying/plotting is needed
+    need_query_or_plot = False
+    potential_filenames = [os.path.join(output_dir, f"{object_id}_{key}.png") for key in plot_keys_ordered]
+    for fname in potential_filenames:
+        if not os.path.isfile(fname):
+            need_query_or_plot = True
+            break
+
+    if not need_query_or_plot:
+        # All potential files exist, return their basenames in the correct order
+        return [os.path.basename(fname) for fname in potential_filenames if os.path.exists(fname)]
+
+    # Proceed with querying and plotting
+    q0 = {
+        "query_type": "find",
+        "query": {
+            "catalog": "ZTF_alerts",
+            "filter": {"objectId": object_id}
+        },
+        "kwargs": {
+            "limit": 1000, # Consider if this limit is sufficient
+        }
+    }
+    out = s.query(q0)
+    alerts = out["default"]["data"]
+    
+    if len(alerts) == 0:
+        print("No alerts found for the given object ID.")
+        return [] # Return empty list if no alerts
+
+    # Convert alerts to DataFrame
+    df = pd.DataFrame([alert['candidate'] for alert in alerts])
+    
+    # Ensure 'drb' column exists and handle potential non-numeric values if necessary
+    if 'drb' in df.columns:
+        df['drb'] = pd.to_numeric(df['drb'], errors='coerce') # Convert to numeric, coerce errors to NaN
+    else:
+        df['drb'] = np.nan # Add NaN column if 'drb' doesn't exist
+
+    if 'scorr' not in df.columns: # Ensure scorr exists for S/N
+        df['scorr'] = np.nan 
+
+    # --- Select Detections ---
+    key_detections = {}
+    df_sorted = df.sort_values(by='jd')
+
+    if not df_sorted.empty:
+        key_detections['first'] = df_sorted.iloc[0]
+        key_detections['last'] = df_sorted.iloc[-1]
+        key_detections['median'] = df_sorted.iloc[len(df_sorted) // 2]
+    
+    if not df['scorr'].isna().all():
+         key_detections['highest_snr'] = df.loc[df['scorr'].idxmax()] if not df['scorr'].isnull().all() else None
+
+    # DRB checks - ensure column exists and has valid values
+    if 'drb' in df.columns and not df['drb'].isna().all():
+         key_detections['highest_drb'] = df.loc[df['drb'].idxmax()] if not df['drb'].isnull().all() else None
+         key_detections['lowest_drb'] = df.loc[df['drb'].idxmin()] if not df['drb'].isnull().all() else None
+
+    # Brightest g/r checks
+    df_g = df[(df['fid'] == 1) & df['magpsf'].notna()]
+    if not df_g.empty:
+        key_detections['brightest_g'] = df_g.loc[df_g['magpsf'].idxmin()]
+    
+    df_r = df[(df['fid'] == 2) & df['magpsf'].notna()]
+    if not df_r.empty:
+        key_detections['brightest_r'] = df_r.loc[df_r['magpsf'].idxmin()]
+
+    # --- Plotting Loop (in predefined order) ---
+    for key in plot_keys_ordered:
+        if key in key_detections and key_detections[key] is not None:
+            detection = key_detections[key]
+            fname = os.path.join(output_dir, f"{object_id}_{key}.png")
+            
+            # Only plot if the file doesn't exist - CHECK RE-ADDED
+            if not os.path.isfile(fname):
+                try:
+                    # Find the corresponding full alert packet
+                    alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
+                    triplet = make_triplet(alert)
+                    fig = plot_triplet(triplet)
+                    fig.savefig(fname, bbox_inches="tight")
+                    plt.close(fig)
+                except StopIteration:
+                    print(f"Warning: Could not find full alert packet for {key} detection (candid: {detection.get('candid', 'N/A')}). Skipping plot.")
+                except Exception as e:
+                    print(f"Error plotting '{key}' for {object_id}: {e}")
+                    plt.close('all') # Close any potentially lingering plots
+
+            # Check if file exists (might have existed before or was just created) 
+            # and update the map if it does.
+            if os.path.isfile(fname):
+                 plot_files_map[key] = os.path.basename(fname)
+        # No need for an else clause, the map entry remains None if detection missing or plot failed
+             
+    # Return the list of filenames (or None) in the fixed order
+    return [plot_files_map[key] for key in plot_keys_ordered]
+
+def plot_ps1_cutout(s,ddir,name,ra,dec):
+    """ Plot cutout from PS1 """
+    if dec>0:
+        decsign = "+"
+    else:
+        decsign = "-"
+
         
     fnames = []
     need_query = False
@@ -616,12 +738,6 @@ def plot_ps1_cutout(s,ddir,name,ra,dec):
         plt.imshow(img_array)
         center_x = img_array.shape[1] // 2
         center_y = img_array.shape[0] // 2
-        # Draw horizontal line segments leaving a gap at the center
-        plt.plot([center_x - 20, center_x - 10], [center_y, center_y], color='lightgreen', lw=1)
-        plt.plot([center_x + 10, center_x + 20], [center_y, center_y], color='lightgreen', lw=1)
-        # Draw vertical line segments leaving a gap at the center
-        plt.plot([center_x, center_x], [center_y - 20, center_y - 10], color='lightgreen', lw=1)
-        plt.plot([center_x, center_x], [center_y + 10, center_y + 20], color='lightgreen', lw=1)
         plt.title("PS1 (y/g/i)", fontsize = 12)
         plt.axis('off')
         plt.tight_layout()
@@ -643,12 +759,6 @@ def plot_ls_cutout(s,ddir,name,ra,dec):
             img_array = np.asarray(Image.open(io.BytesIO(r.content)))
             center_x = img_array.shape[1] // 2
             center_y = img_array.shape[0] // 2
-            # Draw horizontal line segments leaving a gap at the center
-            plt.plot([center_x - 20, center_x - 10], [center_y, center_y], color='lightgreen', lw=1)
-            plt.plot([center_x + 10, center_x + 20], [center_y, center_y], color='lightgreen', lw=1)
-            # Draw vertical line segments leaving a gap at the center
-            plt.plot([center_x, center_x], [center_y - 20, center_y - 10], color='lightgreen', lw=1)
-            plt.plot([center_x, center_x], [center_y + 10, center_y + 20], color='lightgreen', lw=1)
             plt.title("LegSurv DR9", fontsize = 12)
             plt.axis('off')
             plt.tight_layout()
@@ -700,13 +810,23 @@ def plot_light_curve(lc, source_id, span=None):
     # Detections
     for band in lc['fid'].unique():
         band_data = lc[lc['fid'] == band]
+        # Determine filter name based on band (fid)
+        if band == 1:
+            filter_name = 'g-band'
+        elif band == 2:
+            filter_name = 'r-band'
+        elif band == 3:
+            filter_name = 'i-band' # Assuming fid 3 is i-band
+        else:
+            filter_name = f'band {band}' # Fallback for unknown bands
+
         fig.add_trace(go.Scatter(
             x=band_data['mjd'],
             y=band_data['mag_final'],
             mode='markers',
             error_y=dict(type='data', array=band_data['emag_final'], visible=True),
             marker=dict(color=color_map.get(band, 'gray'), symbol=symbol_map.get(band, 'circle'), size=10),
-            name=f'band {band}'
+            name=filter_name # Use the determined filter name
         ))
 
     # Flip y-axis
@@ -768,13 +888,23 @@ def plot_big_light_curve(lc, source_id, span=None):
     # Detections
     for band in lc['fid'].unique():
         band_data = lc[lc['fid'] == band]
+        # Determine filter name based on band (fid)
+        if band == 1:
+            filter_name = 'g-band'
+        elif band == 2:
+            filter_name = 'r-band'
+        elif band == 3:
+            filter_name = 'i-band' # Assuming fid 3 is i-band
+        else:
+            filter_name = f'band {band}' # Fallback for unknown bands
+
         fig.add_trace(go.Scatter(
             x=band_data['mjd'],
             y=band_data['mag_final'],
             mode='markers',
             error_y=dict(type='data', array=band_data['emag_final'], visible=True),
             marker=dict(color=color_map.get(band, 'gray'), symbol=symbol_map.get(band, 'circle'), size=12),
-            name=f'band {band}'
+            name=filter_name # Use the determined filter name
         ))
 
     y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
@@ -1294,26 +1424,18 @@ def fetch_transient_data(kowalski_session, source_id):
             plot_big_filename = plot_big_light_curve(light_curve, source_id)
             plot_big_filename_zoomed = plot_big_light_curve(light_curve, source_id, "detections")
 
-        # ZTF cutouts
-        ztf_cutout_paths = [
-            os.path.join(cutout_dir, f"{source_id}_first.png"),
-            os.path.join(cutout_dir, f"{source_id}_last.png"),
-            os.path.join(cutout_dir, f"{source_id}_highest_snr.png"),
-            os.path.join(cutout_dir, f"{source_id}_median.png"),
-            os.path.join(cutout_dir, f"{source_id}_highest_drb.png"),
-            os.path.join(cutout_dir, f"{source_id}_brightest_g.png"),
-            os.path.join(cutout_dir, f"{source_id}_brightest_r.png"),
-            os.path.join(cutout_dir, f"{source_id}_lowest_drb.png")
-        ]
-        ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout_paths if os.path.exists(path)]
-        logging.debug(f"ZTF Cutout Basenames: {ztf_cutout_basenames}")
-
-        if len(ztf_cutout_basenames) != 8:
-            ztf_cutout = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
-            ztf_cutout_basenames = [os.path.basename(path) for path in ztf_cutout]
+        # ZTF cutouts - Call filter_and_plot_alerts to get the list (potentially with Nones)
+        # The function now handles checking/generating plots internally.
+        ztf_cutout_filenames_or_none = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
+        
+        # Filter out None values for the list passed to the template, 
+        # but the template will still use fixed indices on the original list
+        ztf_cutout_basenames_for_template = ztf_cutout_filenames_or_none # Pass the list with Nones
+        logging.debug(f"ZTF Cutout list (with Nones): {ztf_cutout_basenames_for_template}")
 
         # Pan-STARRS (PS1) cutouts
         ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
+        # Reinstate os.path.exists check
         if os.path.exists(ps1_cutout_path):
             ps1_cutout_basename = f"{source_id}_ps1.png"
         else:
@@ -1323,14 +1445,18 @@ def fetch_transient_data(kowalski_session, source_id):
         # Legacy Survey (LS) cutouts
         ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
         ls_cutout_basename = ''
-        for attempt in range(5):  # Retry up to 5 times
-            if os.path.exists(ls_cutout_path):
-                ls_cutout_basename = f"{source_id}_ls.png"
-                break
-            else:
-                ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-                ls_cutout_basename = os.path.basename(ls_cutout) if ls_cutout else ''
-            time.sleep(2)  # Wait for 2 seconds before retrying
+        # Reinstate os.path.exists check and retry loop
+        if os.path.exists(ls_cutout_path):
+             ls_cutout_basename = f"{source_id}_ls.png"
+        else:
+            # Try to plot/fetch with retries if it doesn't exist
+            for attempt in range(3): # Reduced retries slightly
+                 ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
+                 if ls_cutout and os.path.exists(ls_cutout):
+                     ls_cutout_basename = os.path.basename(ls_cutout)
+                     break # Success
+                 time.sleep(1) # Wait 1 second before retrying
+            # If still no basename after retries, it remains ''
         logging.debug(f"LS Cutout Basename: {ls_cutout_basename}")
 
         legacy_survey_data = xmatch_ls(ra, dec) # Fetch Legacy Survey data
@@ -1428,7 +1554,7 @@ def fetch_transient_data(kowalski_session, source_id):
         coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
         ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4)
         dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4)
-
+        
         logging.debug(f"RA (string): {ra_str}, Dec (string): {dec_str}")
         # Return the core data needed
         data = {
@@ -1454,7 +1580,7 @@ def fetch_transient_data(kowalski_session, source_id):
             "plot_filename_zoomed": plot_filename_zoomed,  # Match key 'plot_filename_zoomed'
             "plot_big_filename": plot_big_filename,  # Match key 'plot_big_filename'
             "plot_big_filename_zoomed": plot_big_filename_zoomed,  # Match key 'plot_big_filename_zoomed'
-            "ztf_cutout": ztf_cutout_basenames,  # Match key 'ztf_cutout'
+            "ztf_cutout": ztf_cutout_basenames_for_template, # Pass the list with Nones
             "ps1_cutout": ps1_cutout_basename,  # Match key 'ps1_cutout'
             "ls_cutout": ls_cutout_basename,  # Match key 'ls_cutout'
             "legacy_amount": legacy_amount,

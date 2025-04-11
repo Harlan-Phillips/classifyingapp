@@ -177,6 +177,69 @@
         background-color: white;  /* Keep the header background white */
         z-index: 1;
     }
+
+    .ag-theme-alpine {
+        --ag-font-size: 12px;
+        --ag-font-family: monospace;
+        --ag-header-height: 30px;
+        --ag-header-foreground-color: black;
+        --ag-header-background-color: #f8f9fa;
+    }
+
+    /* Crosshair overlay styles for PS1/LS main image */
+    .main-image-container {
+        position: relative; /* Needed for absolute positioning */
+        display: inline-block; /* Allows text-center to work */
+        width: 60%; /* Apply the desired width here */
+        vertical-align: middle; /* Optional: Better align if text is nearby */
+    }
+
+    .main-image-container img {
+        display: block; /* Prevents extra space below image */
+        width: 100%; /* Make image fill the container */
+        height: auto; /* Maintain aspect ratio */
+    }
+
+    .main-image-container .crosshair-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0; /* Hidden by default */
+        transition: opacity 0.2s ease-in-out;
+        pointer-events: none;
+    }
+
+    .main-image-container .crosshair-overlay::before,
+    .main-image-container .crosshair-overlay::after {
+        content: '';
+        position: absolute;
+        background-color: rgba(144, 238, 144, 0.7); /* Light green */
+    }
+
+    /* Vertical line */
+    .main-image-container .crosshair-overlay::before {
+        left: 50%;
+        top: 0;
+        width: 3px; /* Increased thickness */
+        height: 100%;
+        transform: translateX(-50%);
+    }
+
+    /* Horizontal line */
+    .main-image-container .crosshair-overlay::after {
+        top: calc(50% + 18px); /* Shift down by 3px */
+        left: 0;
+        height: 3px; /* Increased thickness */
+        width: 100%;
+        transform: translateY(-50%); /* Keep this transform */
+    }
+
+    /* Show overlay on container hover */
+    .main-image-container:hover .crosshair-overlay {
+        opacity: 1;
+    }
 </style>
 
 <body>
@@ -236,7 +299,7 @@
                                     <!-- Galactic Latitude Check -->
                                     <p><strong>Galactic (l, b):</strong> 
                                         {{ galactic_l|round(4) }}, 
-                                        {% if galactic_b < 12 %}
+                                        {% if galactic_b|abs < 12 %}
                                             <span style="color:red;"><strong>{{ galactic_b|round(4) }}</strong></span>
                                         {% else %}
                                             {{ galactic_b|round(4) }}
@@ -246,7 +309,7 @@
                                     <!-- Ecliptic Latitude Check -->
                                     <p><strong>Ecliptic (λ, β):</strong> 
                                         {{ ecliptic_lon|round(4) }}, 
-                                        {% if ecliptic_lat < 8 %}
+                                        {% if ecliptic_lat|abs < 8 %}
                                             <span style="color:red;"><strong>{{ ecliptic_lat|round(4) }}</strong></span>
                                         {% else %}
                                             {{ ecliptic_lat|round(4) }}
@@ -273,7 +336,13 @@
                             
                                 <div class="col-6">
                                     <!-- Number of Alerts -->
-                                    <p><strong>Number of alerts:</strong> {{ alert_count }} </p>
+                                    <p><strong>Number of alerts:</strong> 
+                                        {% if alert_count <= 3 %}
+                                            <span style="color:red;"><strong>{{ alert_count }}</strong></span>
+                                        {% else %}
+                                            {{ alert_count }}
+                                        {% endif %}
+                                    </p>
                             
                                     <!-- Scatter Separation Check -->
                                     <p><strong>Scatter Separation:</strong> 
@@ -342,35 +411,77 @@
                     </ul>
                     <div class="tab-content" id="cutoutTabsContent">
                         <p></p>
+                        {# Display plots based on the fixed order and availability #}
+                        {# Index 0: First #}
+                        {% if ztf_cutout and ztf_cutout[0] %}
                         <div class="tab-pane fade show active" id="first" role="tabpanel" aria-labelledby="first-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                            {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[0]) }}" alt="First ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
+                        {% endif %}
+                        {# Index 1: Last #}
+                        {% if ztf_cutout and ztf_cutout[1] %}
                         <div class="tab-pane fade" id="last" role="tabpanel" aria-labelledby="last-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                            {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[1]) }}" alt="Last ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
+                        {% endif %}
+                        {# Index 2: Median #}
+                        {% if ztf_cutout and ztf_cutout[2] %}
                         <div class="tab-pane fade" id="median" role="tabpanel" aria-labelledby="median-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[3]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                             {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}" alt="Median ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
+                        {% endif %}
+                        {# Index 3: Highest S/N #}
+                        {% if ztf_cutout and ztf_cutout[3] %}
                         <div class="tab-pane fade" id="sn" role="tabpanel" aria-labelledby="sn-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[2]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                             {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[3]) }}" alt="Highest S/N ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
-                        {% if min_drb is not none and max_drb is not none and med_drb is not none and avg_drb is not none %}
+                        {% endif %}
+                        {# Index 4: Highest DRB (Check existence of DRB values first, then if plot file exists) #}
+                        {% if min_drb is not none and ztf_cutout and ztf_cutout[4] %}
                         <div class="tab-pane fade" id="highdrb" role="tabpanel" aria-labelledby="highdrb-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[4]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                             {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[4]) }}" alt="Highest DRB ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
+                        {% endif %}
+                        {# Index 5: Lowest DRB (Check existence of DRB values first, then if plot file exists) #}
+                        {% if min_drb is not none and ztf_cutout and ztf_cutout[5] %}
                         <div class="tab-pane fade" id="lowdrb" role="tabpanel" aria-labelledby="lowdrb-tab" tabindex="0">
-                            <img id="ztf-image" src="{{ url_for('static', filename='cutouts/' + ztf_cutout[-1]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                             {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[5]) }}" alt="Lowest DRB ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
                         {% endif %}
-                        {% if ztf_cutout|length > 5 and ztf_cutout[5] %}
+                        {# Index 6: Brightest g-band #}
+                        {% if ztf_cutout and ztf_cutout[6] %}
                         <div class="tab-pane fade" id="brightg" role="tabpanel" aria-labelledby="brightg-tab" tabindex="0">
-                            <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[5]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                             {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[6]) }}" alt="Brightest g-band ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
                         {% endif %}
-                        
-                        {% if ztf_cutout|length > 6 and ztf_cutout[6] %}
+                        {# Index 7: Brightest r-band #}
+                        {% if ztf_cutout and ztf_cutout[7] %}
                         <div class="tab-pane fade" id="brightr" role="tabpanel" aria-labelledby="brightr-tab" tabindex="0">
-                            <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[6]) }}" alt="ZTF Cutout for {{ source_id }}" style="width:65%" class="img">
+                             {# <div class="ztf-image-container"> #}
+                                <img src="{{ url_for('static', filename='cutouts/' + ztf_cutout[7]) }}" alt="Brightest r-band ZTF Cutout for {{ source_id }}" style="width:65%;" class="img">
+                                {# <div class="crosshair-overlay"></div> #}
+                            {# </div> #}
                         </div>
                         {% endif %}
                     {% endif %}
@@ -388,14 +499,18 @@
                     <p>No classifications yet.</p>
                     {% endif %}
                     <div class="text-center">
-                        {% if ps1_cutout %}
-                            <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}" class="img" style="width:60%;">
-                        {% elif ls_cutout %}
-                            <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ls_cutout) }}" alt="LS Cutout for {{ source_id }}" class="img" style="width:60%">
-                        {% else %}
-                        <p>No Image</p>
-                        {% endif %}
-
+                        {# Wrap the main PS1/LS image in the container, apply width to container #}
+                        <div class="main-image-container">
+                            {% if ps1_cutout %}
+                                <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ps1_cutout) }}" alt="PS1 Cutout for {{ source_id }}" class="img" >
+                            {% elif ls_cutout %}
+                                <img id="main-image" src="{{ url_for('static', filename='cutouts/' + ls_cutout) }}" alt="LS Cutout for {{ source_id }}" class="img" >
+                            {% else %}
+                                <p>No Image</p>
+                            {% endif %}
+                            {# Add the overlay div #}
+                            <div class="crosshair-overlay"></div> 
+                        </div>
                     </div>
                     <!-- Buttons to Switch Image -->
                     <div class="btn-toolbar mt-2 justify-content-center" role="toolbar" aria-label="Image Switcher">
@@ -826,10 +941,35 @@
 
     $(document).ready(function() {
         $('.table').DataTable({
-            "scrollY": "400px",  // Set vertical scrolling height
-            "scrollCollapse": true,
-            "paging": false,  // Disable pagination
-            "autoWidth": false  // Disable automatic column width calculation
+            scrollX: true,
+            scrollY: '50vh',
+            scrollCollapse: true,
+            paging: false,
+            ordering: true,
+            searching: true,
+            info: true,
+            
+            // Custom rendering for numerical columns
+            columnDefs: [
+                {
+                    targets: [0,4,5,6,7,8,9,10,11], // Numerical column indexes
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return parseFloat(data).toFixed(6); // Show 6 decimal places
+                        }
+                        return data; // Use full precision for sorting/filtering
+                    }
+                }
+            ],
+            
+            // Custom DOM layout
+            dom: '<"top"f>rt<"bottom"i>',
+            
+            // Language customization  
+            language: {
+                search: "Filter: ",
+                info: "Showing _TOTAL_ entries"
+            }
         });
     });
     </script>

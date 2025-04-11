@@ -11,3 +11,13 @@
 !/vlass_utils.py
 !/wpd_datasets.csv
 !/templates/
+_pycache__/utils.cpython-312.pyc
+.DS_Store
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+static/cutouts/
+static/light_curves/

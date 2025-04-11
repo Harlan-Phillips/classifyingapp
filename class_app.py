@@ -214,8 +214,8 @@ def classify(source_id):
     # Save to database
     db.session.commit()
     
-    flash(f'Your classification for {source_id} as "{classification}" has been recorded.', 'success')
-    return redirect(url_for('random_transient'))
+    flash(f'Your classification for {source_id} as "{classification_text}" has been recorded.', 'success')
+    return redirect(url_for('classify_source', source_id=source_id))
 
 @class_app.route('/classify/<source_id>', methods=['GET'])
 @login_required
