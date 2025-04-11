@@ -1378,17 +1378,77 @@ def fetch_transient_data(kowalski_session, source_id):
         ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
         logging.debug(f"Ecliptic Coordinates - lon: {ecliptic_lon}, lat: {ecliptic_lat}")
 
-        # Fetch detections
+        # Fetch the original public alerts first
         dets = get_dets(kowalski_session, source_id)
-        logging.debug(f"Detections: {dets}")
+        logging.debug(f"Original Public Alerts (dets): {dets[:5] if dets else 'No public alerts'}") # Log first 5 alerts
 
-        # Transform detections into alerts and count them
-        alerts_raw = alert_table(dets)
-        alerts_raw = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
-        alert_count = len(alerts_raw)
-        logging.debug(f"Alerts: {alerts_raw}, Alert Count: {alert_count}")
+        # Fetch comprehensive light curve data (includes alerts, forced phot, prv dets)
+        light_curve = get_lc(kowalski_session, source_id)
+        logging.debug(f"Comprehensive Light Curve DataFrame head:\n{light_curve.head() if not light_curve.empty else 'Empty LC DataFrame'}")
+        
+        # Calculate alert count based on actual detections in the comprehensive LC
+        detections_lc = pd.DataFrame() # Initialize empty DataFrame
+        if not light_curve.empty and 'isdet' in light_curve.columns:
+             detections_lc = light_curve[light_curve['isdet'] == True].copy()
+        alert_count = detections_lc.shape[0]
+        logging.debug(f"Total Detections (for count): {alert_count}")
 
-        # Fetch DRB (Detection Real-Bogus) values
+        # Preprocess detections to ensure consistent data format between sources
+        # Check for source of alerts and fill missing fields
+        if 'origin' in detections_lc.columns:
+            logging.debug(f"Detection origins: {detections_lc['origin'].value_counts().to_dict()}")
+            # Check for alerts with missing required columns and add placeholders
+            needed_columns = ['programid', 'field', 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1']
+            for col in needed_columns:
+                if col not in detections_lc.columns:
+                    detections_lc[col] = None
+        else:
+            # If origin column missing, assume all are from main alert stream
+            detections_lc['origin'] = 'alert'
+    
+        # For easier debugging
+        logging.debug(f"Detection sources: {detections_lc['origin'].value_counts() if 'origin' in detections_lc.columns else 'Unknown'}")
+
+        # Prepare data for the alert table from the comprehensive LC detections
+        # Select and rename columns to match table expectations, handle missing data
+        table_columns_map = {
+            'jd': 'jd',
+            'fid': 'fid',
+            # These might be NaN if the detection came from forced photometry/prv_candidates
+            'programid': 'programid', 
+            'field': 'field',        
+            'ra': 'ra',            
+            'dec': 'dec',           
+            'mag_final': 'magpsf',   # Use mag_final as the magnitude
+            'emag_final': 'sigmapsf', # Use emag_final as the error
+            'ssdistnr': 'ssdistnr',   
+            'ssmagnr': 'ssmagnr',    
+            'sgscore1': 'sgscore1',  
+            'distpsnr1': 'distpsnr1',
+            'origin': 'origin'      # Add origin field to show data source
+        }
+        raw_alerts_for_table = pd.DataFrame()
+        if not detections_lc.empty:
+            raw_alerts_for_table = detections_lc.copy()
+            # Select columns that exist in detections_lc based on the map keys
+            existing_source_cols = [col for col in table_columns_map.keys() if col in raw_alerts_for_table.columns]
+            raw_alerts_for_table = raw_alerts_for_table[existing_source_cols]
+            # Rename columns to match HTML table keys (the values in the map)
+            raw_alerts_for_table = raw_alerts_for_table.rename(columns=table_columns_map)
+            # Ensure all expected columns exist, fill missing ones with NaN
+            expected_table_cols = list(table_columns_map.values())
+            for expected_col in expected_table_cols:
+                if expected_col not in raw_alerts_for_table.columns:
+                    raw_alerts_for_table[expected_col] = np.nan 
+            # Reorder columns to the expected sequence for the table
+            raw_alerts_for_table = raw_alerts_for_table[expected_table_cols]
+            
+        # Convert NaN to None for JSON/template compatibility if needed, then to dicts
+        raw_alerts = raw_alerts_for_table.replace({np.nan: None}).to_dict(orient='records')
+        logging.debug(f"Data for Alert Table (first 5 rows): {raw_alerts[:5]}")
+
+        # Fetch DRB stats based on original alerts (dets)
+        # DRB is specific to alert packets, so using original alerts makes sense here.
         med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, dets)
         logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
 
@@ -1404,28 +1464,27 @@ def fetch_transient_data(kowalski_session, source_id):
         else:
             wise_filename = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
 
-        # Light curves
+        # Light curves (use the comprehensive light_curve DataFrame fetched earlier)
         light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
         big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
+        light_curve_zoomed_path = os.path.join(light_cur, f"{source_id}_light_curve_zoomed.html")
+        big_light_curve_zoomed_path = os.path.join(light_cur, f"{source_id}_big_light_curve_zoomed.html")
 
-        if os.path.exists(light_curve_path):
-            plot_filename = f"static/light_curves/{source_id}_light_curve.html"
-            plot_filename_zoomed = f"static/light_curves/{source_id}_light_curve_zoomed.html"
-        else:
-            light_curve = get_lc(kowalski_session, source_id)
+        # Check and generate light curve plots using the comprehensive 'light_curve' DataFrame
+        plot_filename = light_curve_path.replace(basedir + '/', '')
+        plot_filename_zoomed = light_curve_zoomed_path.replace(basedir + '/', '')
+        if not os.path.exists(light_curve_path) or not os.path.exists(light_curve_zoomed_path):
             plot_filename = plot_light_curve(light_curve, source_id)
             plot_filename_zoomed = plot_light_curve(light_curve, source_id, "detections")
 
-        if os.path.exists(big_light_curve_path):
-            plot_big_filename = f"static/light_curves/{source_id}_big_light_curve.html"
-            plot_big_filename_zoomed = f"static/light_curves/{source_id}_big_light_curve_zoomed.html"
-        else:
-            light_curve = get_lc(kowalski_session, source_id)
+        plot_big_filename = big_light_curve_path.replace(basedir + '/', '')
+        plot_big_filename_zoomed = big_light_curve_zoomed_path.replace(basedir + '/', '')
+        if not os.path.exists(big_light_curve_path) or not os.path.exists(big_light_curve_zoomed_path):
             plot_big_filename = plot_big_light_curve(light_curve, source_id)
             plot_big_filename_zoomed = plot_big_light_curve(light_curve, source_id, "detections")
 
         # ZTF cutouts - Call filter_and_plot_alerts to get the list (potentially with Nones)
-        # The function now handles checking/generating plots internally.
+        # This still uses the original alerts (via get_dets inside) to pick specific moments.
         ztf_cutout_filenames_or_none = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
         
         # Filter out None values for the list passed to the template, 
@@ -1478,6 +1537,7 @@ def fetch_transient_data(kowalski_session, source_id):
         logging.debug(f"Legacy Survey Data: {legacy_survey_data}")
 
         sdss_data = None
+        # Use the original 'dets' list here to check the first alert packet info
         if dets and dets[0]['candidate']['ssdistnr'] != -999.0 and dets[0]['candidate']['ssmagnr'] != -999.0:
             sdss_data = {
                 'ssdistnr': dets[0]['candidate']['ssdistnr'],
@@ -1485,21 +1545,23 @@ def fetch_transient_data(kowalski_session, source_id):
             }
         logging.debug(f"SDSS Data: {sdss_data}")
 
-        # Aggregate Pan-STARRS data and remove duplicates
+        # Aggregate Pan-STARRS data and remove duplicates from original 'dets'
         pan_starrs_data = []
         seen_sgscore1 = set()
-        for det in dets:
-            candidate = det['candidate']
-            # Filter based on your conditions
-            if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and \
-            'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and \
-            candidate['distpsnr1'] <= 3:
-                if candidate['sgscore1'] not in seen_sgscore1:
-                    pan_starrs_data.append({
-                        'distpsnr1': candidate['distpsnr1'],
-                        'sgscore1': candidate['sgscore1']
-                    })
-                    seen_sgscore1.add(candidate['sgscore1'])
+        # Use the original 'dets' list here to check alert packet info
+        if dets: # Check if dets is not empty
+            for det in dets:
+                candidate = det['candidate']
+                # Filter based on your conditions
+                if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and \
+                'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and \
+                candidate['distpsnr1'] <= 3:
+                    if candidate['sgscore1'] not in seen_sgscore1:
+                        pan_starrs_data.append({
+                            'distpsnr1': candidate['distpsnr1'],
+                            'sgscore1': candidate['sgscore1']
+                        })
+                        seen_sgscore1.add(candidate['sgscore1'])
 
         # Create DataFrame only from filtered data
         pan_starrs_df = pd.DataFrame(pan_starrs_data)
@@ -1513,8 +1575,12 @@ def fetch_transient_data(kowalski_session, source_id):
             ps1_dist = None
             ps1_sgs = None
 
-        # Create the polar plot
-        ztf_alerts = pd.DataFrame([det['candidate'] for det in dets])
+        # Create the polar plot using original 'dets'
+        # Convert original alert packets to DataFrame for polar plot function
+        ztf_alerts_for_polar = pd.DataFrame()
+        if dets:
+             ztf_alerts_for_polar = pd.DataFrame([det['candidate'] for det in dets])
+        
         polar_plot_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
         polar_big_plot_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
         polar_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
@@ -1522,10 +1588,11 @@ def fetch_transient_data(kowalski_session, source_id):
         
         if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out):
             ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
-            plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
-            plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
-            plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
-            plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
+            # Pass the DataFrame created from original alerts
+            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
+            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
+            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
+            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
         # Retrieve classifications and determine the most confident classification
         classifications = Classification.query.filter_by(source_id=source_id).all()
         classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
@@ -1594,8 +1661,13 @@ def fetch_transient_data(kowalski_session, source_id):
             "classified_by_users": classified_by_users,  # Match key 'classified_by_users'
             "most_confident_classification": most_confident_classification,  # Match key 'most_confident_classification'
             "ra_str": ra_str,  # Match key 'ra_str'
-            "dec_str": dec_str  # Match key 'dec_str'
+            "dec_str": dec_str,  # Match key 'dec_str'
+            # Pass the prepared raw_alerts list (from get_lc detections) to the template
+            "raw_alerts": raw_alerts
         }
+        
+        # Log the number of entries being sent to the template for the table
+        logging.debug(f"Number of entries in raw_alerts being sent to template: {len(raw_alerts)}")
 
         return data
 
