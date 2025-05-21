@@ -125,7 +125,8 @@ def get_dets(s, name):
                 "candidate.ssmagnr": 1,
                 "candidate.distpsnr1": 1,
                 "candidate.sgscore1": 1,
-                "candidate.drb": 1
+                "candidate.drb": 1,
+                "candidate.diffmaglim": 1
             }
         }
     }
@@ -247,206 +248,203 @@ def get_ecliptic(ra, dec):
 
 def get_lc(s, name):
     """ Retrieve LC for object """
-    # The alerts
-    dets = get_dets(s, name)
-    if not dets:
-        # If no alerts, try getting forced photometry directly
-        logging.warning(f"No detection alerts found for {name}. Checking forced photometry.")
+    lc = pd.DataFrame() # Initialize an empty DataFrame
+    df_alerts = pd.DataFrame()
+    df_forced = pd.DataFrame()
+    df_prv_candidates = pd.DataFrame()
+
+    try:
+        # The alerts
+        dets = get_dets(s, name)
+        if dets:
+            df_alerts = pd.DataFrame(dets)
+            # Ensure essential alert columns exist, even if empty
+            for col in ['ra', 'dec', 'magpsf', 'sigmapsf', 'fid', 'jd', 'programid', 'field', 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1', 'isdiffpos', 'diffmaglim']:
+                if col not in df_alerts.columns:
+                    df_alerts[col] = np.nan 
+            df_alerts['origin'] = 'alert'
+            logging.debug(f"Alerts for {name}: {len(df_alerts)} rows. Columns: {df_alerts.columns.tolist()}")
+
+        # Forced photometry for previous detections
         det_prv_forced = get_prv_dets_forced(s, name)
         if det_prv_forced:
-            lc = pd.DataFrame(det_prv_forced)
-            # Rename forced phot columns to match expected final columns if possible
-            if 'mag' in lc.columns: lc['mag_final'] = lc['mag']
-            if 'magerr' in lc.columns: lc['emag_final'] = lc['magerr']
-            if 'limmag5sig' in lc.columns: lc['maglim'] = lc['limmag5sig']
-            if 'forcediffimflux' in lc.columns and 'forcediffimfluxunc' in lc.columns:
-                 lc['snr'] = lc['forcediffimflux'] / lc['forcediffimfluxunc']
-                 lc['isdet'] = lc['snr'] > 3
-            else:
-                 lc['isdet'] = False # Assume non-detection if flux/snr info missing
-            # Add required columns if missing
-            for col in ['jd', 'fid', 'ra', 'dec', 'programid', 'field', 'isalert']:
-                 if col not in lc.columns:
-                      lc[col] = None # Or appropriate default
-            lc['isalert'] = False # Mark as not alert
-            lc['origin'] = 'forced_photometry' # Add origin
-            logging.debug(f"Created LC DataFrame solely from forced photometry for {name}.")
-        else:
-            logging.error(f"No alert or forced photometry data found for {name}.")
-            return pd.DataFrame() # Return empty DataFrame if no data at all
-    else:
-        df_alerts = pd.DataFrame([val['candidate'] for val in dets])
-        df_alerts['isalert'] = True
-        df_alerts['origin'] = 'alert' # Add origin
-        lc = df_alerts
+            df_forced = pd.DataFrame(det_prv_forced)
+            # Ensure essential forced phot columns exist
+            for col in ['jd', 'fid', 'mag', 'magerr', 'maglim', 'ra', 'dec', 'programid', 'field', 'forcediffimflux', 'forcediffimfluxunc']:
+                if col not in df_forced.columns:
+                    df_forced[col] = np.nan
+            df_forced['origin'] = 'forced'
+            logging.debug(f"Forced photometry for {name}: {len(df_forced)} rows. Columns: {df_forced.columns.tolist()}")
 
-    # Get 30-day history from forced photometry
-    det_prv_forced = get_prv_dets_forced(s, name)
-    if det_prv_forced is not None:
-        df_forced = pd.DataFrame(det_prv_forced)
+        # Previous candidates (includes non-detections/upper limits from alerts)
+        prv_candidates = get_prv_dets(s, name)
+        if prv_candidates:
+            df_prv_candidates = pd.DataFrame(prv_candidates)
+            # Ensure essential prv_candidate columns exist
+            for col in ['jd', 'fid', 'magpsf', 'sigmapsf', 'maglim', 'programid', 'field', 'ra', 'dec', 'isdiffpos']:
+                 if col not in df_prv_candidates.columns:
+                    df_prv_candidates[col] = np.nan
+            df_prv_candidates['origin'] = 'prv_candidate'
+            logging.debug(f"Previous candidates for {name}: {len(df_prv_candidates)} rows. Columns: {df_prv_candidates.columns.tolist()}")
+
+        # --- Start Merging --- 
+        if not df_alerts.empty:
+            lc = df_alerts.copy()
+            # Rename alert columns to intermediate standard names if they exist
+            if 'magpsf' in lc.columns: lc['mag_intermediate'] = lc['magpsf']
+            if 'sigmapsf' in lc.columns: lc['magerr_intermediate'] = lc['sigmapsf']
+            if 'ra' in lc.columns: lc['ra_intermediate'] = lc['ra']
+            if 'dec' in lc.columns: lc['dec_intermediate'] = lc['dec']
+            if 'diffmaglim' in lc.columns: lc['maglim_intermediate'] = lc['diffmaglim'] # Added this line for alert maglim
+        
         if not df_forced.empty:
-            df_forced['isalert'] = False
-            df_forced['origin'] = 'forced_photometry' # Add origin
+            # Rename forced phot columns to intermediate standard names if they exist
+            if 'mag' in df_forced.columns: df_forced['mag_intermediate'] = df_forced['mag']
+            if 'magerr' in df_forced.columns: df_forced['magerr_intermediate'] = df_forced['magerr']
+            if 'maglim' in df_forced.columns: df_forced['maglim_intermediate'] = df_forced['maglim'] # maglim specific to forced/prv_candidates
+            if 'ra' in df_forced.columns: df_forced['ra_intermediate'] = df_forced['ra']
+            if 'dec' in df_forced.columns: df_forced['dec_intermediate'] = df_forced['dec']
 
-            # Merge the two dataframes
-            lc = lc.merge(
-                df_forced, on='jd', how='outer',
-                suffixes=['_alerts', '_forced30d']).sort_values('jd').reset_index()
-
-            # Define columns to drop CAREFULLY - Keep essential ones like ra, dec, fid, mag, err
-            cols_to_drop = ['index', 'rcid', 'rfid', 'sciinpseeing', 'scibckgnd',
-                'scisigpix', 'magzpsci', 'magzpsciunc', 'magzpscirms', 'clrcoeff',
-                'clrcounc', 'exptime', 'adpctdif1', 'adpctdif2', 'procstatus',
-                'distnr', 'ranr', 'decnr', 'magnr', 'sigmagnr', 'chinr',
-                'sharpnr', 'forcediffimflux', 'forcediffimfluxunc', 'limmag3sig'] # REMOVED ra, dec, alert_ra, alert_dec etc.
-                # Also keep 'ra', 'dec' potentially coming from forced photometry if available
-            cols_to_drop_existing = [col for col in cols_to_drop if col in lc.columns]
-            lc = lc.drop(cols_to_drop_existing, axis=1, errors='ignore')
-
-            # --- Combine essential columns --- Keep original names if possible
-            # RA/Dec: Prioritize alert coords, fall back to forced phot coords if they exist
-            lc['ra'] = lc['ra_alerts'].combine_first(lc.get('ra_forced30d', pd.Series(index=lc.index)))
-            lc['dec'] = lc['dec_alerts'].combine_first(lc.get('dec_forced30d', pd.Series(index=lc.index)))
-
-            lc['fid'] = lc['fid_alerts'].combine_first(lc['fid_forced30d'])
-            lc['programid'] = lc['programid_alerts'].combine_first(lc['programid_forced30d'])
-            lc['field'] = lc['field_alerts'].combine_first(lc['field_forced30d'])
-            lc['isalert'] = lc['isalert_alerts'].combine_first(lc['isalert_forced30d'])
-            lc['origin'] = lc['origin_alerts'].combine_first(lc['origin_forced30d'])
-
-            # Select magnitudes. Options: magpsf/sigmapsf (alert), mag/magerr (30d)
-            lc['mag_final'] = lc['magpsf']  # alert value
-            lc['emag_final'] = lc['sigmapsf']  # alert value
-            if 'mag' in lc.columns and 'snr' in lc.columns:
-                 # Ensure 'snr' is numeric before comparison
-                 lc['snr'] = pd.to_numeric(lc['snr'], errors='coerce')
-                 valid_snr_mask = lc['snr'] > 3
-                 lc.loc[valid_snr_mask, 'mag_final'] = lc.loc[valid_snr_mask, 'mag']
-                 if 'magerr' in lc.columns:
-                      lc.loc[valid_snr_mask, 'emag_final'] = lc.loc[valid_snr_mask, 'magerr']
-
-            # Select limits. Use limmag5sig if available
-            lc['maglim'] = lc.get('limmag5sig', pd.Series(index=lc.index))
-
-            # Define whether detection or not based on SNR or alert status
-            if 'snr' in lc.columns:
-                 lc['isdet'] = np.logical_or(lc['isalert'] == True, lc['snr'] > 3)
+            if lc.empty:
+                lc = df_forced.copy()
             else:
-                 # Fallback if SNR is missing (e.g., only alerts were present)
-                 lc['isdet'] = lc['isalert'] == True
+                # Merge based on JD, prioritizing alert data for conflicts
+                lc = pd.merge(lc, df_forced, on=['jd', 'fid'], how='outer', suffixes=('_alert', '_forced'))
+                # Coalesce common columns, prioritizing alert data if not already done by suffix handling
+                for col_base in ['mag_intermediate', 'magerr_intermediate', 'ra_intermediate', 'dec_intermediate', 'programid', 'field', 'origin']:
+                    if f'{col_base}_alert' in lc.columns and f'{col_base}_forced' in lc.columns:
+                        lc[col_base] = lc[f'{col_base}_alert'].combine_first(lc[f'{col_base}_forced'])
+                        lc.drop(columns=[f'{col_base}_alert', f'{col_base}_forced'], inplace=True)
+                    elif f'{col_base}_alert' in lc.columns: # Only alert data existed
+                        lc.rename(columns={f'{col_base}_alert': col_base}, inplace=True)
+                    elif f'{col_base}_forced' in lc.columns: # Only forced data existed
+                        lc.rename(columns={f'{col_base}_forced': col_base}, inplace=True)
+                # Handle maglim from forced photometry
+                if 'maglim_intermediate_forced' in lc.columns:
+                    lc['maglim'] = lc['maglim_intermediate_forced']
+                    if 'maglim_intermediate_alert' in lc.columns and 'maglim' in lc.columns:
+                         lc['maglim'] = lc['maglim_intermediate_alert'].combine_first(lc['maglim'])
+                    # If maglim_intermediate (from alerts) exists and maglim_intermediate_forced also, prioritize alert
+                    elif 'maglim_intermediate' in lc.columns and 'maglim_intermediate_forced' in lc.columns: # Check if this intermediate is from alert
+                        lc['maglim'] = lc['maglim_intermediate'].combine_first(lc['maglim_intermediate_forced'])
+                    elif 'maglim_intermediate' in lc.columns: # Only alert maglim exists at this stage
+                        lc['maglim'] = lc['maglim_intermediate']
+                    lc.drop(columns=[col for col in ['maglim_intermediate_alert', 'maglim_intermediate_forced', 'maglim_intermediate'] if col in lc.columns and col != 'maglim'], inplace=True) # ensure intermediate from alert is also dropped if used
+                elif 'maglim_intermediate' in df_forced.columns: # if lc was empty and df_forced was copied
+                    lc['maglim'] = df_forced['maglim_intermediate']
 
-            # Drop merged/intermediate columns
-            cols_to_drop_final = [
-                'ra_alerts', 'dec_alerts', 'ra_forced30d', 'dec_forced30d',
-                'fid_alerts', 'fid_forced30d', 'field_alerts', 'field_forced30d',
-                'programid_alerts', 'programid_forced30d', 'isalert_alerts',
-                'isalert_forced30d', 'origin_alerts', 'origin_forced30d',
-                'magpsf', 'sigmapsf', 'mag', 'magerr', 'snr', 'limmag5sig',
-                'diffmaglim', # Often redundant or less useful than limmag5sig
-                'pid' # Process ID, usually not needed
-                # Keep 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1' if they exist
-            ]
-            cols_to_drop_final_existing = [col for col in cols_to_drop_final if col in lc.columns]
-            lc = lc.drop(cols_to_drop_final_existing, axis=1, errors='ignore')
+        if not df_prv_candidates.empty:
+            # Rename prv_candidate columns to intermediate standard names
+            if 'magpsf' in df_prv_candidates.columns: df_prv_candidates['mag_intermediate'] = df_prv_candidates['magpsf']
+            if 'sigmapsf' in df_prv_candidates.columns: df_prv_candidates['magerr_intermediate'] = df_prv_candidates['sigmapsf']
+            if 'maglim' in df_prv_candidates.columns: df_prv_candidates['maglim_intermediate'] = df_prv_candidates['maglim']
+            if 'ra' in df_prv_candidates.columns: df_prv_candidates['ra_intermediate'] = df_prv_candidates['ra']
+            if 'dec' in df_prv_candidates.columns: df_prv_candidates['dec_intermediate'] = df_prv_candidates['dec']
 
-            # Drop rows where essential data (mag or limit) is missing
-            # Keep rows that are non-detections but have a limit
-            essential_missing_mask = lc['mag_final'].isna() & lc['maglim'].isna()
-            lc = lc[~essential_missing_mask]
+            if lc.empty:
+                lc = df_prv_candidates.copy()
+            else:
+                # Merge prv_candidates, treating them mostly as potential upper limits or context
+                lc = pd.merge(lc, df_prv_candidates, on=['jd', 'fid'], how='outer', suffixes=('_current', '_prv'))
+                for col_base in ['mag_intermediate', 'magerr_intermediate', 'maglim_intermediate', 'ra_intermediate', 'dec_intermediate', 'programid', 'field', 'origin', 'isdiffpos']:
+                    if f'{col_base}_current' in lc.columns and f'{col_base}_prv' in lc.columns:
+                        lc[col_base] = lc[f'{col_base}_current'].combine_first(lc[f'{col_base}_prv'])
+                        lc.drop(columns=[f'{col_base}_current', f'{col_base}_prv'], inplace=True)
+                    elif f'{col_base}_current' in lc.columns:
+                        lc.rename(columns={f'{col_base}_current': col_base}, inplace=True)
+                    elif f'{col_base}_prv' in lc.columns:
+                        lc.rename(columns={f'{col_base}_prv': col_base}, inplace=True)
+                # Ensure maglim is properly coalesced
+                if 'maglim_intermediate_prv' in lc.columns and 'maglim' not in lc.columns:
+                     lc['maglim'] = lc['maglim_intermediate_prv']
+                elif 'maglim_intermediate_prv' in lc.columns and 'maglim' in lc.columns:
+                     lc['maglim'] = lc['maglim_intermediate_prv'].combine_first(lc['maglim'])
+                if 'maglim_intermediate_current' in lc.columns and 'maglim' not in lc.columns:
+                     lc['maglim'] = lc['maglim_intermediate_current']
+                elif 'maglim_intermediate_current' in lc.columns and 'maglim' in lc.columns:
+                     lc['maglim'] = lc['maglim_intermediate_current'].combine_first(lc['maglim'])
+                # Drop intermediate maglim columns from prv_candidates merge
+                lc.drop(columns=[col for col in ['maglim_intermediate_current', 'maglim_intermediate_prv', 'maglim_intermediate'] if col in lc.columns and col != 'maglim'], inplace=True)
+        
+        # At this point, lc should have 'mag_intermediate', 'magerr_intermediate', 'ra_intermediate', 'dec_intermediate', and potentially 'maglim'
+        # Create final 'mag_final' and 'emag_final' etc.
+        if 'mag_intermediate' in lc.columns:
+            lc['mag_final'] = lc['mag_intermediate']
         else:
-            # Case where only alerts exist, ensure columns match final schema
-            if 'magpsf' in lc.columns: lc['mag_final'] = lc['magpsf']
-            if 'sigmapsf' in lc.columns: lc['emag_final'] = lc['sigmapsf']
-            # Ensure other essential columns exist
-            if 'maglim' not in lc.columns: lc['maglim'] = np.nan
-            if 'isdet' not in lc.columns: lc['isdet'] = True # Assume alerts are detections
-            if 'ra' not in lc.columns: lc['ra'] = np.nan # Should exist from alerts
-            if 'dec' not in lc.columns: lc['dec'] = np.nan # Should exist from alerts
+            lc['mag_final'] = np.nan # Ensure column exists
 
-            # Drop original mag/err if renamed
-            lc = lc.drop(['magpsf', 'sigmapsf'], axis=1, errors='ignore')
+        if 'magerr_intermediate' in lc.columns:
+            lc['emag_final'] = lc['magerr_intermediate']
+        else:
+            lc['emag_final'] = np.nan # Ensure column exists
 
-    # --- Handle prv_candidates (older detections, often without forced phot info) ---
-    df_prv = pd.DataFrame(get_prv_dets(s, name))
-    if not df_prv.empty:
-        logging.debug(f"Found {len(df_prv)} prv_candidates for {name}. Merging.")
-        df_prv['isalert'] = False
-        df_prv['origin'] = 'prv_candidate'
+        if 'ra_intermediate' in lc.columns:
+            lc['ra'] = lc['ra_intermediate'] # Final RA column
+        elif 'ra' not in lc.columns: # If no intermediate and no original 'ra' (e.g. from empty alerts only)
+            lc['ra'] = np.nan
 
-        # Select/rename relevant columns from prv_candidates before merge
-        # Prioritize magpsf/sigmapsf if available
-        prv_cols_map = {
-            'jd': 'jd',
-            'fid': 'fid',
-            'ra': 'ra',
-            'dec': 'dec',
-            'magpsf': 'mag_final',
-            'sigmapsf': 'emag_final',
-            'diffmaglim': 'maglim'
-            # Add other potentially useful columns? ssdistnr, ssmagnr, sgscore1, distpsnr1?
-        }
-        cols_to_keep = [col for col in prv_cols_map.keys() if col in df_prv.columns]
-        df_prv_renamed = df_prv[cols_to_keep].rename(columns=prv_cols_map)
+        if 'dec_intermediate' in lc.columns:
+            lc['dec'] = lc['dec_intermediate'] # Final Dec column
+        elif 'dec' not in lc.columns:
+            lc['dec'] = np.nan
 
-        # Define prv_candidates as detections if they have mag_final
-        df_prv_renamed['isdet'] = df_prv_renamed['mag_final'].notna()
-
-        # Merge with existing lc data, avoiding duplicate columns from previous merge
-        # Use suffixes specific to this merge step
-        lc = lc.merge(df_prv_renamed, on='jd', how='outer', suffixes=['_main', '_prv'])
-
-        # --- Combine columns after prv_candidate merge --- #
-        # Iterate through columns that might have _main and _prv versions
-        for col_base in ['fid', 'ra', 'dec', 'mag_final', 'emag_final', 'maglim', 'isdet', 'isalert', 'origin']:
-            col_main = f'{col_base}_main'
-            col_prv = f'{col_base}_prv'
-            if col_main in lc.columns and col_prv in lc.columns:
-                lc[col_base] = lc[col_main].combine_first(lc[col_prv])
-                lc = lc.drop([col_main, col_prv], axis=1)
-            elif col_main in lc.columns: # Only main exists (no overlap or prv didn't have it)
-                lc[col_base] = lc[col_main]
-                lc = lc.drop(col_main, axis=1)
-            elif col_prv in lc.columns: # Only prv exists
-                lc[col_base] = lc[col_prv]
-                lc = lc.drop(col_prv, axis=1)
-            # If neither exists, the column won't be created
-
-        # Ensure essential columns exist after all merges, fill with NaN if necessary
-        final_expected_cols = ['jd', 'ra', 'dec', 'fid', 'mag_final', 'emag_final', 'maglim', 'isdet', 'isalert', 'origin',
-                               'programid', 'field', 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1']
-        for col in final_expected_cols:
+        # Ensure other essential columns for the final list exist, even if they are all NaN
+        # These are columns expected by `fetch_transient_data` for the final_columns_to_keep list
+        # or for other calculations like `isdet`
+        ensure_cols = ['jd', 'fid', 'programid', 'field', 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1', 'isdiffpos', 'origin', 'maglim']
+        for col in ensure_cols:
             if col not in lc.columns:
                 lc[col] = np.nan
 
-        # Sort final DataFrame
-        lc = lc.sort_values('jd').reset_index(drop=True)
+        # Determine detections based on mag_final (actual measurement) vs maglim (upper limit)
+        if 'mag_final' in lc.columns and 'maglim' in lc.columns:
+            # A row is a detection if mag_final is not NaN
+            # A row is an upper limit if mag_final is NaN but maglim is not NaN
+            lc['isdet'] = lc['mag_final'].notna()
+        elif 'mag_final' in lc.columns: # Only mag_final exists (e.g. no upper limits data)
+             lc['isdet'] = lc['mag_final'].notna()
+        elif not lc.empty: # lc is not empty but lacks mag_final (should be rare if defaults are set)
+             lc['isdet'] = False 
+        elif lc.empty: # lc is truly empty, create isdet for schema consistency if needed by final_columns_to_keep
+            if 'isdet' in final_columns_to_keep:
+                 lc['isdet'] = pd.Series(dtype=bool) # Empty boolean series
+        
+        # Final cleanup - drop rows where both mag_final and maglim are NaN, if both columns exist
+        if 'mag_final' in lc.columns and 'maglim' in lc.columns:
+            final_drop_mask = lc['mag_final'].isna() & lc['maglim'].isna()
+            if not lc.empty: lc = lc[~final_drop_mask]
+        elif 'mag_final' in lc.columns: # Only mag_final exists, drop if it's NaN
+            if not lc.empty: lc = lc[lc['mag_final'].notna()]
 
-    # Final check for isdet - should be True if mag_final is not NaN
-    # This corrects cases where only prv_candidates were merged without explicit isdet
-    if 'isdet' in lc.columns and 'mag_final' in lc.columns:
-         lc['isdet'] = lc['isdet'].fillna(lc['mag_final'].notna())
-    elif 'mag_final' in lc.columns:
-         lc['isdet'] = lc['mag_final'].notna()
+        # --- Final Column Selection and Cleanup BEFORE returning --- #
+        # Define the columns that are absolutely expected in the output of get_lc
+        final_columns_to_keep = [
+            'jd', 'ra', 'dec', 'fid', 'mag_final', 'emag_final', 'maglim', 
+            'isdiffpos', 'programid', 'field', 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1', 'origin', 'isdet'
+        ]
+        
+        # Create a new DataFrame with only these columns, filling missing ones with NaN
+        # This ensures consistency in the returned DataFrame structure.
+        if not lc.empty:
+            # First, ensure all columns to keep exist in lc, adding them with NaNs if not.
+            for col in final_columns_to_keep:
+                if col not in lc.columns:
+                    lc[col] = np.nan
+            # Then, select only these columns in the specified order.
+            lc = lc[final_columns_to_keep]
+        else:
+            # If lc became empty, return an empty DataFrame but with the correct columns for schema consistency
+            lc = pd.DataFrame(columns=final_columns_to_keep)
 
-    # Final cleanup - drop rows where mag_final and maglim are both NaN
-    final_drop_mask = lc['mag_final'].isna() & lc['maglim'].isna()
-    lc = lc[~final_drop_mask]
+        logging.debug(f"get_lc for {name} returning DataFrame with shape {lc.shape} and columns {lc.columns.tolist()}")
+        if lc.empty:
+            logging.warning(f"get_lc for {name} is returning an empty DataFrame.")
 
-    # --- Final Column Cleanup BEFORE returning --- #
-    # Ensure only the intended final columns exist, drop any intermediate ones
-    # that might have survived the merge logic (like original magpsf/sigmapsf)
-    final_columns_to_keep = [
-        'jd', 'ra', 'dec', 'fid', 'mag_final', 'emag_final', 'maglim',
-        'isdet', 'isalert', 'origin', 'programid', 'field', 'ssdistnr',
-        'ssmagnr', 'sgscore1', 'distpsnr1'
-        # Add any other columns that are *intentionally* generated and needed downstream
-    ]
-    # Select only the columns that exist in the DataFrame from the desired list
-    actual_columns_to_keep = [col for col in final_columns_to_keep if col in lc.columns]
-    lc = lc[actual_columns_to_keep]
-
-    logging.debug(f"Final LC for {name} has {len(lc)} rows. Detections: {lc['isdet'].sum() if 'isdet' in lc.columns else 'N/A'}.")
-    logging.debug(f"Final LC columns (after final cleanup): {lc.columns.tolist()}")
+    except Exception as e:
+        logging.error(f"Critical error in get_lc for {name}: {e}", exc_info=True)
+        # In case of any unexpected error, return an empty DataFrame with the correct schema
+        lc = pd.DataFrame(columns=final_columns_to_keep)
+        logging.warning(f"get_lc for {name} returning empty DataFrame due to exception.")
 
     return lc
 
@@ -850,15 +848,51 @@ matplotlib.use('Agg')  # Use a non-interactive backend
 import matplotlib.pyplot as plt
 
 def plot_light_curve(lc, source_id, span=None):
+    logging.debug(f"plot_light_curve for {source_id} (span={span}) received lc with {len(lc)} rows. Columns: {lc.columns.tolist()}")
+    if not lc.empty:
+        logging.debug(f"Initial lc head:\n{lc.head()}")
+        logging.debug(f"Value counts for 'isdet' in initial lc:\n{lc['isdet'].value_counts(dropna=False)}")
+        if 'maglim' in lc.columns:
+            logging.debug(f"Number of non-NaN maglim in initial lc: {lc['maglim'].notna().sum()}")
+            logging.debug(f"Number of NaN maglim in initial lc: {lc['maglim'].isna().sum()}")
+        else:
+            logging.debug("'maglim' column not present in initial lc")
+        if 'mag_final' in lc.columns:
+            logging.debug(f"Number of non-NaN mag_final in initial lc: {lc['mag_final'].notna().sum()}")
+        else:
+            logging.debug("'mag_final' column not present in initial lc")
+
+
     # Preserve existing data prep logic
-    non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
-    lc = lc.dropna(subset=['mag_final']) if lc['mag_final'].isna().sum() > 0 else lc
-    non_dets = non_dets.dropna(subset=['maglim']) if non_dets['maglim'].isna().sum() > 0 else non_dets
+    non_dets = lc[lc['isdet'] == False].copy() # Removed & (lc['maglim'] > 1)
+    logging.debug(f"After filtering for isdet == False, non_dets has {len(non_dets)} rows. Columns: {non_dets.columns.tolist()}")
+    if not non_dets.empty:
+        logging.debug(f"non_dets head (after isdet == False):\n{non_dets.head()}")
+        if 'maglim' in non_dets.columns:
+            logging.debug(f"Number of non-NaN maglim in non_dets (after isdet == False): {non_dets['maglim'].notna().sum()}")
+            logging.debug(f"Number of NaN maglim in non_dets (after isdet == False): {non_dets['maglim'].isna().sum()}")
+
+
+    lc_detections = lc.dropna(subset=['mag_final']) if 'mag_final' in lc.columns and lc['mag_final'].isna().sum() > 0 else lc.copy() # Changed to lc_detections
+    logging.debug(f"After dropna on 'mag_final' for detections, lc_detections has {len(lc_detections)} rows.")
+    if not lc_detections.empty:
+        logging.debug(f"lc_detections head:\n{lc_detections.head()}")
+
+    non_dets = non_dets.dropna(subset=['maglim']) if 'maglim' in non_dets.columns and non_dets['maglim'].isna().sum() > 0 else non_dets
+    logging.debug(f"After dropna on 'maglim' for non_dets, non_dets has {len(non_dets)} rows.")
+    if not non_dets.empty:
+        logging.debug(f"non_dets head (after maglim dropna):\n{non_dets.head()}")
+        logging.debug(f"Non-detections to be plotted: {len(non_dets)}")
+        if 'maglim' in non_dets.columns:
+            logging.debug(f"Unique maglim values in final non_dets: {non_dets['maglim'].unique()}")
+
 
     # Convert JD to MJD
     from astropy.time import Time
-    lc['mjd'] = Time(lc['jd'], format='jd').mjd - 58000
-    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
+    if not lc_detections.empty and 'jd' in lc_detections.columns: # Use lc_detections
+        lc_detections['mjd'] = Time(lc_detections['jd'], format='jd').mjd - 58000
+    if not non_dets.empty and 'jd' in non_dets.columns:
+        non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
 
     fig = go.Figure()
     color_map = {1: 'seagreen', 2: 'crimson', 3: 'goldenrod'}
@@ -876,8 +910,8 @@ def plot_light_curve(lc, source_id, span=None):
         ))
     
     # Detections
-    for band in lc['fid'].unique():
-        band_data = lc[lc['fid'] == band]
+    for band in lc_detections['fid'].unique(): # Use lc_detections
+        band_data = lc_detections[lc_detections['fid'] == band] # Use lc_detections
         # Determine filter name based on band (fid)
         if band == 1:
             filter_name = 'g-band'
@@ -898,17 +932,26 @@ def plot_light_curve(lc, source_id, span=None):
         ))
 
     # Flip y-axis
-    y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
-    y_max = lc['mag_final'].max() + 0.5 if not lc['mag_final'].empty else 0
+    y_min_val = lc_detections['mag_final'].min() if not lc_detections.empty and 'mag_final' in lc_detections.columns and lc_detections['mag_final'].notna().any() else 25  # Default if empty or all NaN
+    y_max_val = lc_detections['mag_final'].max() if not lc_detections.empty and 'mag_final' in lc_detections.columns and lc_detections['mag_final'].notna().any() else 15 # Default if empty or all NaN
+    
+    # Consider non_dets for y-axis range as well
+    if not non_dets.empty and 'maglim' in non_dets.columns and non_dets['maglim'].notna().any():
+        y_min_val = min(y_min_val, non_dets['maglim'].min())
+        y_max_val = max(y_max_val, non_dets['maglim'].max())
 
-    if span == 'detections' and not lc.empty:
-        diff = lc['mjd'].max() - lc['mjd'].min()
+    y_min = y_min_val - 0.5
+    y_max = y_max_val + 0.5
+
+
+    if span == 'detections' and not lc_detections.empty and 'mjd' in lc_detections.columns: # Use lc_detections
+        diff = lc_detections['mjd'].max() - lc_detections['mjd'].min() # Use lc_detections
         if diff < 1:
-            x_min = lc['mjd'].min() - (diff * 1.2)
-            x_max = lc['mjd'].max() + (diff * 1.2)
+            x_min = lc_detections['mjd'].min() - (diff * 1.2) # Use lc_detections
+            x_max = lc_detections['mjd'].max() + (diff * 1.2) # Use lc_detections
         else:
-            x_min = lc['mjd'].min() - 0.5
-            x_max = lc['mjd'].max() + 0.5
+            x_min = lc_detections['mjd'].min() - 0.5 # Use lc_detections
+            x_max = lc_detections['mjd'].max() + 0.5 # Use lc_detections
         fig.update_xaxes(range=[x_min, x_max])
     
     fig.update_layout(
@@ -929,14 +972,42 @@ def plot_light_curve(lc, source_id, span=None):
     return plot_filename
 
 def plot_big_light_curve(lc, source_id, span=None):
+    logging.debug(f"plot_big_light_curve for {source_id} (span={span}) received lc with {len(lc)} rows. Columns: {lc.columns.tolist()}")
+    if not lc.empty:
+        logging.debug(f"Initial lc head (big plot):\n{lc.head()}")
+        logging.debug(f"Value counts for 'isdet' in initial lc (big plot):\n{lc['isdet'].value_counts(dropna=False)}")
+        if 'maglim' in lc.columns:
+            logging.debug(f"Number of non-NaN maglim in initial lc (big plot): {lc['maglim'].notna().sum()}")
+        else:
+            logging.debug("'maglim' column not present in initial lc (big plot)")
+        if 'mag_final' in lc.columns:
+            logging.debug(f"Number of non-NaN mag_final in initial lc (big plot): {lc['mag_final'].notna().sum()}")
+        else:
+            logging.debug("'mag_final' column not present in initial lc (big plot)")
+
     # Preserve existing data prep logic
-    non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
-    lc = lc.dropna(subset=['mag_final']) if lc['mag_final'].isna().sum() > 0 else lc
-    non_dets = non_dets.dropna(subset=['maglim']) if non_dets['maglim'].isna().sum() > 0 else non_dets
+    non_dets = lc[lc['isdet'] == False].copy() # Removed & (lc['maglim'] > 1)
+    logging.debug(f"After filtering for isdet == False, non_dets (big plot) has {len(non_dets)} rows. Columns: {non_dets.columns.tolist()}")
+    if not non_dets.empty:
+        logging.debug(f"non_dets head (big plot, after isdet == False):\n{non_dets.head()}")
+        if 'maglim' in non_dets.columns:
+             logging.debug(f"Number of non-NaN maglim in non_dets (big plot, after isdet == False): {non_dets['maglim'].notna().sum()}")
+
+    lc_detections = lc.dropna(subset=['mag_final']) if 'mag_final' in lc.columns and lc['mag_final'].isna().sum() > 0 else lc.copy() # Changed to lc_detections
+    logging.debug(f"After dropna on 'mag_final' for detections, lc_detections (big plot) has {len(lc_detections)} rows.")
+
+    non_dets = non_dets.dropna(subset=['maglim']) if 'maglim' in non_dets.columns and non_dets['maglim'].isna().sum() > 0 else non_dets
+    logging.debug(f"After dropna on 'maglim' for non_dets, non_dets (big plot) has {len(non_dets)} rows.")
+    if not non_dets.empty:
+        logging.debug(f"non_dets head (big plot, after maglim dropna):\n{non_dets.head()}")
+        logging.debug(f"Non-detections to be plotted (big plot): {len(non_dets)}")
+
 
     from astropy.time import Time
-    lc['mjd'] = Time(lc['jd'], format='jd').mjd - 58000
-    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
+    if not lc_detections.empty and 'jd' in lc_detections.columns: # Use lc_detections
+        lc_detections['mjd'] = Time(lc_detections['jd'], format='jd').mjd - 58000
+    if not non_dets.empty and 'jd' in non_dets.columns:
+        non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
 
     fig = go.Figure()
     color_map = {1: 'seagreen', 2: 'crimson', 3: 'goldenrod'}
@@ -954,8 +1025,8 @@ def plot_big_light_curve(lc, source_id, span=None):
         ))
 
     # Detections
-    for band in lc['fid'].unique():
-        band_data = lc[lc['fid'] == band]
+    for band in lc_detections['fid'].unique(): # Use lc_detections
+        band_data = lc_detections[lc_detections['fid'] == band] # Use lc_detections
         # Determine filter name based on band (fid)
         if band == 1:
             filter_name = 'g-band'
@@ -975,17 +1046,25 @@ def plot_big_light_curve(lc, source_id, span=None):
             name=filter_name # Use the determined filter name
         ))
 
-    y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
-    y_max = lc['mag_final'].max() + 0.5 if not lc['mag_final'].empty else 0
+    y_min_val = lc_detections['mag_final'].min() if not lc_detections.empty and 'mag_final' in lc_detections.columns and lc_detections['mag_final'].notna().any() else 25
+    y_max_val = lc_detections['mag_final'].max() if not lc_detections.empty and 'mag_final' in lc_detections.columns and lc_detections['mag_final'].notna().any() else 15
 
-    if span == 'detections' and not lc.empty:
-        diff = lc['mjd'].max() - lc['mjd'].min()
+    if not non_dets.empty and 'maglim' in non_dets.columns and non_dets['maglim'].notna().any():
+        y_min_val = min(y_min_val, non_dets['maglim'].min())
+        y_max_val = max(y_max_val, non_dets['maglim'].max())
+    
+    y_min = y_min_val - 0.5
+    y_max = y_max_val + 0.5
+
+
+    if span == 'detections' and not lc_detections.empty and 'mjd' in lc_detections.columns: # Use lc_detections
+        diff = lc_detections['mjd'].max() - lc_detections['mjd'].min() # Use lc_detections
         if diff < 1:
-            x_min = lc['mjd'].min() - (diff * 1.2)
-            x_max = lc['mjd'].max() + (diff * 1.2)
+            x_min = lc_detections['mjd'].min() - (diff * 1.2) # Use lc_detections
+            x_max = lc_detections['mjd'].max() + (diff * 1.2) # Use lc_detections
         else:
-            x_min = lc['mjd'].min() - 0.5
-            x_max = lc['mjd'].max() + 0.5
+            x_min = lc_detections['mjd'].min() - 0.5 # Use lc_detections
+            x_max = lc_detections['mjd'].max() + 0.5 # Use lc_detections
         fig.update_xaxes(range=[x_min, x_max])
 
     fig.update_layout(
@@ -1141,6 +1220,7 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+    ax.invert_xaxis()  
 
     plt.tight_layout()
     #fig.subplots_adjust(top=0.9, bottom=0.1, left=0.1, right=0.9, hspace=0.2, wspace=0.2)
@@ -1234,6 +1314,7 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+    ax.invert_xaxis() 
 
     plt.tight_layout()
     #fig.subplots_adjust(top=.98, bottom=0.2, left=0.1, right=.75, hspace=0, wspace=0)
@@ -1433,420 +1514,401 @@ def plot_wise(s, name, ra, dec, output_path):
 
 def fetch_transient_data(kowalski_session, source_id):
     """Fetch all the required data for rendering a classification page for a given source."""
+    # Initialize all potential data fields to None or default values
+    # This ensures the data dictionary always has a consistent structure.
+    ra, dec, scat_sep = None, None, None
+    ra_str, dec_str = "N/A", "N/A"
+    galactic_l, galactic_b = "N/A", "N/A"
+    ecliptic_lon, ecliptic_lat = "N/A", "N/A"
+    original_dets_packets = []
+    light_curve_df = pd.DataFrame()
+    detections_lc_df = pd.DataFrame()
+    alert_count = 0
+    raw_alerts = []
+    med_drb, min_drb, max_drb, avg_drb = "N/A", "N/A", "N/A", "N/A"
+    span = "N/A"
+    wise_filename = None
+    plot_filename_rel, plot_filename_zoomed_rel = None, None
+    plot_big_filename_rel, plot_big_filename_zoomed_rel = None, None
+    ztf_cutout_basenames_for_template = [None] * 8 # Assuming 8 potential cutouts
+    ps1_cutout_basename = None
+    ls_cutout_basename = None
+    legacy_survey_data = pd.DataFrame()
+    legacy_amount = 0
+    legacy_data = []
+    sdss_data = None
+    ps1_dist, ps1_sgs = "N/A", "N/A"
+    polar_plot_rel_path, polar_big_plot_rel_path = None, None
+    polar_plot_out_rel_path, polar_big_plot_out_rel_path = None, None
+    classifications = []
+    classified_by_users = []
+    most_confident_classification = None
+    general_error_message = None # To store any top-level error
+
     try:
-        # Fetch positional and galactic data
-        ra, dec, scat_sep = get_pos(kowalski_session, source_id)
-        if ra is None or dec is None:
-            logging.error(f"Could not determine position for {source_id}")
-            return None # Cannot proceed without position
-        logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
+        # Attempt to fetch primary positional data
+        try:
+            ra, dec, scat_sep = get_pos(kowalski_session, source_id)
+            if ra is None or dec is None:
+                logging.warning(f"Could not determine position for {source_id} via get_pos. Some features will be unavailable.")
+                # general_error_message = "Primary position not found. Some data may be unavailable."
+                # Do not return yet, try to get other data
+            else:
+                logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
+                # Convert RA/Dec to sexagesimal strings if available
+                try:
+                    coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
+                    ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4, pad=True)
+                    dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4, pad=True, alwayssign=True)
+                except Exception as coord_err:
+                    logging.error(f"Error converting RA/Dec to string for {source_id}: {coord_err}")
+                    ra_str, dec_str = "Error", "Error"
+                
+                # Fetch galactic coordinates
+                galactic_l, galactic_b = get_galactic(ra, dec)
+                logging.debug(f"Galactic Coordinates - l: {galactic_l}, b: {galactic_b}")
 
-        # Fetch galactic coordinates
-        galactic_l, galactic_b = get_galactic(ra, dec)
-        logging.debug(f"Galactic Coordinates - l: {galactic_l}, b: {galactic_b}")
+                # Fetch ecliptic coordinates
+                ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
+                logging.debug(f"Ecliptic Coordinates - lon: {ecliptic_lon}, lat: {ecliptic_lat}")
 
-        # Fetch ecliptic coordinates
-        ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
-        logging.debug(f"Ecliptic Coordinates - lon: {ecliptic_lon}, lat: {ecliptic_lat}")
+        except Exception as pos_exc:
+            logging.error(f"Critical error fetching position for {source_id}: {pos_exc}")
+            general_error_message = "Error fetching primary position. Most data will be unavailable."
+            # Still proceed to create the data dict with what we have (mostly Nones)
 
-        # Fetch the original public alerts (needed for DRB and span)
-        # We will NOT use this for the main table or alert count anymore
-        original_dets_packets = get_dets(kowalski_session, source_id)
-        logging.debug(f"Original Public Alerts (dets packets): {len(original_dets_packets) if original_dets_packets else 0} found")
+        # Fetch the original public alerts (needed for DRB and span, even if RA/Dec failed)
+        try:
+            original_dets_packets = get_dets(kowalski_session, source_id) or []
+            logging.debug(f"Original Public Alerts (dets packets): {len(original_dets_packets)} found")
+        except Exception as dets_exc:
+            logging.error(f"Error fetching original alert packets for {source_id}: {dets_exc}")
+            # general_error_message = general_error_message or "Error fetching alert packets."
+
 
         # Fetch comprehensive light curve data (includes alerts, forced phot, prv dets)
-        # THIS WILL BE THE PRIMARY SOURCE FOR TABLE AND COUNT
-        light_curve_df = get_lc(kowalski_session, source_id)
-        if light_curve_df is None or light_curve_df.empty:
-             logging.warning(f"Comprehensive light curve (get_lc) returned empty or None for {source_id}. Falling back to original dets packets.")
-             # Fallback: use original alert packets if get_lc fails
-             if original_dets_packets:
-                 light_curve_df = pd.DataFrame([p['candidate'] for p in original_dets_packets])
-                 # Add necessary columns if missing from original packets
-                 if 'mag_final' not in light_curve_df.columns and 'magpsf' in light_curve_df.columns:
-                     light_curve_df['mag_final'] = light_curve_df['magpsf']
-                 if 'emag_final' not in light_curve_df.columns and 'sigmapsf' in light_curve_df.columns:
-                     light_curve_df['emag_final'] = light_curve_df['sigmapsf']
-                 if 'isdet' not in light_curve_df.columns:
-                      # Assume all original packets are detections if 'isdet' is missing
-                      light_curve_df['isdet'] = True 
-                 if 'origin' not in light_curve_df.columns:
-                      light_curve_df['origin'] = 'alert_packet'
-             else:
-                 # If both fail, create an empty DataFrame to avoid errors later
-                 light_curve_df = pd.DataFrame()
-                 logging.error(f"No alert data could be retrieved for {source_id} from get_lc or get_dets.")
+        try:
+            light_curve_df = get_lc(kowalski_session, source_id)
+            if light_curve_df is None or light_curve_df.empty:
+                 logging.warning(f"Comprehensive light curve (get_lc) returned empty or None for {source_id}.")
+                 if not original_dets_packets: # Only if get_lc failed AND no original packets
+                     general_error_message = general_error_message or "No light curve or alert data found."
+                 # Fallback: use original alert packets if get_lc fails and packets exist
+                 if original_dets_packets:
+                     light_curve_df = pd.DataFrame([p['candidate'] for p in original_dets_packets])
+                     # Add necessary columns if missing from original packets
+                     if 'mag_final' not in light_curve_df.columns and 'magpsf' in light_curve_df.columns:
+                         light_curve_df['mag_final'] = light_curve_df['magpsf']
+                     if 'emag_final' not in light_curve_df.columns and 'sigmapsf' in light_curve_df.columns:
+                         light_curve_df['emag_final'] = light_curve_df['sigmapsf']
+                     if 'maglim' not in light_curve_df.columns and 'diffmaglim' in light_curve_df.columns: # Added this block
+                         light_curve_df['maglim'] = light_curve_df['diffmaglim']
+                     if 'isdet' not in light_curve_df.columns:
+                          light_curve_df['isdet'] = True 
+                     if 'origin' not in light_curve_df.columns:
+                          light_curve_df['origin'] = 'alert_packet'
+                 else:
+                     light_curve_df = pd.DataFrame() # Ensure it's an empty DF
+            logging.debug(f"Comprehensive Light Curve DataFrame head:\n{light_curve_df.head() if not light_curve_df.empty else 'Empty LC DataFrame'}")
+        except Exception as lc_exc:
+            logging.error(f"Error fetching comprehensive light curve for {source_id}: {lc_exc}")
+            general_error_message = general_error_message or "Error processing light curve data."
+            light_curve_df = pd.DataFrame() # Ensure it's an empty DF on error
 
-        logging.debug(f"Comprehensive Light Curve DataFrame head:\n{light_curve_df.head() if not light_curve_df.empty else 'Empty LC DataFrame'}")
 
         # Calculate alert count based on actual detections in the comprehensive LC DataFrame
-        detections_lc_df = pd.DataFrame() # Initialize empty DataFrame
         if not light_curve_df.empty and 'isdet' in light_curve_df.columns:
-             # Ensure 'isdet' is boolean or comparable to True
              try:
                  detections_lc_df = light_curve_df[light_curve_df['isdet'] == True].copy()
              except Exception as e:
                  logging.error(f"Error filtering light_curve_df by 'isdet': {e}. LC columns: {light_curve_df.columns}")
-                 # Attempt recovery if possible, or default to empty
-                 if 'isdet' in light_curve_df.columns: # Check again if column exists
-                     detections_lc_df = light_curve_df[light_curve_df['isdet'].notna()].copy() # Fallback: Count non-null isdet
+                 if 'isdet' in light_curve_df.columns:
+                     detections_lc_df = light_curve_df[light_curve_df['isdet'].notna()].copy() 
                  else:
-                    detections_lc_df = light_curve_df.copy() # Fallback: Count all if isdet is missing
+                    detections_lc_df = light_curve_df.copy() 
+        else:
+            detections_lc_df = pd.DataFrame()
 
-        alert_count = detections_lc_df.shape[0] # THIS IS THE CORRECT COUNT
+
+        alert_count = detections_lc_df.shape[0]
         logging.debug(f"Final Alert Count (from LC detections): {alert_count}")
 
-        # Add 'origin' column if it doesn't exist in the detections_lc_df
-        if 'origin' not in detections_lc_df.columns:
-            # Add the column before copying
-            light_curve_df['origin'] = 'unknown' # Add to original df if filtering failed
-            if not detections_lc_df.empty:
-                detections_lc_df['origin'] = 'unknown' # Add to filtered df
+        if 'origin' not in detections_lc_df.columns and not detections_lc_df.empty:
+            detections_lc_df['origin'] = 'unknown'
+        elif 'origin' not in light_curve_df.columns and not light_curve_df.empty : # if detections_lc_df is empty but light_curve_df is not
+             light_curve_df['origin'] = 'unknown'
 
-        # Prepare data for the alert table from the comprehensive LC detections
+
+        # Prepare data for the alert table
         table_columns_map = {
-            # Source Col Name -> Target Col Name for Table
-            'jd': 'jd',
-            'fid': 'fid',
-            'programid': 'programid',
-            'field': 'field',
-            'ra': 'ra',
-            'dec': 'dec',
-            'mag_final': 'magpsf',   # Use mag_final as the magnitude for the table
-            'emag_final': 'sigmapsf', # Use emag_final as the error for the table
-            'ssdistnr': 'ssdistnr',
-            'ssmagnr': 'ssmagnr',
-            'sgscore1': 'sgscore1',
-            'distpsnr1': 'distpsnr1',
-            'origin': 'origin'
+            'jd': 'jd', 'fid': 'fid', 'programid': 'programid', 'field': 'field',
+            'ra': 'ra', 'dec': 'dec', 'mag_final': 'magpsf', 'emag_final': 'sigmapsf',
+            'ssdistnr': 'ssdistnr', 'ssmagnr': 'ssmagnr', 'sgscore1': 'sgscore1',
+            'distpsnr1': 'distpsnr1', 'origin': 'origin'
         }
         raw_alerts_for_table = pd.DataFrame()
         expected_table_cols = list(table_columns_map.values())
 
         if not detections_lc_df.empty:
-            # 1. Copy the filtered detections DataFrame
             df_for_table = detections_lc_df.copy()
-            logging.debug(f"Step 1 (Copy): df_for_table shape = {df_for_table.shape}, columns = {df_for_table.columns.tolist()}")
-
-            # 2. Ensure all SOURCE columns needed for the map exist
             for source_col in table_columns_map.keys():
                 if source_col not in df_for_table.columns:
-                    logging.warning(f"Source column '{source_col}' missing in detections_lc_df for table prep. Filling with NaN.")
                     df_for_table[source_col] = np.nan
-            logging.debug(f"Step 2 (Ensure Source Cols): df_for_table shape = {df_for_table.shape}, columns = {df_for_table.columns.tolist()}")
-
-            # 3. Rename columns based on the map
             df_for_table = df_for_table.rename(columns=table_columns_map)
-            logging.debug(f"Step 3 (Rename): df_for_table shape = {df_for_table.shape}, columns = {df_for_table.columns.tolist()}")
-
-            # 4. Select only the TARGET columns expected by the table
-            # Ensure target columns exist after renaming, fill if necessary (though renaming should handle this)
-            final_table_cols = []
-            missing_target_cols = []
-            for target_col in expected_table_cols:
-                if target_col in df_for_table.columns:
-                    final_table_cols.append(target_col)
-                else:
-                    # This case should be less likely now with the rename first approach
-                    logging.warning(f"Target column '{target_col}' missing after rename.")
-                    missing_target_cols.append(target_col)
-
-            logging.debug(f"Step 4 (Target Cols Check): Expected = {expected_table_cols}, Found = {final_table_cols}, Missing = {missing_target_cols}")
-
-            # Assign the processed DataFrame using only the found target columns
-            if final_table_cols: # Only select if we have columns to select
+            final_table_cols = [col for col in expected_table_cols if col in df_for_table.columns]
+            if final_table_cols:
                 raw_alerts_for_table = df_for_table[final_table_cols]
-                logging.debug(f"Step 4 (Select Target Cols): raw_alerts_for_table shape = {raw_alerts_for_table.shape}")
-            else:
-                logging.error("No target columns found after processing! Resulting table data will be empty.")
-                raw_alerts_for_table = pd.DataFrame() # Ensure it's an empty DF
-
-        else:
-            logging.warning("detections_lc_df was empty, cannot prepare table data.")
-
-
-        # Convert NaN to None for JSON/template compatibility
+        
         raw_alerts_for_table = raw_alerts_for_table.replace({pd.NaT: None, np.nan: None})
         raw_alerts = raw_alerts_for_table.to_dict(orient='records')
-        logging.debug(f"Step 5 (To Dict): raw_alerts list length = {len(raw_alerts)}")
+        logging.debug(f"Final raw_alerts list length = {len(raw_alerts)}")
 
-        # Fetch DRB stats based on original alerts (dets packets) - DRB is specific to alert packets
-        med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, original_dets_packets)
-        logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
+        # DRB stats and Span (from original packets, as DRB is alert-specific)
+        if original_dets_packets:
+            try:
+                med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, original_dets_packets)
+                span = get_span(kowalski_session, source_id, original_dets_packets)
+                logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
+                logging.debug(f"Span (days): {span}")
+            except Exception as drb_span_exc:
+                logging.error(f"Error getting DRB/Span for {source_id}: {drb_span_exc}")
 
-        # Calculate span using original dets packets as well
-        span = get_span(kowalski_session, source_id, original_dets_packets)
-        logging.debug(f"Span (days): {span}")
-
+        # --- Position-dependent data fetching ---
         # Directories for cutouts and plots
         cutout_dir = os.path.join(basedir, 'static', 'cutouts')
-        light_cur = os.path.join(basedir, 'static', 'light_curves')
+        light_cur_dir = os.path.join(basedir, 'static', 'light_curves') # Corrected variable name
         wise_dir = os.path.join(basedir, 'static', 'wise_plots')
 
-        # WISE plot
-        wise_plot_path = os.path.join(wise_dir, f"{source_id}_wise_plot.html")
-        wise_filename = None # Initialize as None
-        if os.path.exists(wise_plot_path):
-            wise_filename = os.path.basename(wise_plot_path) # Just use basename if exists
-            logging.debug(f"WISE plot found: {wise_filename}")
-        else:
-            # Check if RA/Dec are valid before plotting
-            if ra is not None and dec is not None:
-                 wise_plot_result = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
-                 if wise_plot_result:
-                     wise_filename = os.path.basename(wise_plot_result)
-                     logging.debug(f"WISE plot generated: {wise_filename}")
-                 else:
-                     logging.debug(f"WISE plot generation failed or returned None for {source_id}.")
-            else:
-                logging.warning(f"Skipping WISE plot for {source_id} due to missing RA/Dec.")
-
-        # Light curves (use the comprehensive light_curve_df fetched earlier)
-        light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
-        big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
-        light_curve_zoomed_path = os.path.join(light_cur, f"{source_id}_light_curve_zoomed.html")
-        big_light_curve_zoomed_path = os.path.join(light_cur, f"{source_id}_big_light_curve_zoomed.html")
-
-        # Check and generate light curve plots using the comprehensive 'light_curve_df'
-        plot_filename_rel = os.path.join('static', 'light_curves', os.path.basename(light_curve_path))
-        plot_filename_zoomed_rel = os.path.join('static', 'light_curves', os.path.basename(light_curve_zoomed_path))
-        if not os.path.exists(light_curve_path) or not os.path.exists(light_curve_zoomed_path):
-             if not light_curve_df.empty:
-                 logging.debug(f"Generating light curve plots for {source_id}")
-                 plot_light_curve(light_curve_df.copy(), source_id) # Pass a copy to avoid modifying original df
-                 plot_light_curve(light_curve_df.copy(), source_id, "detections")
-             else:
-                 logging.warning(f"Skipping light curve plot generation for {source_id} due to empty light_curve_df.")
-
-
-        plot_big_filename_rel = os.path.join('static', 'light_curves', os.path.basename(big_light_curve_path))
-        plot_big_filename_zoomed_rel = os.path.join('static', 'light_curves', os.path.basename(big_light_curve_zoomed_path))
-        if not os.path.exists(big_light_curve_path) or not os.path.exists(big_light_curve_zoomed_path):
-             if not light_curve_df.empty:
-                 logging.debug(f"Generating big light curve plots for {source_id}")
-                 plot_big_light_curve(light_curve_df.copy(), source_id) # Pass a copy
-                 plot_big_light_curve(light_curve_df.copy(), source_id, "detections")
-             else:
-                  logging.warning(f"Skipping big light curve plot generation for {source_id} due to empty light_curve_df.")
-
-        # ZTF cutouts - Still uses original alert packets to pick specific moments.
-        ztf_cutout_filenames_or_none = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
-        ztf_cutout_basenames_for_template = ztf_cutout_filenames_or_none # Pass the list with Nones
-        logging.debug(f"ZTF Cutout list (with Nones): {ztf_cutout_basenames_for_template}")
-
-        # Pan-STARRS (PS1) cutouts
-        ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
-        ps1_cutout_basename = None
-        if os.path.exists(ps1_cutout_path):
-            ps1_cutout_basename = os.path.basename(ps1_cutout_path)
-        else:
-            if ra is not None and dec is not None:
-                ps1_cutout = plot_ps1_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-                ps1_cutout_basename = os.path.basename(ps1_cutout) if ps1_cutout else None
-            else:
-                 logging.warning(f"Skipping PS1 cutout for {source_id} due to missing RA/Dec.")
-        logging.debug(f"PS1 Cutout Basename: {ps1_cutout_basename}")
-
-        # Legacy Survey (LS) cutouts
-        ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
-        ls_cutout_basename = None
-        if os.path.exists(ls_cutout_path):
-             ls_cutout_basename = os.path.basename(ls_cutout_path)
-        else:
-             if ra is not None and dec is not None:
-                 # Try to plot/fetch with retries if it doesn't exist
-                 for attempt in range(3): # Reduced retries slightly
-                      ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-                      if ls_cutout and os.path.exists(ls_cutout):
-                          ls_cutout_basename = os.path.basename(ls_cutout)
-                          break # Success
-                      time.sleep(1) # Wait 1 second before retrying
-             else:
-                 logging.warning(f"Skipping LS cutout for {source_id} due to missing RA/Dec.")
-        logging.debug(f"LS Cutout Basename: {ls_cutout_basename}")
-
-
-        # Fetch Legacy Survey crossmatch data
-        legacy_survey_data = pd.DataFrame() # Default to empty
-        if ra is not None and dec is not None:
-             legacy_survey_data = xmatch_ls(ra, dec)
-             logging.debug(f"Legacy Survey Data: {legacy_survey_data.shape[0]} sources found.")
-        else:
-             logging.warning(f"Skipping Legacy Survey crossmatch for {source_id} due to missing RA/Dec.")
-
-        legacy_amount = legacy_survey_data.shape[0]
-        legacy_data = []
-        if legacy_amount > 0:
-            legacy_closest = legacy_survey_data.iloc[0]
-            legacy_data = [
-                legacy_closest.get('sep_arcsec', 'N/A'), # Use .get for safety
-                legacy_closest.get('pa_degree', 'N/A'),
-                legacy_closest.get('z_phot_median', 'N/A'),
-                legacy_closest.get('z_phot_l68', 'N/A'),
-                legacy_closest.get('z_phot_u68', 'N/A'),
-                legacy_closest.get('type', 'N/A')
-            ]
-            # Round numeric values if they are not 'N/A'
-            legacy_data = [round(v, 2) if isinstance(v, (int, float)) else v for v in legacy_data]
-
-
-        # SDSS crossmatch data (check original packets)
-        sdss_data = None
-        # Use the original_dets_packets list here
-        if original_dets_packets and 'candidate' in original_dets_packets[0]:
-            first_candidate = original_dets_packets[0]['candidate']
-            # Check for existence and valid values before creating dict
-            if first_candidate.get('ssdistnr') is not None and first_candidate.get('ssdistnr') > -999 and \
-               first_candidate.get('ssmagnr') is not None and first_candidate.get('ssmagnr') > -999:
-                sdss_data = {
-                    'ssdistnr': first_candidate['ssdistnr'],
-                    'ssmagnr': first_candidate['ssmagnr']
-                }
-        logging.debug(f"SDSS Data (from first packet): {sdss_data}")
-
-
-        # PS1 crossmatch summary (use comprehensive LC detections)
-        ps1_dist = None
-        ps1_sgs = None
-        if not detections_lc_df.empty and 'distpsnr1' in detections_lc_df.columns and 'sgscore1' in detections_lc_df.columns:
-             # Filter out invalid values (-999) before finding the minimum distance
-             valid_ps1_df = detections_lc_df[
-                 (detections_lc_df['distpsnr1'].notna()) & (detections_lc_df['distpsnr1'] > -999) &
-                 (detections_lc_df['sgscore1'].notna()) & (detections_lc_df['sgscore1'] > -999) &
-                 (detections_lc_df['distpsnr1'] <= 3) # Apply 3 arcsec filter
-             ].copy()
-
-             if not valid_ps1_df.empty:
-                 # Find the row with the minimum distpsnr1
-                 closest_ps1_row = valid_ps1_df.loc[valid_ps1_df['distpsnr1'].idxmin()]
-                 ps1_dist = closest_ps1_row['distpsnr1']
-                 ps1_sgs = closest_ps1_row['sgscore1']
-        logging.debug(f"PS1 Crossmatch (closest within 3\"): dist={ps1_dist}, sgs={ps1_sgs}")
-
-
-        # Create the polar plot using the comprehensive detections_lc_df
-        # Ensure detections_lc_df has 'ra' and 'dec' columns
-        ztf_alerts_for_polar = pd.DataFrame()
-        if not detections_lc_df.empty and 'ra' in detections_lc_df.columns and 'dec' in detections_lc_df.columns:
-             ztf_alerts_for_polar = detections_lc_df.copy()
-        else:
-            logging.warning(f"Cannot generate polar plot data for {source_id} due to missing RA/Dec in detections_lc_df.")
-
-        polar_plot_rel_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
-        polar_big_plot_rel_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
-        polar_plot_out_rel_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
-        polar_big_plot_out_rel_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot_out.html')
-
-        # Check if plots need generating
-        polar_plot_abs_path = os.path.join(basedir, polar_plot_rel_path)
-        polar_big_plot_abs_path = os.path.join(basedir, polar_big_plot_rel_path)
-        polar_plot_out_abs_path = os.path.join(basedir, polar_plot_out_rel_path)
-        polar_big_plot_out_abs_path = os.path.join(basedir, polar_big_plot_out_rel_path)
-
-        if not os.path.exists(polar_plot_abs_path) or not os.path.exists(polar_plot_out_abs_path):
-             if not ztf_alerts_for_polar.empty and ra is not None and dec is not None:
-                 logging.debug(f"Generating polar plots for {source_id} using {len(ztf_alerts_for_polar)} detections.")
-                 # Analyze PS1 photoz needs valid RA/Dec
-                 ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
-
-                 # Pass the DataFrame derived from the comprehensive light curve
-                 plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_abs_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
-                 plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_out_abs_path, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
-                 plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_abs_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
-                 plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_out_abs_path, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
-             else:
-                 logging.warning(f"Skipping polar plot generation for {source_id} due to missing data (alerts or RA/Dec).")
-
-        # Retrieve classifications and determine the most confident classification
-        classifications = Classification.query.filter_by(source_id=source_id).all()
-        classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
-        classified_by_users = []
-
-        for classification in classifications:
-            user = User.query.get(classification.user_id)
-            if user: # Check if user exists
-                classified_by_users.append(user.username)
-                classification_counts[classification.classification]['count'] += 1
-                # Simplified confidence score mapping
-                confidence_map = {'Uncertain': 1, 'Probable': 2, 'Confident': 3}
-                classification_counts[classification.classification]['confidence'] += confidence_map.get(classification.confidence, 0)
-
-
-        most_confident_classification = None
-        if classification_counts:
-            # Sort first by confidence score (desc), then by count (desc)
-            sorted_classifications = sorted(
-                classification_counts.items(),
-                key=lambda item: (item[1]['confidence'], item[1]['count']),
-                reverse=True
-            )
-            most_confident_classification = sorted_classifications[0][0]
-
-        logging.debug(f"Most Confident Classification: {most_confident_classification}")
-
-        # Convert RA/Dec to sexagesimal strings
-        ra_str = 'N/A'
-        dec_str = 'N/A'
-        if ra is not None and dec is not None:
+        if ra is not None and dec is not None: # Only proceed if we have coordinates
+            # WISE plot
             try:
-                 coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
-                 ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4, pad=True)
-                 dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4, pad=True, alwayssign=True)
-            except Exception as coord_err:
-                 logging.error(f"Error converting RA/Dec to string for {source_id}: {coord_err}")
+                wise_plot_path = os.path.join(wise_dir, f"{source_id}_wise_plot.html")
+                if os.path.exists(wise_plot_path):
+                    wise_filename = os.path.basename(wise_plot_path)
+                else:
+                    wise_plot_result = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+                    if wise_plot_result: wise_filename = os.path.basename(wise_plot_result)
+                logging.debug(f"WISE plot: {wise_filename}")
+            except Exception as wise_exc:
+                logging.error(f"Error with WISE plot for {source_id}: {wise_exc}")
+
+            # Pan-STARRS (PS1) cutouts
+            try:
+                ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
+                if os.path.exists(ps1_cutout_path):
+                    ps1_cutout_basename = os.path.basename(ps1_cutout_path)
+                else:
+                    ps1_cutout_obj = plot_ps1_cutout(kowalski_session, cutout_dir, source_id, ra, dec) # Corrected function name
+                    ps1_cutout_basename = os.path.basename(ps1_cutout_obj) if ps1_cutout_obj else None
+                logging.debug(f"PS1 Cutout: {ps1_cutout_basename}")
+            except Exception as ps1_exc:
+                logging.error(f"Error with PS1 cutout for {source_id}: {ps1_exc}")
+
+            # Legacy Survey (LS) cutouts
+            try:
+                ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
+                if os.path.exists(ls_cutout_path):
+                    ls_cutout_basename = os.path.basename(ls_cutout_path)
+                else:
+                    for attempt in range(3):
+                        ls_cutout_obj = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec) # Corrected var name
+                        if ls_cutout_obj and os.path.exists(ls_cutout_obj):
+                            ls_cutout_basename = os.path.basename(ls_cutout_obj)
+                            break
+                        time.sleep(1)
+                logging.debug(f"LS Cutout: {ls_cutout_basename}")
+            except Exception as ls_exc:
+                logging.error(f"Error with LS cutout for {source_id}: {ls_exc}")
+            
+            # Legacy Survey crossmatch data
+            try:
+                legacy_survey_data = xmatch_ls(ra, dec)
+                legacy_amount = legacy_survey_data.shape[0]
+                if legacy_amount > 0:
+                    legacy_closest = legacy_survey_data.iloc[0]
+                    legacy_data = [
+                        legacy_closest.get('sep_arcsec', 'N/A'), legacy_closest.get('pa_degree', 'N/A'),
+                        legacy_closest.get('z_phot_median', 'N/A'), legacy_closest.get('z_phot_l68', 'N/A'),
+                        legacy_closest.get('z_phot_u68', 'N/A'), legacy_closest.get('type', 'N/A')
+                    ]
+                    legacy_data = [round(v, 2) if isinstance(v, (int, float)) else v for v in legacy_data]
+                logging.debug(f"Legacy Survey Data: {legacy_amount} sources found.")
+            except Exception as ls_xmatch_exc:
+                logging.error(f"Error with Legacy Survey xmatch for {source_id}: {ls_xmatch_exc}")
+
+            # Polar plots
+            try:
+                polar_plot_rel_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
+                polar_big_plot_rel_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
+                polar_plot_out_rel_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
+                polar_big_plot_out_rel_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot_out.html')
+
+                polar_plot_abs_path = os.path.join(basedir, polar_plot_rel_path)
+                # ... (similar for other polar plot paths)
+                polar_big_plot_abs_path = os.path.join(basedir, polar_big_plot_rel_path)
+                polar_plot_out_abs_path = os.path.join(basedir, polar_plot_out_rel_path)
+                polar_big_plot_out_abs_path = os.path.join(basedir, polar_big_plot_out_rel_path)
 
 
-        logging.debug(f"RA (string): {ra_str}, Dec (string): {dec_str}")
+                if not os.path.exists(polar_plot_abs_path) or not os.path.exists(polar_plot_out_abs_path): # Check one pair suffices
+                    if not detections_lc_df.empty : # Use detections_lc_df for polar plot
+                        ra_ps1_polar, dec_ps1_polar = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3) # Renamed vars
+                        plot_polar_coordinates(detections_lc_df, ra_ps1_polar, dec_ps1_polar, legacy_survey_data, ra, dec, polar_plot_abs_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
+                        plot_polar_coordinates(detections_lc_df, ra_ps1_polar, dec_ps1_polar, legacy_survey_data, ra, dec, polar_plot_out_abs_path, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
+                        plot_big_polar_coordinates(detections_lc_df, ra_ps1_polar, dec_ps1_polar, legacy_survey_data, ra, dec, polar_big_plot_abs_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
+                        plot_big_polar_coordinates(detections_lc_df, ra_ps1_polar, dec_ps1_polar, legacy_survey_data, ra, dec, polar_big_plot_out_abs_path, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
+                        logging.debug(f"Polar plots generated for {source_id}")
+                    else:
+                        logging.warning(f"Skipping polar plot generation for {source_id} - no detections for polar plot.")
+            except Exception as polar_exc:
+                logging.error(f"Error generating polar plots for {source_id}: {polar_exc}")
+        else: # RA or Dec is None
+            logging.warning(f"Skipping position-dependent data for {source_id} due to missing RA/Dec.")
+            general_error_message = general_error_message or "RA/Dec not found; some plots and crossmatches are unavailable."
+            # Ensure plot paths are None if not generated
+            polar_plot_rel_path, polar_big_plot_rel_path = None, None
+            polar_plot_out_rel_path, polar_big_plot_out_rel_path = None, None
 
-        # Return the core data needed
+
+        # Light curves (can be generated even if RA/Dec is missing, if LC data exists)
+        try:
+            if not light_curve_df.empty:
+                light_curve_path = os.path.join(light_cur_dir, f"{source_id}_light_curve.html") # Use corrected var
+                # ... (similar for other light curve paths)
+                big_light_curve_path = os.path.join(light_cur_dir, f"{source_id}_big_light_curve.html")
+                light_curve_zoomed_path = os.path.join(light_cur_dir, f"{source_id}_light_curve_zoomed.html")
+                big_light_curve_zoomed_path = os.path.join(light_cur_dir, f"{source_id}_big_light_curve_zoomed.html")
+
+
+                plot_filename_rel = os.path.join('static', 'light_curves', os.path.basename(light_curve_path))
+                plot_filename_zoomed_rel = os.path.join('static', 'light_curves', os.path.basename(light_curve_zoomed_path))
+                if not os.path.exists(light_curve_path) or not os.path.exists(light_curve_zoomed_path):
+                    plot_light_curve(light_curve_df.copy(), source_id)
+                    plot_light_curve(light_curve_df.copy(), source_id, "detections")
+
+                plot_big_filename_rel = os.path.join('static', 'light_curves', os.path.basename(big_light_curve_path))
+                plot_big_filename_zoomed_rel = os.path.join('static', 'light_curves', os.path.basename(big_light_curve_zoomed_path))
+                if not os.path.exists(big_light_curve_path) or not os.path.exists(big_light_curve_zoomed_path):
+                    plot_big_light_curve(light_curve_df.copy(), source_id)
+                    plot_big_light_curve(light_curve_df.copy(), source_id, "detections")
+                logging.debug(f"Light curve plots processed for {source_id}")
+            else:
+                logging.warning(f"Skipping light curve plot generation for {source_id} due to empty light_curve_df.")
+                plot_filename_rel, plot_filename_zoomed_rel = None, None # Ensure None if not generated
+                plot_big_filename_rel, plot_big_filename_zoomed_rel = None, None
+        except Exception as lc_plot_exc:
+            logging.error(f"Error generating light curve plots for {source_id}: {lc_plot_exc}")
+            plot_filename_rel, plot_filename_zoomed_rel = None, None
+            plot_big_filename_rel, plot_big_filename_zoomed_rel = None, None
+
+
+        # ZTF cutouts (uses original alert packets)
+        try:
+            if original_dets_packets: # Only if we have original alerts to pick from
+                ztf_cutout_filenames_or_none = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
+                ztf_cutout_basenames_for_template = ztf_cutout_filenames_or_none
+            else:
+                ztf_cutout_basenames_for_template = [None] * 8 # Default if no original alerts
+            logging.debug(f"ZTF Cutout list: {ztf_cutout_basenames_for_template}")
+        except Exception as ztf_cutout_exc:
+            logging.error(f"Error with ZTF cutouts for {source_id}: {ztf_cutout_exc}")
+
+
+        # SDSS crossmatch data (from original packets)
+        try:
+            if original_dets_packets and original_dets_packets[0].get('candidate'):
+                first_candidate = original_dets_packets[0]['candidate']
+                if first_candidate.get('ssdistnr') is not None and first_candidate.get('ssdistnr') > -999 and \
+                   first_candidate.get('ssmagnr') is not None and first_candidate.get('ssmagnr') > -999:
+                    sdss_data = {'ssdistnr': first_candidate['ssdistnr'], 'ssmagnr': first_candidate['ssmagnr']}
+            logging.debug(f"SDSS Data: {sdss_data}")
+        except Exception as sdss_exc:
+            logging.error(f"Error with SDSS data for {source_id}: {sdss_exc}")
+
+        # PS1 crossmatch summary (from comprehensive LC detections)
+        try:
+            if not detections_lc_df.empty and 'distpsnr1' in detections_lc_df.columns and 'sgscore1' in detections_lc_df.columns:
+                 valid_ps1_df = detections_lc_df[
+                     (detections_lc_df['distpsnr1'].notna()) & (detections_lc_df['distpsnr1'] > -999) &
+                     (detections_lc_df['sgscore1'].notna()) & (detections_lc_df['sgscore1'] > -999) &
+                     (detections_lc_df['distpsnr1'] <= 3)
+                 ].copy()
+                 if not valid_ps1_df.empty:
+                     closest_ps1_row = valid_ps1_df.loc[valid_ps1_df['distpsnr1'].idxmin()]
+                     ps1_dist = closest_ps1_row['distpsnr1']
+                     ps1_sgs = closest_ps1_row['sgscore1']
+            logging.debug(f"PS1 Crossmatch (closest): dist={ps1_dist}, sgs={ps1_sgs}")
+        except Exception as ps1_xmatch_exc:
+            logging.error(f"Error with PS1 xmatch for {source_id}: {ps1_xmatch_exc}")
+            ps1_dist, ps1_sgs = None, None # Ensure None on error too
+
+        # Convert "N/A" for ps1_dist and ps1_sgs to None for template compatibility
+        if ps1_dist == "N/A":
+            ps1_dist = None
+        if ps1_sgs == "N/A":
+            ps1_sgs = None
+            
+        # Retrieve classifications
+        try:
+            classifications = Classification.query.filter_by(source_id=source_id).all()
+            classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
+            for classification in classifications:
+                user = User.query.get(classification.user_id)
+                if user:
+                    classified_by_users.append(user.username)
+                    classification_counts[classification.classification]['count'] += 1
+                    confidence_map = {'Uncertain': 1, 'Probable': 2, 'Confident': 3}
+                    classification_counts[classification.classification]['confidence'] += confidence_map.get(classification.confidence, 0)
+            if classification_counts:
+                sorted_classifications = sorted(classification_counts.items(), key=lambda item: (item[1]['confidence'], item[1]['count']), reverse=True)
+                most_confident_classification = sorted_classifications[0][0]
+            logging.debug(f"Most Confident Classification: {most_confident_classification}")
+        except Exception as class_exc:
+            logging.error(f"Error retrieving classifications for {source_id}: {class_exc}")
+        
+        # Final data dictionary construction
         data = {
-            "source_id": source_id,
-            "ra": ra_str, # Use formatted string
-            "dec": dec_str, # Use formatted string
-            "scat_sep": scat_sep,
-            "galactic_l": galactic_l,
-            "galactic_b": galactic_b,
-            "span": span, # Use span calculated from original packets
-            "ecliptic_lon": ecliptic_lon,
-            "ecliptic_lat": ecliptic_lat,
-            # "dets": original_dets_packets, # No longer needed directly by template
-            "alert_count": alert_count,  # Use the count from LC detections
-            "med_drb": med_drb,
-            "min_drb": min_drb,
-            "max_drb": max_drb,
-            "avg_drb": avg_drb,
-            "ps1_dist": ps1_dist, # Use closest from LC
-            "ps1_sgs": ps1_sgs,   # Use closest from LC
-            "wise_plot": wise_filename, # Use basename
-            "plot_filename": plot_filename_rel, # Use relative path for template
-            "plot_filename_zoomed": plot_filename_zoomed_rel, # Use relative path
-            "plot_big_filename": plot_big_filename_rel, # Use relative path
-            "plot_big_filename_zoomed": plot_big_filename_zoomed_rel, # Use relative path
-            "ztf_cutout": ztf_cutout_basenames_for_template, # Pass the list with Nones
-            "ps1_cutout": ps1_cutout_basename, # Use basename
-            "ls_cutout": ls_cutout_basename, # Use basename
-            "legacy_amount": legacy_amount,
-            "legacy_data": legacy_data,
-            "sdss_data": sdss_data,
-            "polar_plot": polar_plot_rel_path, # Use relative path
-            "polar_big_plot": polar_big_plot_rel_path, # Use relative path
-            "polar_plot_out": polar_plot_out_rel_path, # Use relative path
-            "polar_big_plot_out": polar_big_plot_out_rel_path, # Use relative path
-            "classifications": classifications,
-            "classified_by_users": classified_by_users,
+            "source_id": source_id, "ra": ra_str, "dec": dec_str, "scat_sep": scat_sep,
+            "galactic_l": galactic_l, "galactic_b": galactic_b, "span": span,
+            "ecliptic_lon": ecliptic_lon, "ecliptic_lat": ecliptic_lat,
+            "alert_count": alert_count, "med_drb": med_drb, "min_drb": min_drb,
+            "max_drb": max_drb, "avg_drb": avg_drb, "ps1_dist": ps1_dist, "ps1_sgs": ps1_sgs,
+            "wise_plot": wise_filename, "plot_filename": plot_filename_rel,
+            "plot_filename_zoomed": plot_filename_zoomed_rel,
+            "plot_big_filename": plot_big_filename_rel,
+            "plot_big_filename_zoomed": plot_big_filename_zoomed_rel,
+            "ztf_cutout": ztf_cutout_basenames_for_template,
+            "ps1_cutout": ps1_cutout_basename, "ls_cutout": ls_cutout_basename,
+            "legacy_amount": legacy_amount, "legacy_data": legacy_data, "sdss_data": sdss_data,
+            "polar_plot": polar_plot_rel_path, "polar_big_plot": polar_big_plot_rel_path,
+            "polar_plot_out": polar_plot_out_rel_path,
+            "polar_big_plot_out": polar_big_plot_out_rel_path,
+            "classifications": classifications, "classified_by_users": classified_by_users,
             "most_confident_classification": most_confident_classification,
-            # "ra_str": ra_str, # Included in 'ra' key now
-            # "dec_str": dec_str, # Included in 'dec' key now
-            # Pass the processed raw_alerts list derived from the comprehensive LC
-            "raw_alerts": raw_alerts
+            "raw_alerts": raw_alerts,
+            "general_error_message": general_error_message # Pass any general error
         }
-
         return data
 
-    except Exception as e:
-        logging.error(f"Error during fetch_transient_data for {source_id}: {str(e)}")
+    except Exception as e: # Catch-all for truly unexpected errors during the process
+        logging.error(f"Outer error during fetch_transient_data for {source_id}: {str(e)}")
         import traceback
         logging.error(traceback.format_exc())
-        return None # Return None on error
+        # Return a minimal data structure with the error message
+        return {
+            "source_id": source_id, "ra": "Error", "dec": "Error", "scat_sep": "N/A",
+            "galactic_l": "N/A", "galactic_b": "N/A", "span": "N/A",
+            "ecliptic_lon": "N/A", "ecliptic_lat": "N/A", "alert_count": 0,
+            "med_drb": "N/A", "min_drb": "N/A", "max_drb": "N/A", "avg_drb": "N/A",
+            "ps1_dist": "N/A", "ps1_sgs": "N/A", "wise_plot": None, "plot_filename": None,
+            "plot_filename_zoomed": None, "plot_big_filename": None,
+            "plot_big_filename_zoomed": None, "ztf_cutout": [None]*8,
+            "ps1_cutout": None, "ls_cutout": None, "legacy_amount": 0, "legacy_data": [],
+            "sdss_data": None, "polar_plot": None, "polar_big_plot": None,
+            "polar_plot_out": None, "polar_big_plot_out": None,
+            "classifications": [], "classified_by_users": [],
+            "most_confident_classification": None, "raw_alerts": [],
+            "general_error_message": f"An unexpected error occurred: {str(e)}"
+        }
 
 # ... rest of utils.py ...
