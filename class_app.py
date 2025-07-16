@@ -254,10 +254,11 @@ def classify_source(source_id):
         # Render the current transient page
         response = render_template('classify.html', **data)
 
-        # Start prefetching the next transient in a separate thread
-        user_id = current_user.get_id()
-        thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
-        thread.start()
+        # Start prefetching the next transient in a separate thread only if data was fetched (not from cache)
+        # This prevents starting a prefetch if we just used cached data.
+        if not (cached_transient and cached_transient.get('status') == 'complete' and cached_transient.get('source_id') == source_id):
+             thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+             thread.start()
 
         return response
 
@@ -438,9 +439,10 @@ def random_transient():
     user_id = current_user.get_id()
 
     # Check if we have prefetched data ready in the cache
-    cached_transient = transient_cache.pop(user_id, None)
+    cached_transient = transient_cache.get(user_id) # Use get() instead of pop() here
+
     if cached_transient and cached_transient.get('status') == 'complete':
-        # Use the prefetched data
+        # Use the prefetched data by redirecting to its specific URL
         source_id = cached_transient['source_id']
         data = cached_transient['data']
         
@@ -471,9 +473,14 @@ def random_transient():
         thread.start()
 
         return render_template('classify.html', **data)
+      
     else:
-        # No prefetched data, fetch a new random transient
+        # No valid prefetched data, fetch a new random transient
+        logging.debug("No valid prefetched data found. Getting new random ID.")
         new_source_id = get_random_id()
+        # Start prefetching immediately since we know we need new data
+        thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+        thread.start()
         return redirect(url_for('classify_source', source_id=new_source_id))
 
 @class_app.route('/user_classifications')
