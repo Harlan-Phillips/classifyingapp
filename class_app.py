@@ -26,12 +26,9 @@ from wtforms.validators import DataRequired, Email, EqualTo
 # Imports from local files
 from models import db, User, Transient, Classification
 from utils import (
-    get_pos, get_galactic, get_lc, logon,  
-    plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
-    xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
-    plot_big_light_curve, plot_big_polar_coordinates, 
-    analyze_ps1_photoz, get_drb, get_span, plot_wise, filter_and_plot_alerts, alert_table,
-    get_ecliptic, make_celery, fetch_transient_data
+    get_pos, logon,  
+    get_most_confident_classification, 
+    make_celery, fetch_transient_data
 )
 from vlass_utils import get_vlass_data, run_search
 
@@ -215,7 +212,7 @@ def classify(source_id):
     db.session.commit()
     
     flash(f'Your classification for {source_id} as "{classification_text}" has been recorded.', 'success')
-    return redirect(url_for('classify_source', source_id=source_id))
+    return redirect(url_for('random_transient'))
 
 @class_app.route('/classify/<source_id>', methods=['GET'])
 @login_required

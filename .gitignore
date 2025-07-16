@@ -22,3 +22,5 @@ _pycache__/utils.cpython-312.pyc
 static/cutouts/
 static/light_curves/
 _pycache__/
+class_app.db
+static/wise_plots/

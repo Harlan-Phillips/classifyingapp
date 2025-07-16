@@ -1,4 +1,5 @@
 # Astropy modules
+import warnings
 from astropy.coordinates import SkyCoord, GeocentricTrueEcliptic
 from astropy.io import fits
 from astropy import units as u
@@ -31,6 +32,7 @@ import requests
 from penquins import Kowalski
 from dl import queryClient as qc
 from dl.helpers.utils import convert
+from astroquery.sdss import SDSS
 
 # JSON handling
 import json
@@ -519,6 +521,62 @@ def plot_ztf_cutout(s, alert, cutout_type='science'):
     plt.tight_layout()
     return fig
 
+
+def analyze_sdss_redshift(ra, dec, peak_magnitude=None, radius=10):
+    """
+    Complete SDSS analysis function using CONFIRMED WORKING approaches
+    Calculates physical properties and includes RA/Dec for cross-match plotting
+    """
+    # Get the best available redshift using confirmed working functions
+    z, sep, objid, ra_match, dec_match, z_type = get_sdss_redshift_confirmed(ra, dec, radius)
+    
+    if z >= 99:
+        logging.debug("No SDSS redshift found")
+        return None
+    
+    # Check if this is a reasonable association (within radius)
+    if sep > radius:
+        logging.debug(f"SDSS match too far: {sep:.2f} > {radius} arcsec")
+        return None
+    
+    # Calculate physical properties if we have a peak magnitude
+    result = {
+        'redshift': z,
+        'separation_arcsec': sep,
+        'objid': objid,
+        'ra_match': ra_match,  # RA of matched SDSS source for plotting
+        'dec_match': dec_match,  # Dec of matched SDSS source for plotting  
+        'redshift_type': z_type,  # 'spec' or 'photo'
+        'is_association': sep < radius
+    }
+    
+    if peak_magnitude is not None:
+        # Calculate absolute magnitude using distance modulus
+        from astropy.cosmology import Planck18
+        
+        try:
+            distance_modulus = Planck18.distmod(z).value
+            absolute_magnitude = peak_magnitude - distance_modulus
+            
+            # Calculate angular separation in physical units (kpc)
+            angular_diameter_distance = Planck18.angular_diameter_distance(z).value  # Mpc
+            physical_separation_kpc = (sep/3600) * (np.pi/180) * angular_diameter_distance * 1000
+            
+            result.update({
+                'absolute_magnitude': absolute_magnitude,
+                'physical_separation_kpc': physical_separation_kpc,
+                'distance_modulus': distance_modulus
+            })
+            
+            print(f"SDSS {z_type}-z association: z={z:.4f}, "
+                  f"M_abs={absolute_magnitude:.2f}, "
+                  f"sep={physical_separation_kpc:.1f} kpc")
+                  
+        except Exception as e:
+            print(f"Error calculating physical properties: {e}")
+    
+    return result
+
 def filter_and_plot_alerts(s, output_dir, object_id):
     
     # Define the desired order and keys for plots
@@ -640,6 +698,9 @@ def plot_ps1_cutout(s,ddir,name,ra,dec):
         decsign = "+"
     else:
         decsign = "-"
+    
+    output_dir = ddir 
+    object_id = name
 
         
     fnames = []
@@ -748,6 +809,11 @@ def plot_ps1_cutout(s,ddir,name,ra,dec):
 
 def plot_ls_cutout(s,ddir,name,ra,dec):
     """ Plot cutout from Legacy Survey """
+    if dec > 0:
+        decsign = "+"
+    else:
+        decsign = "-"
+        
     fname = ddir + "/%s_ls.png"%name
     if os.path.isfile(fname)==False:
         url = "http://legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr9&pixscale=0.27&bands=grz" %(ra,dec)
@@ -763,15 +829,9 @@ def plot_ls_cutout(s,ddir,name,ra,dec):
             plt.axis('off')
             plt.tight_layout()
             plt.savefig(fname, bbox_inches="tight")
-            lslinkstr = "http://legacysurvey.org/viewer?" +\
-                        "ra=%.6f&dec=%s%.6f"%(ra, decsign, abs(dec))+\
-                        "&zoom=16&layer=dr9"
-            outputf.write("<a href = %s>"%lslinkstr)
-            outputf.write('<img src="%s_ls.png" height="200">'%(name))
-            outputf.write("</a>")
-            outputf.write('</br>')
-        except:
-            # not in footprint
+            # Removed outputf references - these were legacy HTML output code
+        except Exception as e:
+            print(f"Error creating LS cutout: {e}")
             return None
         # you want to save it anyway so you don't do this over and over again
         plt.close()
@@ -992,7 +1052,7 @@ def filter_ztf_alerts(ztf_alerts):
                 seen_sgscore1.add(row['sgscore1'])
     return pd.DataFrame(filtered_data)
 
-def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size):
+def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size, sdss_data=None):
     """
     Plots the polar coordinates of nearby sources with the transient at the center.
 
@@ -1002,6 +1062,7 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
     - source_ra (float): Right Ascension of the transient source.
     - source_dec (float): Declination of the transient source.
     - output_path (str): Path to save the output plot.
+    - sdss_data (dict): SDSS data with keys 'ra_match', 'dec_match', 'redshift_type', etc.
     """
     
     
@@ -1051,6 +1112,28 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
         # Plot PS1 source
         ps1_scatter = ax.scatter(ps1_ra_offset, ps1_dec_offset, color='purple', marker='*', s=point_size*10, label='PS1')
         plugins.connect(fig, plugins.PointHTMLTooltip(ps1_scatter, labels=[f'PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}']))
+
+    # Plot SDSS data if available
+    if sdss_data and sdss_data.get('ra_match') is not None and sdss_data.get('dec_match') is not None:
+        # Create a SkyCoord object for the SDSS source
+        sdss_coord = SkyCoord(ra=sdss_data['ra_match'], dec=sdss_data['dec_match'], unit='deg')
+        sdss_ra_offset = (sdss_coord.ra - central_coord.ra).arcsec
+        sdss_dec_offset = (sdss_coord.dec - central_coord.dec).arcsec
+        
+        # Choose color based on redshift type
+        sdss_color = 'orange' if sdss_data.get('redshift_type') == 'spec' else 'gold'
+        sdss_label = f"SDSS ({sdss_data.get('redshift_type', 'unknown')}-z)"
+        
+        # Plot SDSS source  
+        sdss_scatter = ax.scatter(sdss_ra_offset, sdss_dec_offset, color=sdss_color, marker='*', s=point_size*12, label=sdss_label)
+        
+        # Create tooltip with SDSS info
+        tooltip_text = f"SDSS {sdss_data.get('redshift_type', 'unknown')}-z<br>"
+        tooltip_text += f"RA: {sdss_data['ra_match']:.6f}<br>Dec: {sdss_data['dec_match']:.6f}<br>"
+        tooltip_text += f"z = {sdss_data.get('redshift', 'N/A'):.4f}<br>"
+        tooltip_text += f"Sep: {sdss_data.get('separation_arcsec', 'N/A'):.2f}\""
+        
+        plugins.connect(fig, plugins.PointHTMLTooltip(sdss_scatter, labels=[tooltip_text]))
             
         
     # Central source
@@ -1073,6 +1156,7 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+    ax.invert_xaxis()  
 
     plt.tight_layout()
     #fig.subplots_adjust(top=0.9, bottom=0.1, left=0.1, right=0.9, hspace=0.2, wspace=0.2)
@@ -1084,7 +1168,7 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
 
     plt.close(fig)
 
-def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size):
+def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size, sdss_data=None):
     """
     Plots the polar coordinates of nearby sources with the transient at the center.
 
@@ -1094,6 +1178,7 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
     - source_ra (float): Right Ascension of the transient source.
     - source_dec (float): Declination of the transient source.
     - output_path (str): Path to save the output plot.
+    - sdss_data (dict): SDSS data with keys 'ra_match', 'dec_match', 'redshift_type', etc.
     """
     
     
@@ -1143,6 +1228,28 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
         # Plot PS1 source
         ps1_scatter = ax.scatter(ps1_ra_offset, ps1_dec_offset, color='purple', marker='*', s=point_size*10, label='PS1')
         plugins.connect(fig, plugins.PointHTMLTooltip(ps1_scatter, labels=[f'PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}']))
+
+    # Plot SDSS data if available
+    if sdss_data and sdss_data.get('ra_match') is not None and sdss_data.get('dec_match') is not None:
+        # Create a SkyCoord object for the SDSS source
+        sdss_coord = SkyCoord(ra=sdss_data['ra_match'], dec=sdss_data['dec_match'], unit='deg')
+        sdss_ra_offset = (sdss_coord.ra - central_coord.ra).arcsec
+        sdss_dec_offset = (sdss_coord.dec - central_coord.dec).arcsec
+        
+        # Choose color based on redshift type
+        sdss_color = 'orange' if sdss_data.get('redshift_type') == 'spec' else 'gold'
+        sdss_label = f"SDSS ({sdss_data.get('redshift_type', 'unknown')}-z)"
+        
+        # Plot SDSS source  
+        sdss_scatter = ax.scatter(sdss_ra_offset, sdss_dec_offset, color=sdss_color, marker='*', s=point_size*12, label=sdss_label)
+        
+        # Create tooltip with SDSS info
+        tooltip_text = f"SDSS {sdss_data.get('redshift_type', 'unknown')}-z<br>"
+        tooltip_text += f"RA: {sdss_data['ra_match']:.6f}<br>Dec: {sdss_data['dec_match']:.6f}<br>"
+        tooltip_text += f"z = {sdss_data.get('redshift', 'N/A'):.4f}<br>"
+        tooltip_text += f"Sep: {sdss_data.get('separation_arcsec', 'N/A'):.2f}\""
+        
+        plugins.connect(fig, plugins.PointHTMLTooltip(sdss_scatter, labels=[tooltip_text]))
             
         
     # Central source
@@ -1166,7 +1273,8 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
-
+    ax.invert_xaxis()
+    
     plt.tight_layout()
     #fig.subplots_adjust(top=.98, bottom=0.2, left=0.1, right=.75, hspace=0, wspace=0)
 
@@ -1326,8 +1434,8 @@ def plot_wise(s, name, ra, dec, output_path):
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    # Plot the WISE source data
-    scatter = ax.scatter(w1_w2, w2_w3, color='blue', label='WISE Source')
+    # Plot the WISE source data 
+    scatter = ax.scatter(w2_w3, w1_w2, color='blue', label='WISE Source')
 
     # Plot the data from the CSV
     plt.fill(stars_x, stars_y, label='Stars', alpha=0.3)
@@ -1343,9 +1451,9 @@ def plot_wise(s, name, ra, dec, output_path):
     plt.text(4.895, 0.456, 'LIRGs', fontsize=16, color='black', ha='center')
     plt.text(3.07, 1.276, 'QSOs/Seyferts', fontsize=16, color='black', ha='center')
 
-    # Set axis labels and title
-    ax.set_xlabel('W1 - W2', fontsize=14)
-    ax.set_ylabel('W2 - W3', fontsize=14)
+    # Set axis labels and title 
+    ax.set_xlabel('W2 - W3', fontsize=14)
+    ax.set_ylabel('W1 - W2', fontsize=14)
     ax.set_title(f'WISE Color-Color Plot\n(RA: {ra:.5f}, Dec: {dec:.5f})', fontsize=16)
     ax.legend()
     ax.grid(alpha =.1)
@@ -1462,7 +1570,12 @@ def fetch_transient_data(kowalski_session, source_id):
         if os.path.exists(wise_plot_path):
             wise_filename = f"static/wise_plots/{source_id}_wise_plot.html"
         else:
-            wise_filename = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+            wise_result = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+            # Handle the case where plot_wise returns None
+            if wise_result:
+                wise_filename = wise_result
+            else:
+                wise_filename = None  # Set to None explicitly when no WISE data
 
         # Light curves (use the comprehensive light_curve DataFrame fetched earlier)
         light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
@@ -1536,14 +1649,16 @@ def fetch_transient_data(kowalski_session, source_id):
         
         logging.debug(f"Legacy Survey Data: {legacy_survey_data}")
 
-        sdss_data = None
-        # Use the original 'dets' list here to check the first alert packet info
-        if dets and dets[0]['candidate']['ssdistnr'] != -999.0 and dets[0]['candidate']['ssmagnr'] != -999.0:
-            sdss_data = {
-                'ssdistnr': dets[0]['candidate']['ssdistnr'],
-                'ssmagnr': dets[0]['candidate']['ssmagnr']
-            }
-        logging.debug(f"SDSS Data: {sdss_data}")
+        sdss_result = analyze_sdss_redshift(ra, dec, radius=5)
+        if sdss_result:
+            logging.debug(f"SDSS Association Found:")
+            logging.debug(f"  Redshift: {sdss_result['redshift']:.4f} ({sdss_result['redshift_type']})")
+            logging.debug(f"  Separation: {sdss_result['separation_arcsec']:.2f} arcsec")
+            if 'physical_separation_kpc' in sdss_result:
+                logging.debug(f"  Physical separation: {sdss_result['physical_separation_kpc']:.1f} kpc")
+        else:
+            logging.debug("No SDSS association found")
+       
 
         # Aggregate Pan-STARRS data and remove duplicates from original 'dets'
         pan_starrs_data = []
@@ -1555,7 +1670,7 @@ def fetch_transient_data(kowalski_session, source_id):
                 # Filter based on your conditions
                 if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and \
                 'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and \
-                candidate['distpsnr1'] <= 3:
+                candidate['distpsnr1'] <= 5:
                     if candidate['sgscore1'] not in seen_sgscore1:
                         pan_starrs_data.append({
                             'distpsnr1': candidate['distpsnr1'],
@@ -1588,11 +1703,11 @@ def fetch_transient_data(kowalski_session, source_id):
         
         if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out):
             ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
-            # Pass the DataFrame created from original alerts
-            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15)
-            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15)
-            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17)
-            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17)
+            # Pass the DataFrame created from original alerts and include SDSS data
+            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15, sdss_data=sdss_result)
+            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15, sdss_data=sdss_result)
+            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17, sdss_data=sdss_result)
+            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17, sdss_data=sdss_result)
         # Retrieve classifications and determine the most confident classification
         classifications = Classification.query.filter_by(source_id=source_id).all()
         classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
@@ -1652,7 +1767,7 @@ def fetch_transient_data(kowalski_session, source_id):
             "ls_cutout": ls_cutout_basename,  # Match key 'ls_cutout'
             "legacy_amount": legacy_amount,
             "legacy_data": legacy_data,
-            "sdss_data": sdss_data,  # Match key 'sdss_data'  # Match key 'pan_starrs_df'
+            "sdss_data": sdss_result, 
             "polar_plot": polar_plot_path,  # Match key 'polar_plot'
             "polar_big_plot": polar_big_plot_path,  # Match key 'polar_big_plot'
             "polar_plot_out": polar_plot_path_out,  # Match key 'polar_plot_out'
@@ -1674,3 +1789,99 @@ def fetch_transient_data(kowalski_session, source_id):
     except Exception as e:
         logging.error(f"Error while fetching transient data: {str(e)}")
         return None
+
+# Add confirmed working SDSS functions above the existing ones
+def get_sdss_specz_confirmed(ra, dec, radius=10):
+    """
+    Check to see if there's an SDSS spectrum - CONFIRMED WORKING VERSION
+    Returns: redshift, separation_arcsec, objid, ra_match, dec_match
+    Based on user's confirmed working function with RA/Dec extraction added
+    """
+    print("try SDSS query region")
+    pos = SkyCoord(ra, dec, unit='deg')
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            xid = SDSS.query_region(pos, radius='%s arcsec' %radius, spectro=True)
+            if xid is not None:
+                if np.logical_and(len(xid) > 0, '<html>' not in str(xid[0])):
+                    ra_match = xid['ra'].data
+                    dec_match = xid['dec'].data
+                    z_match = xid['z'].data
+                    objid_match = xid['objid'].data  # Get objid for photometric query
+                    
+                    pos2 = SkyCoord(ra_match, dec_match, unit='deg')
+                    sep_match = pos.separation(pos2).arcsec
+                    ind_closest = np.argmin(sep_match)
+                    sep = sep_match[ind_closest]
+                    
+                    return (xid['z'][ind_closest], 
+                           sep,
+                           objid_match[ind_closest], 
+                           ra_match[ind_closest], 
+                           dec_match[ind_closest])
+            return 99, 99, None, None, None
+        except EOFError as e:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                SDSS.clear_cache()
+            time.sleep(1)
+    print("all attempts failed. returning fallback values")
+    return 99, 99, None, None, None
+
+def get_sdss_photoz_with_objid(objid):
+    """
+    Query photometric redshift using confirmed working query structure
+    Uses Anna Ho's confirmed query: FROM Photoz AS z WHERE z.objid = {objid}
+    """
+    if objid is None:
+        return 99, None
+        
+    try:
+        query = f"""
+        SELECT z.objid, z.z AS photoz
+        FROM Photoz AS z
+        WHERE z.objid = {objid}
+        """
+        
+        result = qc.query(sql=query)
+        df_result = convert(result)
+        
+        if len(df_result) > 0 and not pd.isna(df_result.iloc[0]['photoz']):
+            photoz = df_result.iloc[0]['photoz']
+            print(f"Found photometric redshift: z={photoz:.4f}")
+            return photoz, objid
+        else:
+            print("No photometric redshift available for this objid")
+            return 99, None
+            
+    except Exception as e:
+        print(f"Photometric query failed: {e}")
+        return 99, None
+
+def get_sdss_redshift_confirmed(ra, dec, radius=10):
+    """
+    Get SDSS redshift using ONLY confirmed working approaches
+    Tries spectroscopic first, then photometric if available
+    Returns: redshift, separation_arcsec, objid, ra_match, dec_match, redshift_type
+    """
+    print("Trying SDSS spectroscopic redshift...")
+    
+    # Try spectroscopic first (confirmed working)
+    z_spec, sep, objid, ra_match, dec_match = get_sdss_specz_confirmed(ra, dec, radius)
+    
+    if z_spec < 99:
+        print(f"Found spectroscopic redshift: z={z_spec:.4f}")
+        return z_spec, sep, objid, ra_match, dec_match, 'spec'
+    
+    # If no spectroscopic redshift and we got an objid, try photometric
+    if objid is not None:
+        print("No spectroscopic redshift found, trying photometric...")
+        z_photo, _ = get_sdss_photoz_with_objid(objid)
+        
+        if z_photo < 99:
+            print(f"Found photometric redshift: z={z_photo:.4f}")
+            return z_photo, sep, objid, ra_match, dec_match, 'photo'
+    
+    print("No SDSS redshift found (neither spec nor photo)")
+    return 99, 99, None, None, None, None
