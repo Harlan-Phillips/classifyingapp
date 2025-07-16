@@ -75,6 +75,10 @@ login_manager = LoginManager()
 login_manager.init_app(class_app)
 login_manager.login_view = 'login'
 
+with class_app.app_context():
+    db.create_all()
+    load_transients()
+
 # Define forms for search, registration, and login
 class SearchForm(FlaskForm):
     source_id = StringField('Source ID', validators=[DataRequired()])
