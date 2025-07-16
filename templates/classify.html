@@ -127,6 +127,18 @@
         color: var(--bs-btn-active-color);
     }
     
+    .btn-primary.selected {
+        background-color: #0056b3 !important;
+        border-color: #0056b3 !important;
+        color: white !important;
+    }
+    
+    .btn-outline-primary.selected {
+        background-color: #007bff !important;
+        border-color: #007bff !important;
+        color: white !important;
+    }
+    
     /* Custom media query to stack columns at 960px and below */
     /* @media screen and (min-width: 1400px) {
     
@@ -614,23 +626,32 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="container-fluid" style="margin-top: 50px">
-                                            <!-- SDSS Data -->
+                                           <!-- SDSS Data -->
                                             {% if sdss_data %}
-                                            <p><strong>SDSS (10 arcsec):</strong> Found SDSS spec-z: z={{ sdss_data.ssmagnr|round(2) }}; peak abs mag = {{ sdss_data.ssdistnr|round(2) }}</p>
+                                            <p><strong>SDSS (5 arcsec):</strong> 
+                                                Found SDSS {{ sdss_data.redshift_type }}-z: z={{ sdss_data.redshift|round(4) }}; 
+                                                sep={{ sdss_data.separation_arcsec|round(2) }}" arcsec
+                                                {% if sdss_data.absolute_magnitude %}
+                                                    ; M_abs={{ sdss_data.absolute_magnitude|round(2) }}
+                                                {% endif %}
+                                                {% if sdss_data.physical_separation_kpc %}
+                                                    ; {{ sdss_data.physical_separation_kpc|round(1) }} kpc
+                                                {% endif %}
+                                            </p>
                                             {% else %}
-                                            <!-- <p><strong>SDSS (10 arcsec):</strong> No data found</p> -->
+                                            <p><strong>SDSS (5 arcsec):</strong> No data found</p>
                                             {% endif %}
                                             <!-- Legacy Survey Data-->
                                             {% if not legacy_data %}
-                                            <p><strong>LegacySurvey:</strong> 0 sources in 10 arcsec</p>
+                                            <p><strong>LegacySurvey:</strong> 0 sources in 5 arcsec</p>
                                             {% else %}
-                                            <p><strong>LegacySurvey:</strong> {{ legacy_amount }} sources in 10 arcsec</p>
+                                            <p><strong>LegacySurvey:</strong> {{ legacy_amount }} sources in 5 arcsec</p>
                                             <p>Closest: d = {{ legacy_data[0] }} arcsec, {{ legacy_data[1] }} deg (east of north)</p>
                                             <p>photoz={{ legacy_data[2] }} (68% bounds {{ legacy_data[3] }}, {{ legacy_data[4] }}), type={{ legacy_data[5] }}</p>
                                             {% endif %}
                                             <!-- PS1 Data -->
                                             {% if ps1_dist is not none and ps1_sgs is not none %}                                            
-                                            <p><strong>PS1:</strong> 1 source in 3 arcsec</p>
+                                            <p><strong>PS1:</strong> 1 source in 5 arcsec</p>
                                                 <p>Source: d = {{ ps1_dist|round(4) }} arcsec, sgscore1={{ ps1_sgs|round(4) }}</p>
                                             
                                             {% else %}
@@ -716,39 +737,51 @@
                                 </div> 
                         
                                 <!-- Transient Classification buttons -->
-                                <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-                                    <div class="input-group">
-                                        <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
-                                            <button type="button" onclick="setClassification(this, 'SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
-                                            <button type="button" onclick="setClassification(this, 'AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
-                                            <button type="button" onclick="setClassification(this, 'CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
-                                            <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
-                                            <button type="button" onclick="setClassification(this, 'Fast')" class="btn btn-outline-primary" title="Very fast candidate transient">Fast</button>
-                                            <button type="button" onclick="setClassification(this, 'Slow')" class="btn btn-outline-primary" title="Very slow candidate transient">Slow</button>
-                                            <!-- <button type="button" onclick="setBold(this)" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button> -->
-                                            <div class="dropdown container-fluid">
-                                                <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)">
-                                                    Other Types
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'QSO')">QSO</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
-                                                </ul>
-                                            </div>
+                                <!-- First row: Primary classification buttons -->
+                                <div class="btn-toolbar justify-content-start container-fluid" role="toolbar" aria-label="Primary classification buttons">
+                                    <div class="btn-group mb-2 me-2" role="group" aria-label="Primary classifications">
+                                        <button type="button" onclick="setClassification(this, 'SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
+                                        <button type="button" onclick="setClassification(this, 'AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
+                                        <button type="button" onclick="setClassification(this, 'QSO')" class="btn btn-outline-primary" title="Quasar">QSO</button>
+                                        <button type="button" onclick="setClassification(this, 'CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
+                                        <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Second row: Dropdown menus -->
+                                <div class="btn-toolbar justify-content-start container-fluid" role="toolbar" aria-label="Dropdown classification menus">
+                                    <div class="btn-group mb-2 me-2" role="group" aria-label="Dropdown classifications">
+                                        <div class="dropdown ">
+                                            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)" data-original-text="Ambiguous">
+                                                Ambiguous
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Fast event')">Fast event</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Slow event')">Slow event</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nuclear event')">Nuclear event</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
+                                            </ul>
+                                        </div>
+                                        <div class="dropdown container-fluid">
+                                            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)" data-original-text="Stars/Artifacts">
+                                                Stars/Artifacts
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
@@ -761,31 +794,32 @@
                                             <button type="button" onclick="setConfidence(this, 'Probable')" class="btn btn-outline-secondary">Probable</button>
                                             <button type="button" onclick="setConfidence(this, 'Confident')" class="btn btn-outline-secondary">Confident</button>
                                         </div>
-                                        <div class="ms-auto" style="margin-left: 20px; margin-top: -8px;">
-                                            <button type="submit" id="submitBtn"class="btn btn-primary" disabled>Fetching...</button>
-                                        </div>
+                                        
                                     </div>
                                 </div>
                             </form>
-                            <div class="btn-toolbar container-fluid mt-3" role="toolbar" style="margin-left: -35px">
-                                <div class = "vlass-button"></div>
-                                    <div>
+                            <div class="btn-toolbar container-fluid mt-3" role="toolbar" >
+                                <!-- <div class = "vlass-button"></div> -->
+                                    <!-- <div>
                                         <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
                                             <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
                                         </form>
+                                    </div> -->
+                                    <div >
+                                        <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Select Classification & Confidence</button>
                                     </div>
-                                <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
+                                <button id="toggle-images" class="btn btn-outline-info vlass-button" style="display: none;">Show VLASS Images</button>
                             </div>
                         </div>
                     </div>
                 </div>
        
             
-            <div id="image-section" class="vlass-images">
+            <!-- <div id="image-section" class="vlass-images">
                 {% for image in vlass_images %}
                     <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
                 {% endfor %}
-            </div>
+            </div> -->
             
     </div>
     
@@ -801,19 +835,12 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Then Bootstrap 5 Bundle (includes Popper v2) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Then DataTables JS (depends on jQuery) -->
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
 
-    <!-- All custom scripts below -->
-    <script>
-        // Ensure Bootstrap 5 tooltips are initialized (if you use data-bs-toggle="tooltip")
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+    <script> 
+        // Global variable to track prefetch status
+        window.prefetchComplete = false;
 
         document.addEventListener('DOMContentLoaded', function() {
-            var nextButton = document.getElementById('submitBtn');
             var checkInterval = 1000; // Check every second
 
             function checkPrefetchStatus() {
@@ -821,11 +848,11 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'complete') {
-                            nextButton.disabled = false;
-                            nextButton.textContent = 'Submit';
+                            window.prefetchComplete = true;
+                            validateSubmitButton(); // Check if form is ready to submit
                         } else if (data.status === 'error') {
-                            nextButton.disabled = false;
-                            nextButton.textContent = 'Submit (Error in prefetch)';
+                            window.prefetchComplete = true;
+                            validateSubmitButton(); // Check if form is ready to submit
                         } else {
                             // Still fetching
                             setTimeout(checkPrefetchStatus, checkInterval);
@@ -833,8 +860,8 @@
                     })
                     .catch(error => {
                         console.error('Error checking prefetch status:', error);
-                        nextButton.disabled = false;
-                        nextButton.textContent = 'Submit (Error)';
+                        window.prefetchComplete = true;
+                        validateSubmitButton(); // Check if form is ready to submit
                     });
             }
 
@@ -845,15 +872,43 @@
         function setClassification(button, value) {
             document.getElementById('classification').value = value;
             // Remove 'selected' class from all classification buttons
-            document.querySelectorAll('.btn-outline-primary').forEach(btn => btn.classList.remove('selected'));
-            // Add 'selected' class to the clicked button
-            button.classList.add('selected');
+            document.querySelectorAll('.btn-outline-primary, .btn-primary.dropdown-toggle').forEach(btn => btn.classList.remove('selected'));
+            
+            // Reset all dropdown button texts to their defaults
+            resetDropdownTexts();
+            
+            // If this is a dropdown item, mark the parent dropdown toggle as selected and update its text
+            const dropdown = button.closest('.dropdown');
+            if (dropdown) {
+                const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
+                if (dropdownToggle) {
+                    dropdownToggle.classList.add('selected');
+                    // Update the dropdown button text to show the selected item
+                    dropdownToggle.childNodes[0].textContent = value + ' ';
+                }
+            } else {
+                // If not a dropdown item, mark the button itself as selected
+                button.classList.add('selected');
+            }
+            
+            // Check if both classification and confidence are selected
+            validateSubmitButton();
+        }
+
+        function resetDropdownTexts() {
+            // Reset dropdown button texts to their original values
+            document.querySelectorAll('.dropdown-toggle[data-original-text]').forEach(toggle => {
+                const originalText = toggle.getAttribute('data-original-text');
+                toggle.childNodes[0].textContent = originalText + ' ';
+            });
         }
 
         function setBold(button) {
             // Remove 'selected' class from all classification buttons
-            document.querySelectorAll('.btn-outline-primary').forEach(btn => btn.classList.remove('selected'));
-            // Add 'selected' class to the clicked button
+            document.querySelectorAll('.btn-outline-primary, .btn-primary.dropdown-toggle').forEach(btn => btn.classList.remove('selected'));
+            // Reset dropdown texts when a dropdown toggle is clicked (but not when selecting from dropdown)
+            resetDropdownTexts();
+            // Add 'selected' class to the clicked dropdown toggle button
             button.classList.add('selected');
         }
 
@@ -863,6 +918,28 @@
             document.querySelectorAll('.btn-outline-secondary').forEach(btn => btn.classList.remove('selected'));
             // Add 'selected' class to the clicked button
             button.classList.add('selected');
+            
+            // Check if both classification and confidence are selected
+            validateSubmitButton();
+        }
+
+        // Function to validate if both classification and confidence are selected
+        function validateSubmitButton() {
+            const classification = document.getElementById('classification').value;
+            const confidence = document.getElementById('confidence').value;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // Priority order: Fetching > Missing selections > Ready to submit
+            if (!window.prefetchComplete) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Fetching...';
+            } else if (!classification || !confidence) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Select Classification & Confidence';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit';
+            }
         }
 
     
