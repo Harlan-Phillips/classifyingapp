@@ -228,145 +228,31 @@ def classify_source(source_id):
             flash('An error occurred while fetching the transient data.')
             return redirect(url_for('index'))
 
-        # Get both detection data sources
-        dets = data.get('dets')
-        lc = data.get('lc')
-        alert_count = data.get('alert_count')
+        # The comprehensive raw_alerts data is already prepared in fetch_transient_data()
+        # which includes alerts, forced photometry, and previous detections
+        raw_alerts = data.get('raw_alerts', [])
+        alert_count = data.get('alert_count', 0)
         
-        # Debug logs to see the structure of both data sources
+        # Debug logs
         logging.debug(f"Source ID: {source_id}")
         logging.debug(f"Alert count reported: {alert_count}")
-        logging.debug(f"Number of entries in dets: {len(dets) if dets else 0}")
-        logging.debug(f"Number of entries in lc: {len(lc) if lc else 0}")
+        logging.debug(f"Number of entries in raw_alerts from fetch_transient_data: {len(raw_alerts)}")
         
-        # Print out the entire lc data structure to see what we're dealing with
-        logging.debug(f"FULL LC DATA: {lc}")
-        
-        if lc and len(lc) > 0:
-            logging.debug(f"Sample lc entry structure: {lc[0]}")
-            # Check if lc entries are dictionaries or have a different structure
-            logging.debug(f"Type of lc[0]: {type(lc[0])}")
-            if hasattr(lc[0], 'keys'):
-                logging.debug(f"Keys in lc[0]: {list(lc[0].keys())}")
-            
-            # Try to examine the JD values to see if they're different from dets
-            lc_jds = [alert.get('jd') if isinstance(alert, dict) else getattr(alert, 'jd', None) for alert in lc]
-            logging.debug(f"JDs in lc: {lc_jds}")
-        
-        if dets and len(dets) > 0:
-            logging.debug(f"Sample dets entry structure: {dets[0]}")
-            # Get JDs from dets for comparison
-            if 'candidate' in dets[0]:
-                dets_jds = [det.get('candidate', {}).get('jd') for det in dets]
-            else:
-                dets_jds = [det.get('jd') for det in dets]
-            logging.debug(f"JDs in dets: {dets_jds}")
-        
-        # Initialize raw_alerts
-        raw_alerts = []
-        
-        # First try to use original dets data (for backward compatibility)
-        if dets:
-            alerts_raw = alert_table(dets)
-            if alerts_raw is not None:
-                logging.debug(f"Alerts from dets via alert_table: {len(alerts_raw)}")
-                raw_alerts = alerts_raw.to_dict(orient='records')
-                logging.debug(f"Initial raw_alerts from dets: {len(raw_alerts)}")
-            
-        # Now try to add data from lc
-        if lc:
-            # Create a set of JDs from the alerts we already have
-            existing_jds = set()
-            if raw_alerts:
-                existing_jds = set(float(alert['jd']) for alert in raw_alerts)
-                logging.debug(f"Existing JDs from raw_alerts: {existing_jds}")
-            
-            added_count = 0
-            # Loop through lc data and add entries that aren't in dets
-            for alert in lc:
-                # Get JD value, handling different potential structures
-                if isinstance(alert, dict):
-                    jd = alert.get('jd')
-                else:
-                    # Try to access as an attribute
-                    jd = getattr(alert, 'jd', None)
-                
-                if jd is None:
-                    continue
-                    
-                # Convert to float for comparison (avoid string vs float issues)
-                jd_float = float(jd)
-                
-                # Check for duplicates with a small tolerance for floating point differences
-                duplicate = False
-                for existing_jd in existing_jds:
-                    if abs(jd_float - existing_jd) < 0.0001:  # Small tolerance
-                        duplicate = True
-                        break
-                        
-                if duplicate:
-                    continue
-                
-                # Add this JD to our set
-                existing_jds.add(jd_float)
-                
-                # Now build the alert dictionary
-                alert_dict = {}
-                
-                # Handle different alert structures
-                if isinstance(alert, dict):
-                    alert_dict = {
-                        'jd': alert.get('jd'),
-                        'fid': alert.get('fid'),
-                        'programid': alert.get('programid', -1),
-                        'field': alert.get('field', -1),
-                        'ra': alert.get('ra'),
-                        'dec': alert.get('dec'),
-                        'magpsf': alert.get('magpsf'),
-                        'sigmapsf': alert.get('sigmapsf'),
-                        'ssdistnr': alert.get('ssdistnr', -999.0),
-                        'ssmagnr': alert.get('ssmagnr', -999.0),
-                        'sgscore1': alert.get('sgscore1', -999.0),
-                        'distpsnr1': alert.get('distpsnr1', -999.0),
-                        'origin': alert.get('origin', 'lc_data')
-                    }
-                else:
-                    # Try to access fields as attributes
-                    alert_dict = {
-                        'jd': getattr(alert, 'jd', None),
-                        'fid': getattr(alert, 'fid', None),
-                        'programid': getattr(alert, 'programid', -1),
-                        'field': getattr(alert, 'field', -1),
-                        'ra': getattr(alert, 'ra', None),
-                        'dec': getattr(alert, 'dec', None),
-                        'magpsf': getattr(alert, 'magpsf', None),
-                        'sigmapsf': getattr(alert, 'sigmapsf', None),
-                        'ssdistnr': getattr(alert, 'ssdistnr', -999.0),
-                        'ssmagnr': getattr(alert, 'ssmagnr', -999.0),
-                        'sgscore1': getattr(alert, 'sgscore1', -999.0),
-                        'distpsnr1': getattr(alert, 'distpsnr1', -999.0),
-                        'origin': getattr(alert, 'origin', 'lc_data')
-                    }
-                
-                # Add the alert
-                raw_alerts.append(alert_dict)
-                added_count += 1
-            
-            logging.debug(f"Added {added_count} alerts from lc data")
-        
-        # Log what we're sending to the template
-        logging.debug(f"Final number of entries in raw_alerts being sent to template: {len(raw_alerts)}")
-        if raw_alerts and len(raw_alerts) > 0:
+        if raw_alerts:
             logging.debug(f"Sample raw_alerts entry: {raw_alerts[0]}")
-            logging.debug(f"All JDs in final raw_alerts: {[alert.get('jd') for alert in raw_alerts]}")
+            logging.debug(f"All JDs in raw_alerts: {[alert.get('jd') for alert in raw_alerts]}")
+            
+            # Check the origins of the alerts to see data sources
+            origins = [alert.get('origin', 'unknown') for alert in raw_alerts]
+            logging.debug(f"Alert origins: {Counter(origins)}")
 
-        data['raw_alerts'] = raw_alerts
-        data['vlass_images'] = session.pop('vlass_images', [])
-
-        # Check if alert_count matches raw_alerts length, if not update
-        if alert_count != len(raw_alerts) and len(raw_alerts) > 0:
+        # Update alert count to match raw_alerts length if needed
+        if alert_count != len(raw_alerts):
             logging.debug(f"Updating alert_count from {alert_count} to {len(raw_alerts)}")
             data['alert_count'] = len(raw_alerts)
+
+        # Add VLASS images from session
+        data['vlass_images'] = session.pop('vlass_images', [])
 
         # Render the current transient page
         response = render_template('classify.html', **data)
@@ -561,75 +447,26 @@ def random_transient():
         source_id = cached_transient['source_id']
         data = cached_transient['data']
         
-        # Get both detection data sources
-        dets = data.get('dets')
-        lc = data.get('lc')
+        # The comprehensive raw_alerts data is already prepared in the cached data
+        # which includes alerts, forced photometry, and previous detections
+        raw_alerts = data.get('raw_alerts', [])
+        alert_count = data.get('alert_count', 0)
         
-        # Debug logs to see the structure of both data sources
-        logging.debug(f"Number of entries in dets for random transient: {len(dets) if dets else 0}")
-        logging.debug(f"Number of entries in lc for random transient: {len(lc) if lc else 0}")
+        # Debug logs
+        logging.debug(f"Random transient - Source ID: {source_id}")
+        logging.debug(f"Number of entries in raw_alerts from cached data: {len(raw_alerts)}")
         
-        # First try to use original dets data (for backward compatibility)
-        if dets:
-            alerts_raw = alert_table(dets)
-            raw_alerts = alerts_raw.to_dict(orient='records') if alerts_raw is not None else []
-            
-            # Now add any additional alerts from lc that aren't in dets
-            if lc:
-                # Create a set of JDs from the alerts we already have
-                existing_jds = set(alert['jd'] for alert in raw_alerts)
-                
-                # Loop through lc data and add entries that aren't in dets
-                for alert in lc:
-                    # Skip if we already have this alert (based on JD)
-                    if alert.get('jd') in existing_jds:
-                        continue
-                    
-                    # Add any missing fields with default values
-                    alert_dict = {
-                        'jd': alert.get('jd'),
-                        'fid': alert.get('fid'),
-                        'programid': alert.get('programid', -1),
-                        'field': alert.get('field', -1),
-                        'ra': alert.get('ra'),
-                        'dec': alert.get('dec'),
-                        'magpsf': alert.get('magpsf'),
-                        'sigmapsf': alert.get('sigmapsf'),
-                        'ssdistnr': alert.get('ssdistnr', -999.0),
-                        'ssmagnr': alert.get('ssmagnr', -999.0),
-                        'sgscore1': alert.get('sgscore1', -999.0),
-                        'distpsnr1': alert.get('distpsnr1', -999.0),
-                        'origin': alert.get('origin', 'forced_photometry' if 'forced' in str(alert) else 'previous_detection')
-                    }
-                    raw_alerts.append(alert_dict)
-        
-        # If no data from dets, try to build from lc only
-        elif lc:
-            raw_alerts = []
-            for alert in lc:
-                # Extract fields with proper defaults
-                alert_dict = {
-                    'jd': alert.get('jd'),
-                    'fid': alert.get('fid'),
-                    'programid': alert.get('programid', -1),
-                    'field': alert.get('field', -1),
-                    'ra': alert.get('ra'),
-                    'dec': alert.get('dec'),
-                    'magpsf': alert.get('magpsf'),
-                    'sigmapsf': alert.get('sigmapsf'),
-                    'ssdistnr': alert.get('ssdistnr', -999.0),
-                    'ssmagnr': alert.get('ssmagnr', -999.0),
-                    'sgscore1': alert.get('sgscore1', -999.0),
-                    'distpsnr1': alert.get('distpsnr1', -999.0),
-                    'origin': alert.get('origin', 'unknown')
-                }
-                raw_alerts.append(alert_dict)
-        else:
-            raw_alerts = []
-        
-        logging.debug(f"Number of entries in raw_alerts being sent to template for random transient: {len(raw_alerts)}")
+        if raw_alerts:
+            # Check the origins of the alerts to see data sources
+            origins = [alert.get('origin', 'unknown') for alert in raw_alerts]
+            logging.debug(f"Alert origins: {Counter(origins)}")
 
-        data['raw_alerts'] = raw_alerts
+        # Update alert count to match raw_alerts length if needed
+        if alert_count != len(raw_alerts):
+            logging.debug(f"Updating alert_count from {alert_count} to {len(raw_alerts)}")
+            data['alert_count'] = len(raw_alerts)
+
+        # Add VLASS images from session
         data['vlass_images'] = session.pop('vlass_images', [])
         
         # Start prefetching the next transient in a separate thread
@@ -673,4 +510,4 @@ if __name__ == '__main__':
     with class_app.app_context():
         db.create_all()
         load_transients()
-    class_app.run(debug=True)
+    class_app.run(debug=True, port=5001)

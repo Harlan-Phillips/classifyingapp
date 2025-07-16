@@ -21,3 +21,4 @@ _pycache__/utils.cpython-312.pyc
 *.pywz
 static/cutouts/
 static/light_curves/
+_pycache__/
