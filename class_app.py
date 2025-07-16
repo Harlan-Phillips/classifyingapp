@@ -75,10 +75,6 @@ login_manager = LoginManager()
 login_manager.init_app(class_app)
 login_manager.login_view = 'login'
 
-with class_app.app_context():
-    db.create_all()
-    load_transients()
-
 # Define forms for search, registration, and login
 class SearchForm(FlaskForm):
     source_id = StringField('Source ID', validators=[DataRequired()])
@@ -513,6 +509,10 @@ def delete_classification(classification_id):
     flash('Classification deleted successfully.', 'success')
     return redirect(url_for('user_classifications'))
 
+with class_app.app_context():
+    db.create_all()
+    load_transients()
+    
 if __name__ == '__main__':
     # Initialize databases and load transients from csv
     with class_app.app_context():
