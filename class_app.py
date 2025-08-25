@@ -256,9 +256,11 @@ def classify_source(source_id):
 
         # Start prefetching the next transient in a separate thread only if data was fetched (not from cache)
         # This prevents starting a prefetch if we just used cached data.
+        user_id = current_user.get_id()
+        cached_transient = transient_cache.get(user_id)
         if not (cached_transient and cached_transient.get('status') == 'complete' and cached_transient.get('source_id') == source_id):
-             thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
-             thread.start()
+            thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+            thread.start()
 
         return response
 

@@ -1476,6 +1476,9 @@ def fetch_transient_data(kowalski_session, source_id):
     try:
         # Fetch positional and galactic data
         ra, dec, scat_sep = get_pos(kowalski_session, source_id)
+        if ra is None or dec is None:
+            logging.debug("No ZTF detections for this source; skipping data assembly.")
+            return None
         logging.debug(f"RA: {ra}, Dec: {dec}, Scatter Separation: {scat_sep}")
 
         # Fetch galactic coordinates
