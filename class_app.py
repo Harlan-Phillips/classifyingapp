@@ -26,12 +26,9 @@ from wtforms.validators import DataRequired, Email, EqualTo
 # Imports from local files
 from models import db, User, Transient, Classification
 from utils import (
-    get_pos, get_galactic, get_lc, logon,  
-    plot_ps1_cutout, plot_ls_cutout, plot_light_curve, 
-    xmatch_ls, get_dets, plot_polar_coordinates, get_most_confident_classification, 
-    plot_big_light_curve, plot_big_polar_coordinates, 
-    analyze_ps1_photoz, get_drb, get_span, plot_wise, filter_and_plot_alerts, alert_table,
-    get_ecliptic, make_celery, fetch_transient_data
+    get_pos, logon,  
+    get_most_confident_classification, 
+    make_celery, fetch_transient_data
 )
 from vlass_utils import get_vlass_data, run_search
 
@@ -215,43 +212,44 @@ def classify(source_id):
     db.session.commit()
     
     flash(f'Your classification for {source_id} as "{classification_text}" has been recorded.', 'success')
-    return redirect(url_for('classify_source', source_id=source_id))
+    return redirect(url_for('random_transient'))
 
 @class_app.route('/classify/<source_id>', methods=['GET'])
 @login_required
 def classify_source(source_id):
     """Render the classification page for a given source."""
     try:
-        # Check cache first
-        user_id = current_user.get_id()
-        cached_transient = transient_cache.get(user_id)
-        data = None
+        # Fetch the data for the current transient
+        data = fetch_transient_data(kowalski_session, source_id)
+        if not data:
+            flash('An error occurred while fetching the transient data.')
+            return redirect(url_for('index'))
 
-        if cached_transient and cached_transient.get('status') == 'complete' and cached_transient.get('source_id') == source_id:
-            logging.debug(f"Using cached data for {source_id}")
-            data = cached_transient['data']
-            # Remove from cache now that it's being used
-            transient_cache.pop(user_id, None)
-        else:
-            logging.debug(f"Cache miss or ID mismatch for {source_id}. Fetching data.")
-            # Fetch the data for the current transient if not in cache
-            data = fetch_transient_data(kowalski_session, source_id)
-            if not data:
-                flash('An error occurred while fetching the transient data.')
-                return redirect(url_for('index'))
-
-        # Ensure alert_count from fetch_transient_data is used
-        if 'alert_count' not in data:
-            # Calculate from raw_alerts if somehow missing (shouldn't happen ideally)
-            data['alert_count'] = len(data.get('raw_alerts', []))
-            logging.warning(f"alert_count missing from fetch_transient_data result, recalculating: {data['alert_count']}")
+        # The comprehensive raw_alerts data is already prepared in fetch_transient_data()
+        # which includes alerts, forced photometry, and previous detections
+        raw_alerts = data.get('raw_alerts', [])
+        alert_count = data.get('alert_count', 0)
+        
+        # Debug logs
+        logging.debug(f"Source ID: {source_id}")
+        logging.debug(f"Alert count reported: {alert_count}")
+        logging.debug(f"Number of entries in raw_alerts from fetch_transient_data: {len(raw_alerts)}")
+        
+        if raw_alerts:
+            logging.debug(f"Sample raw_alerts entry: {raw_alerts[0]}")
+            logging.debug(f"All JDs in raw_alerts: {[alert.get('jd') for alert in raw_alerts]}")
             
-        # Ensure VLASS images are handled
-        data['vlass_images'] = session.pop('vlass_images', [])
+            # Check the origins of the alerts to see data sources
+            origins = [alert.get('origin', 'unknown') for alert in raw_alerts]
+            logging.debug(f"Alert origins: {Counter(origins)}")
 
-        # Log the final count before rendering
-        logging.debug(f"Data being sent to template - raw_alerts length: {len(data.get('raw_alerts', []))}")
-        logging.debug(f"Data being sent to template - alert_count: {data.get('alert_count', 'N/A')}")
+        # Update alert count to match raw_alerts length if needed
+        if alert_count != len(raw_alerts):
+            logging.debug(f"Updating alert_count from {alert_count} to {len(raw_alerts)}")
+            data['alert_count'] = len(raw_alerts)
+
+        # Add VLASS images from session
+        data['vlass_images'] = session.pop('vlass_images', [])
 
         # Render the current transient page
         response = render_template('classify.html', **data)
@@ -446,9 +444,36 @@ def random_transient():
     if cached_transient and cached_transient.get('status') == 'complete':
         # Use the prefetched data by redirecting to its specific URL
         source_id = cached_transient['source_id']
-        logging.debug(f"Prefetched data found for {source_id}. Redirecting.")
-        # Redirect to classify_source, which will handle using the cached data
-        return redirect(url_for('classify_source', source_id=source_id))
+        data = cached_transient['data']
+        
+        # The comprehensive raw_alerts data is already prepared in the cached data
+        # which includes alerts, forced photometry, and previous detections
+        raw_alerts = data.get('raw_alerts', [])
+        alert_count = data.get('alert_count', 0)
+        
+        # Debug logs
+        logging.debug(f"Random transient - Source ID: {source_id}")
+        logging.debug(f"Number of entries in raw_alerts from cached data: {len(raw_alerts)}")
+        
+        if raw_alerts:
+            # Check the origins of the alerts to see data sources
+            origins = [alert.get('origin', 'unknown') for alert in raw_alerts]
+            logging.debug(f"Alert origins: {Counter(origins)}")
+
+        # Update alert count to match raw_alerts length if needed
+        if alert_count != len(raw_alerts):
+            logging.debug(f"Updating alert_count from {alert_count} to {len(raw_alerts)}")
+            data['alert_count'] = len(raw_alerts)
+
+        # Add VLASS images from session
+        data['vlass_images'] = session.pop('vlass_images', [])
+        
+        # Start prefetching the next transient in a separate thread
+        thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+        thread.start()
+
+        return render_template('classify.html', **data)
+      
     else:
         # No valid prefetched data, fetch a new random transient
         logging.debug("No valid prefetched data found. Getting new random ID.")
@@ -484,9 +509,13 @@ def delete_classification(classification_id):
     flash('Classification deleted successfully.', 'success')
     return redirect(url_for('user_classifications'))
 
+with class_app.app_context():
+    db.create_all()
+    load_transients()
+    
 if __name__ == '__main__':
     # Initialize databases and load transients from csv
     with class_app.app_context():
         db.create_all()
         load_transients()
-    class_app.run(debug=True)
+    class_app.run(debug=True, port=5001)

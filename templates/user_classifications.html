@@ -20,7 +20,7 @@
                 <td><a href="{{ url_for('classify_source', source_id=classification.source_id) }}">{{ classification.source_id }}</a></td>
                 <td>{{ classification.classification }}</td>
                 <td>
-                    <button type="button" class="btn btn-info btn-sm" onclick="window.location.href='{{ url_for('classify_source', source_id=classification.source_id) }}'">Edit</button>
+                    <button type="button" class="btn btn-info btn-sm" onclick='window.location.href="{{ url_for("classify_source", source_id=classification.source_id) }}";'>Edit</button>
                     <form action="{{ url_for('delete_classification', classification_id=classification.id) }}" method="post" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>

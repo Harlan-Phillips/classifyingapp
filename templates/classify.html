@@ -127,6 +127,18 @@
         color: var(--bs-btn-active-color);
     }
     
+    .btn-primary.selected {
+        background-color: #0056b3 !important;
+        border-color: #0056b3 !important;
+        color: white !important;
+    }
+    
+    .btn-outline-primary.selected {
+        background-color: #007bff !important;
+        border-color: #007bff !important;
+        color: white !important;
+    }
+    
     /* Custom media query to stack columns at 960px and below */
     /* @media screen and (min-width: 1400px) {
     
@@ -601,8 +613,8 @@
                                     <iframe id="light-curve-small" src="{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}" width="100%" height="520" style="border: 0px solid black"></iframe>
                                     <iframe id="light-curve-large" src="{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}" width="100%" height="620" style="display: none; border: 0px solid black"></iframe>
                                     <div class="zoom-buttons">
-                                        <button id="lc-zoom-detections" class="btn btn-outline-primary">Detections Span</button>
-                                        <button id="lc-zoom-all" class="btn btn-outline-primary">All</button>
+                                        <button id="detections" class="btn btn-outline-primary">Detections Span</button>
+                                        <button id="all" class="btn btn-outline-primary">All</button>
                                     </div>
                                 </div>  
                             </div>
@@ -614,23 +626,32 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="container-fluid" style="margin-top: 50px">
-                                            <!-- SDSS Data -->
+                                           <!-- SDSS Data -->
                                             {% if sdss_data %}
-                                            <p><strong>SDSS (10 arcsec):</strong> Found SDSS spec-z: z={{ sdss_data.ssmagnr|round(2) }}; peak abs mag = {{ sdss_data.ssdistnr|round(2) }}</p>
+                                            <p><strong>SDSS (5 arcsec):</strong> 
+                                                Found SDSS {{ sdss_data.redshift_type }}-z: z={{ sdss_data.redshift|round(4) }}; 
+                                                sep={{ sdss_data.separation_arcsec|round(2) }}" arcsec
+                                                {% if sdss_data.absolute_magnitude %}
+                                                    ; M_abs={{ sdss_data.absolute_magnitude|round(2) }}
+                                                {% endif %}
+                                                {% if sdss_data.physical_separation_kpc %}
+                                                    ; {{ sdss_data.physical_separation_kpc|round(1) }} kpc
+                                                {% endif %}
+                                            </p>
                                             {% else %}
-                                            <!-- <p><strong>SDSS (10 arcsec):</strong> No data found</p> -->
+                                            <p><strong>SDSS (5 arcsec):</strong> No data found</p>
                                             {% endif %}
                                             <!-- Legacy Survey Data-->
                                             {% if not legacy_data %}
-                                            <p><strong>LegacySurvey:</strong> 0 sources in 10 arcsec</p>
+                                            <p><strong>LegacySurvey:</strong> 0 sources in 5 arcsec</p>
                                             {% else %}
-                                            <p><strong>LegacySurvey:</strong> {{ legacy_amount }} sources in 10 arcsec</p>
+                                            <p><strong>LegacySurvey:</strong> {{ legacy_amount }} sources in 5 arcsec</p>
                                             <p>Closest: d = {{ legacy_data[0] }} arcsec, {{ legacy_data[1] }} deg (east of north)</p>
                                             <p>photoz={{ legacy_data[2] }} (68% bounds {{ legacy_data[3] }}, {{ legacy_data[4] }}), type={{ legacy_data[5] }}</p>
                                             {% endif %}
                                             <!-- PS1 Data -->
                                             {% if ps1_dist is not none and ps1_sgs is not none %}                                            
-                                            <p><strong>PS1:</strong> 1 source in 3 arcsec</p>
+                                            <p><strong>PS1:</strong> 1 source in 5 arcsec</p>
                                                 <p>Source: d = {{ ps1_dist|round(4) }} arcsec, sgscore1={{ ps1_sgs|round(4) }}</p>
                                             
                                             {% else %}
@@ -653,12 +674,7 @@
                                 <div class="table-responsive" style="width: 100%; overflow-x: auto;">
                                     {# Use raw_alerts directly as passed from the route #}
                                     {% if raw_alerts %}
-                                    {# Log the length of raw_alerts as seen by Jinja - Corrected Syntax #}
-                                    <script>
-                                        console.log("Jinja sees raw_alerts length: {{ raw_alerts|length }}");
-                                    </script>
-                                    {# Add an ID to the table #}
-                                    <table id="alert-packets-table" class="table table-striped table-hover table-sm display nowrap" style="width: 100%;">
+                                    <table class="table table-striped table-hover table-sm display nowrap" style="width: 100%;">
                                         <thead>
                                             <tr>
                                                 <th scope="col">JD</th>
@@ -716,43 +732,82 @@
                                 </div> 
                         
                                 <!-- Transient Classification buttons -->
-                                <div class="btn-toolbar justify-content-between container-fluid" role="toolbar" aria-label="Toolbar with button groups">
-                                    <div class="input-group">
-                                        <div class="btn-group mb-2 me-2" role="group" aria-label="First group">
-                                            <button type="button" onclick="setClassification(this, 'SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
-                                            <button type="button" onclick="setClassification(this, 'AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
-                                            <button type="button" onclick="setClassification(this, 'CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
-                                            <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
-                                            <button type="button" onclick="setClassification(this, 'Fast')" class="btn btn-outline-primary" title="Very fast candidate transient">Fast</button>
-                                            <button type="button" onclick="setClassification(this, 'Slow')" class="btn btn-outline-primary" title="Very slow candidate transient">Slow</button>
-                                            <!-- <button type="button" onclick="setBold(this)" data-toggle="collapse" data-target="#other-types" class="btn btn-outline-primary">Other</button> -->
-                                            <div class="dropdown container-fluid">
-                                                <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)">
-                                                    Other Types
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'QSO')">QSO</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
-                                                    <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
-                                                </ul>
-                                            </div>
+                                <!-- First row: Primary classification buttons -->
+                                <div class="btn-toolbar justify-content-start container-fluid" role="toolbar" aria-label="Primary classification buttons">
+                                    <div class="btn-group mb-2 me-2" role="group" aria-label="Primary classifications">
+                                        <button type="button" onclick="setClassification(this, 'SN')" class="btn btn-outline-primary" title="Extragalactic transient">SN</button>
+                                        <button type="button" onclick="setClassification(this, 'AGN')" class="btn btn-outline-primary" title="Active nucleus">AGN</button>
+                                        <button type="button" onclick="setClassification(this, 'QSO')" class="btn btn-outline-primary" title="Quasar">QSO</button>
+                                        <button type="button" onclick="setClassification(this, 'CV')" class="btn btn-outline-primary" title="Cataclysmic variable star">CV</button>
+                                        <button type="button" onclick="setClassification(this, 'Rock')" class="btn btn-outline-primary" title="Minor planet/moon">Rock</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Second row: Dropdown menus -->
+                                <div class="btn-toolbar justify-content-start container-fluid" role="toolbar" aria-label="Dropdown classification menus">
+                                    <div class="btn-group mb-2 me-2" role="group" aria-label="Dropdown classifications">
+                                        <div class="dropdown ">
+                                            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)" data-original-text="Ambiguous">
+                                                Ambiguous
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Fast event')">Fast event</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Slow event')">Slow event</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nuclear event')">Nuclear event</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
+                                            </ul>
+                                        </div>
+                                        <div class="dropdown container-fluid">
+                                            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false" onclick="setBold(this)" data-original-text="Stars/Artifacts">
+                                                Stars/Artifacts
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
+                                                <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
                                 
+                                <!-- Other Buttons -->
+                                <!-- <div class="collapse" id="other-types">
+                                    <div class="dropdown container-fluid">
+                                        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                                            Other Types
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: bad subtraction')">Star: bad subtraction</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: high proper motion')">Star: high proper motion</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: slow variable')">Star: slow variable</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Star: rapid/erratic variable')">Star: rapid/erratic variable</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'QSO')">QSO</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Nucleus: bad subtraction')">Nucleus: bad subtraction</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other: bad subtraction')">Other: bad subtraction</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Hot pixel')">Hot pixel</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Cosmic ray')">Cosmic ray</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reference artifact')">Reference artifact</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Reflection/ghost')">Reflection/ghost</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Artificial satellite')">Artificial satellite</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Composite')">Composite</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other astrophysical')">Other astrophysical</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Other artifact')">Other artifact</button></li>
+                                            <li><button class="dropdown-item" type="button" onclick="setClassification(this, 'Unclear')">Unclear</button></li>
+                                        </ul>
+                                    </div>
+                                </div> -->
+                        
                                 <!-- Confidence Level Buttons -->
                                 <div class="btn-toolbar justify-content-between container-fluid mt-3" role="toolbar" aria-label="Confidence levels">
                                     <div class="d-flex align-items-center w-100">
@@ -761,31 +816,32 @@
                                             <button type="button" onclick="setConfidence(this, 'Probable')" class="btn btn-outline-secondary">Probable</button>
                                             <button type="button" onclick="setConfidence(this, 'Confident')" class="btn btn-outline-secondary">Confident</button>
                                         </div>
-                                        <div class="ms-auto" style="margin-left: 20px; margin-top: -8px;">
-                                            <button type="submit" id="submitBtn"class="btn btn-primary" disabled>Fetching...</button>
-                                        </div>
+                                        
                                     </div>
                                 </div>
                             </form>
-                            <div class="btn-toolbar container-fluid mt-3" role="toolbar" style="margin-left: -35px">
-                                <div class = "vlass-button"></div>
-                                    <div>
+                            <div class="btn-toolbar container-fluid mt-3" role="toolbar" >
+                                <!-- <div class = "vlass-button"></div> -->
+                                    <!-- <div>
                                         <form method="POST" action="{{ url_for('retrieve_vlass_data', source_id=source_id) }}">
                                             <button type="submit" class="btn btn-outline-danger vlass-button">Fetch VLASS Data</button>
                                         </form>
+                                    </div> -->
+                                    <div >
+                                        <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Select Classification & Confidence</button>
                                     </div>
-                                <button id="toggle-images" class="btn btn-outline-info vlass-button">Show VLASS Images</button>
+                                <button id="toggle-images" class="btn btn-outline-info vlass-button" style="display: none;">Show VLASS Images</button>
                             </div>
                         </div>
                     </div>
                 </div>
        
             
-            <div id="image-section" class="vlass-images">
+            <!-- <div id="image-section" class="vlass-images">
                 {% for image in vlass_images %}
                     <img src="{{ url_for('static', filename=image) }}" alt="VLASS Image for {{ source_id }}" class="img-thumbnail">
                 {% endfor %}
-            </div>
+            </div> -->
             
     </div>
     
@@ -795,25 +851,22 @@
     
 
 
-    <!-- Bootstrap JS, Popper.js, and jQuery -->
-    <!-- Ensure this is the ONLY script loading section -->
-    <!-- Load Full jQuery first -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Then Bootstrap 5 Bundle (includes Popper v2) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Then DataTables JS (depends on jQuery) -->
+    <!-- Bootstrap JS, Popper.js, and jQuery -->    
+    <!-- Load jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <!-- Then Popper.js (required by Bootstrap 4) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script> 
+    <!-- Then Bootstrap 4 JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script> 
+    <!-- Then DataTables JS -->
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
-
-    <!-- All custom scripts below -->
-    <script>
-        // Ensure Bootstrap 5 tooltips are initialized (if you use data-bs-toggle="tooltip")
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-
+    <!-- Then Bootstrap 5 JS (if needed for other components like tabs) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script> 
+        // Global variable to track prefetch status
+        window.prefetchComplete = false;
+        
         document.addEventListener('DOMContentLoaded', function() {
-            var nextButton = document.getElementById('submitBtn');
             var checkInterval = 1000; // Check every second
 
             function checkPrefetchStatus() {
@@ -821,11 +874,11 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'complete') {
-                            nextButton.disabled = false;
-                            nextButton.textContent = 'Submit';
+                            window.prefetchComplete = true;
+                            validateSubmitButton(); // Check if form is ready to submit
                         } else if (data.status === 'error') {
-                            nextButton.disabled = false;
-                            nextButton.textContent = 'Submit (Error in prefetch)';
+                            window.prefetchComplete = true;
+                            validateSubmitButton(); // Check if form is ready to submit
                         } else {
                             // Still fetching
                             setTimeout(checkPrefetchStatus, checkInterval);
@@ -833,8 +886,8 @@
                     })
                     .catch(error => {
                         console.error('Error checking prefetch status:', error);
-                        nextButton.disabled = false;
-                        nextButton.textContent = 'Submit (Error)';
+                        window.prefetchComplete = true;
+                        validateSubmitButton(); // Check if form is ready to submit
                     });
             }
 
@@ -845,15 +898,43 @@
         function setClassification(button, value) {
             document.getElementById('classification').value = value;
             // Remove 'selected' class from all classification buttons
-            document.querySelectorAll('.btn-outline-primary').forEach(btn => btn.classList.remove('selected'));
-            // Add 'selected' class to the clicked button
-            button.classList.add('selected');
+            document.querySelectorAll('.btn-outline-primary, .btn-primary.dropdown-toggle').forEach(btn => btn.classList.remove('selected'));
+            
+            // Reset all dropdown button texts to their defaults
+            resetDropdownTexts();
+            
+            // If this is a dropdown item, mark the parent dropdown toggle as selected and update its text
+            const dropdown = button.closest('.dropdown');
+            if (dropdown) {
+                const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
+                if (dropdownToggle) {
+                    dropdownToggle.classList.add('selected');
+                    // Update the dropdown button text to show the selected item
+                    dropdownToggle.childNodes[0].textContent = value + ' ';
+                }
+            } else {
+                // If not a dropdown item, mark the button itself as selected
+                button.classList.add('selected');
+            }
+            
+            // Check if both classification and confidence are selected
+            validateSubmitButton();
+        }
+
+        function resetDropdownTexts() {
+            // Reset dropdown button texts to their original values
+            document.querySelectorAll('.dropdown-toggle[data-original-text]').forEach(toggle => {
+                const originalText = toggle.getAttribute('data-original-text');
+                toggle.childNodes[0].textContent = originalText + ' ';
+            });
         }
 
         function setBold(button) {
             // Remove 'selected' class from all classification buttons
-            document.querySelectorAll('.btn-outline-primary').forEach(btn => btn.classList.remove('selected'));
-            // Add 'selected' class to the clicked button
+            document.querySelectorAll('.btn-outline-primary, .btn-primary.dropdown-toggle').forEach(btn => btn.classList.remove('selected'));
+            // Reset dropdown texts when a dropdown toggle is clicked (but not when selecting from dropdown)
+            resetDropdownTexts();
+            // Add 'selected' class to the clicked dropdown toggle button
             button.classList.add('selected');
         }
 
@@ -863,6 +944,28 @@
             document.querySelectorAll('.btn-outline-secondary').forEach(btn => btn.classList.remove('selected'));
             // Add 'selected' class to the clicked button
             button.classList.add('selected');
+            
+            // Check if both classification and confidence are selected
+            validateSubmitButton();
+        }
+
+        // Function to validate if both classification and confidence are selected
+        function validateSubmitButton() {
+            const classification = document.getElementById('classification').value;
+            const confidence = document.getElementById('confidence').value;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // Priority order: Fetching > Missing selections > Ready to submit
+            if (!window.prefetchComplete) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Fetching...';
+            } else if (!classification || !confidence) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Select Classification & Confidence';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit';
+            }
         }
 
     
@@ -927,42 +1030,29 @@
     }
     
     function zoomPolarPlot(zoomLevel) {
-        var smallPolarPlotIframe = document.getElementById('polar-plot-small');
-        var largePolarPlotIframe = document.getElementById('polar-plot-large');
-        var smallBaseSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_polar_plot.html') }}";
-        var largeBaseSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_big_polar_plot.html') }}";
-        var smallOutSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_polar_plot_out.html') }}";
-        var largeOutSrc = "{{ url_for('static', filename='light_curves/' + source_id + '_big_polar_plot_out.html') }}";
+    var smallPolarPlotIframe = document.getElementById('polar-plot-small');
+    var largePolarPlotIframe = document.getElementById('polar-plot-large');
+    var smallLightCurveIframe = document.getElementById('light-curve-small');
+    var largeLightCurveIframe = document.getElementById('light-curve-large');
+    var smallLightSrc = smallLightCurveIframe.src;
+    var largeLightSrc = largeLightCurveIframe.src;
+    var smallSrc = smallPolarPlotIframe.src;
+    var largeSrc = largePolarPlotIframe.src;
 
         if (zoomLevel === 'in') {
-            smallPolarPlotIframe.src = smallBaseSrc;
-            largePolarPlotIframe.src = largeBaseSrc;
-            console.log("Zooming polar plot IN");
+            smallPolarPlotIframe.src = smallSrc.replace(/polar_plot_out\.html/, 'polar_plot.html');
+            largePolarPlotIframe.src = largeSrc.replace(/big_polar_plot_out\.html/, 'big_polar_plot.html');
+            smallLightCurveIframe.src = smallLightSrc.replace(/light_curve_zoomed\.html/, 'light_curve.html');
+            largeLightCurveIframe.src = largeLightSrc.replace(/big_light_curve_zoomed\.html/, 'big_light_curve.html');
         } else if (zoomLevel === 'out') {
-            smallPolarPlotIframe.src = smallOutSrc;
-            largePolarPlotIframe.src = largeOutSrc;
-            console.log("Zooming polar plot OUT");
+            smallPolarPlotIframe.src = smallSrc.replace(/polar_plot\.html/, 'polar_plot_out.html');
+            largePolarPlotIframe.src = largeSrc.replace(/big_polar_plot\.html/, 'big_polar_plot_out.html');
+            smallLightCurveIframe.src = smallLightSrc.replace(/light_curve\.html/, 'light_curve_zoomed.html');
+            largeLightCurveIframe.src = largeLightSrc.replace(/big_light_curve\.html/, 'big_light_curve_zoomed.html');
         }
     }
 
-    function zoomLightCurve(zoomLevel) {
-        var smallLightCurveIframe = document.getElementById('light-curve-small');
-        var largeLightCurveIframe = document.getElementById('light-curve-large');
-        var smallBaseSrc = "{{ url_for('static', filename='light_curves/' + plot_filename.split('/')[-1]) }}";
-        var largeBaseSrc = "{{ url_for('static', filename='light_curves/' + plot_big_filename.split('/')[-1]) }}";
-        var smallZoomedSrc = "{{ url_for('static', filename='light_curves/' + plot_filename_zoomed.split('/')[-1]) }}";
-        var largeZoomedSrc = "{{ url_for('static', filename='light_curves/' + plot_big_filename_zoomed.split('/')[-1]) }}";
-        
-        if (zoomLevel === 'all') {
-            smallLightCurveIframe.src = smallBaseSrc;
-            largeLightCurveIframe.src = largeBaseSrc;
-            console.log("Zooming light curve to ALL");
-        } else if (zoomLevel === 'detections') {
-            smallLightCurveIframe.src = smallZoomedSrc;
-            largeLightCurveIframe.src = largeZoomedSrc;
-            console.log("Zooming light curve to DETECTIONS");
-        }
-    }
+
 
     document.getElementById('zoom-in').addEventListener('click', function() {
         zoomPolarPlot('in');
@@ -972,16 +1062,23 @@
         zoomPolarPlot('out');
     });
 
-    // Correct the light curve zoom buttons
-    document.getElementById('lc-zoom-all').addEventListener('click', function() {
-        zoomLightCurve('all');
+    document.getElementById('all').addEventListener('click', function() {
+        zoomPolarPlot('in');
     });
 
-    document.getElementById('lc-zoom-detections').addEventListener('click', function() {
-        zoomLightCurve('detections');
+    document.getElementById('detections').addEventListener('click', function() {
+        zoomPolarPlot('out');
     });
 
-    const triggerTabList = document.querySelectorAll('#myTab button, #plotTabs button'); // Include plotTabs
+    const triggerTabList = document.querySelectorAll('#myTab button');
+    triggerTabList.forEach(triggerEl => {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+
+        triggerEl.addEventListener('click', event => {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
 
     // Initial check
     adjustIframe();
@@ -989,113 +1086,81 @@
     window.addEventListener('resize', adjustIframe);
 
     $(document).ready(function() {
-        // Flag to track if DataTable is initialized
-        var alertTableInitialized = false;
-        var alertTableInstance = null; // To store the DataTable instance
-
-        // Listener for when the Alert Packets tab is shown
-        $('button[data-bs-target="#table"]').on('shown.bs.tab', function (e) {
-            // Log the number of HTML rows found before initialization
-            var rowCount = $('#alert-packets-table tbody tr').length;
-            console.log("HTML rows found in #alert-packets-table tbody before init:", rowCount);
-
-            // Check if the table has been initialized
-            if (!alertTableInitialized) {
-                console.log("Initializing Alert Table on tab show...");
-                // Initialize DataTable on the specific table ID
-                alertTableInstance = $('#alert-packets-table').DataTable({
-                    // Keep destroy: true if you might re-initialize, but with the flag it might not be needed.
-                    // It shouldn't harm to keep it for now.
-                    destroy: true,
-                    searching: true,
-                    ordering: true,
-                    info: true,
-                    paging: false,
-                    scrollY: '500px',
-                    scrollX: true,
-                    scrollCollapse: false,
-                    dom: '<"top"f>rt<"bottom"i>',
-                    columnDefs: [
-                        {
-                            targets: [0, 4, 5, 6, 7, 8, 9, 10, 11],
-                            render: function(data, type, row) {
-                                if (type === 'display' || type === 'filter') {
-                                    if (data === null || data === undefined) {
-                                        return 'N/A';
-                                    }
-                                    var num = parseFloat(data);
-                                    if (num <= -999) {
-                                        return 'N/A';
-                                    }
-                                    // Smart rounding: More precision for JD, less for others if needed
-                                    // Example: Round JD to 6, others to 4? Adjust as needed.
-                                    if ($.isNumeric(num)) { // Check if it's actually numeric
-                                        // Assuming the first column (index 0) is JD
-                                        if (this.api().column(arguments[3].col).index() === 0) {
-                                             return num.toFixed(6); // More precision for JD
-                                        } else {
-                                             // Check for very small numbers that might benefit from scientific notation
-                                             if (Math.abs(num) > 0 && Math.abs(num) < 0.0001) {
-                                                 return num.toExponential(3);
-                                             } else {
-                                                 return num.toFixed(4); // Less precision for others
-                                             }
-                                        }
-                                    } else {
-                                        return data; // Return original data if not numeric
-                                    }
-                                }
-                                return data;
+        // Create DataTable with specific configuration
+        var alertTable = $('.table').DataTable({
+            destroy: true,            // Destroy any existing table
+            searching: true,          // Enable search
+            ordering: true,           // Enable sorting
+            info: true,               // Show info (X of Y entries)
+            paging: false,            // Disable pagination
+            scrollY: '500px',         // Increase vertical scrolling height
+            scrollX: true,            // Enable horizontal scrolling
+            scrollCollapse: false,    // Disable scroll collapse
+            
+            // Custom DOM layout
+            dom: '<"top"f>rt<"bottom"i>',
+            
+            // Column-specific settings
+            columnDefs: [
+                {
+                    // Format numerical columns
+                    targets: [0, 4, 5, 6, 7, 8, 9, 10, 11],
+                    render: function(data, type, row) {
+                        if (type === 'display' || type === 'filter') {
+                            // Handle null or undefined
+                            if (data === null || data === undefined) {
+                                return 'N/A';
                             }
-                        },
-                        {
-                            targets: '_all',
-                            className: 'dt-body-nowrap'
+                            
+                            // Convert to number and format
+                            var num = parseFloat(data);
+                            
+                            // Special handling for -999 values (missing data in astronomy)
+                            if (num <= -999) {
+                                return 'N/A';
+                            }
+                            
+                            // Normal numerical formatting
+                            return num.toFixed(6);
                         }
-                    ],
-                    responsive: true,
-                    language: {
-                        search: "Filter: ",
-                        info: "Showing _TOTAL_ alerts",
-                        infoEmpty: "No alerts available",
-                        emptyTable: "No alert data available"
-                    },
-                    // initComplete callback to log and adjust columns after initialization
-                    initComplete: function(settings, json) {
-                        console.log("Alert table initialized via initComplete with " + this.api().rows().count() + " rows");
-                        // Use a short delay to ensure rendering is complete before adjusting
-                        setTimeout(() => { 
-                            console.log("Adjusting columns post-init...");
-                            this.api().columns.adjust().draw(); 
-                            $(window).trigger('resize'); // Also trigger window resize for good measure
-                        }, 100); // 100ms delay
+                        return data; // Return raw data for sorting
                     }
-                });
-                // Set the flag to true
-                alertTableInitialized = true;
-            } else {
-                // If already initialized, just adjust column widths for visibility
-                console.log("Alert table already initialized. Adjusting columns.");
-                 // Use a short delay here too
-                setTimeout(() => {
-                    if (alertTableInstance) { // Check if instance exists
-                       alertTableInstance.columns.adjust().draw();
-                    }
-                }, 100);
+                },
+                {
+                    // Ensure all columns have appropriate width
+                    targets: '_all',
+                    className: 'dt-body-nowrap'
+                }
+            ],
+            
+            // Apply responsive layout
+            responsive: true,
+            
+            // Language customization
+            language: {
+                search: "Filter: ",
+                info: "Showing _TOTAL_ alerts",
+                infoEmpty: "No alerts available",
+                emptyTable: "No alert data available"
+            },
+            
+            // After initialization
+            initComplete: function() {
+                console.log("Alert table initialized with " + this.api().rows().count() + " rows");
+                // Force resize to ensure proper display
+                $(window).trigger('resize');
             }
         });
-
-        // Keep the window resize listener outside the tab listener
+        
+        // Log row count to verify data
+        console.log("Raw data row count: " + $('.table tbody tr').length);
+        
+        // Handle window resize to ensure table redraws properly
         $(window).on('resize', function() {
-            // Adjust columns only if the table has been initialized
-            if (alertTableInitialized && alertTableInstance) {
-                // console.log("Window resized, adjusting table columns...");
-                alertTableInstance.columns.adjust();
+            if (alertTable) {
+                alertTable.columns.adjust().draw();
             }
         });
-
-        // Log initial raw row count from HTML (for comparison)
-        console.log("Initial HTML row count: " + $('#alert-packets-table tbody tr').length);
     });
     </script>
 </body>
