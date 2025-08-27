@@ -412,13 +412,30 @@ def export_test_transients():
             'classification': most_confident_classification
         })
 
-    # Convert to DataFrame
+    # Convert to DataFrame (summary)
     df = pd.DataFrame(data)
-    
+
+    # Build per-user classifications sheet
+    per_user_rows = []
+    for transient in transients:
+        classifications = Classification.query.filter_by(source_id=transient.source_id).all()
+        for c in classifications:
+            user = User.query.get(c.user_id)
+            per_user_rows.append({
+                'source_id': transient.source_id,
+                'username': user.username if user else None,
+                'classification': c.classification,
+                'confidence': c.confidence,
+                'timestamp': c.timestamp.strftime('%Y-%m-%d %H:%M:%S') if c.timestamp else None
+            })
+    per_user_columns = ['source_id', 'username', 'classification', 'confidence', 'timestamp']
+    df_users = pd.DataFrame(per_user_rows, columns=per_user_columns)
+
     # Create a BytesIO buffer to save the Excel file
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Transients')
+        df_users.to_excel(writer, index=False, sheet_name='Per-User Classifications')
     
     # Seek to the beginning of the stream
     output.seek(0)
