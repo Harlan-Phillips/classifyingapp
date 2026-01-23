@@ -16,15 +16,15 @@ email_validator
 requests
 
 # Data processing libraries
-pandas
-numpy
+pandas==3.0.0
+numpy==2.4.1
 openpyxl
 
 # Plotting and visualization
-matplotlib
+matplotlib==3.10.8
 
 # Astronomy specific libraries
-astropy
+astropy==7.2.0
 penquins
 ztfquery
 
