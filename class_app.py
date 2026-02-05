@@ -323,11 +323,17 @@ def load_transients():
     """Load transients from a CSV file into the database."""
     with class_app.app_context():
         if not Transient.query.first():  # Only load if the table is empty
+            BATCH_SIZE = 10000
+
             with open('transients.csv', newline='', encoding='utf-8-sig') as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     transient = Transient(source_id=row[0])
                     db.session.add(transient)
+                    BATCH_SIZE -= 1
+                    if BATCH_SIZE == 0:
+                        db.session.commit()
+                        BATCH_SIZE = 10000
                 db.session.commit()
 
 def load_test_transients_ids():
