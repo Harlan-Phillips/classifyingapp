@@ -23,6 +23,9 @@ import os
 
 # Image handling modules
 from PIL import Image
+import matplotlib
+
+matplotlib.use("Agg")  # Use a non-interactive backend
 import matplotlib.pyplot as plt
 import mpld3
 from mpld3 import fig_to_html, plugins
@@ -41,31 +44,38 @@ import json
 from ztfquery.utils import stamps
 
 import mastcasjobs
-from celery  import Celery, shared_task
+from celery import Celery, shared_task
 
 from flask import session
 import logging
 from models import db, User, Transient, Classification
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-logging.basicConfig(level=logging.DEBUG,  # or INFO
-                    format='%(asctime)s %(levelname)s %(message)s',
-                    handlers=[logging.StreamHandler()])
+logging.basicConfig(
+    level=logging.DEBUG,  # or INFO
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+
 
 def make_celery(app):
     celery = Celery(
         app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
+        backend=app.config["CELERY_RESULT_BACKEND"],
+        broker=app.config["CELERY_BROKER_URL"],
     )
     celery.conf.update(app.config)
     return celery
 
+
 def read_secrets():
-    secrets_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'secrets.txt')
-    with open(secrets_file, 'r') as f:
+    secrets_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "secrets.txt"
+    )
+    with open(secrets_file, "r") as f:
         secrets = f.read().splitlines()
     return secrets
+
 
 secrets = read_secrets()
 
@@ -75,42 +85,59 @@ wsid_mastcasjobs = secrets[2]
 password_mastcasjobs = secrets[3]
 
 # Reading data from CSV
-column_names = ['stars_x', 'stars_y', 'ellipticals_x', 'ellipticals_y', 'spirals_x', 'spirals_y',
-                'LIRGs_x', 'LIRGs_y', 'qsos_x', 'qsos_y']
-data = pd.read_csv('wpd_datasets.csv', names=column_names, skiprows=1)
+column_names = [
+    "stars_x",
+    "stars_y",
+    "ellipticals_x",
+    "ellipticals_y",
+    "spirals_x",
+    "spirals_y",
+    "LIRGs_x",
+    "LIRGs_y",
+    "qsos_x",
+    "qsos_y",
+]
+data = pd.read_csv("wpd_datasets.csv", names=column_names, skiprows=1)
 
 # Extracting the data for each group
-stars_x = data['stars_x'].dropna().tolist()
-stars_y = data['stars_y'].dropna().tolist()
+stars_x = data["stars_x"].dropna().tolist()
+stars_y = data["stars_y"].dropna().tolist()
 
-ellipticals_x = data['ellipticals_x'].dropna().tolist()
-ellipticals_y = data['ellipticals_y'].dropna().tolist()
+ellipticals_x = data["ellipticals_x"].dropna().tolist()
+ellipticals_y = data["ellipticals_y"].dropna().tolist()
 
-spirals_x = data['spirals_x'].dropna().tolist()
-spirals_y = data['spirals_y'].dropna().tolist()
+spirals_x = data["spirals_x"].dropna().tolist()
+spirals_y = data["spirals_y"].dropna().tolist()
 
-LIRGs_x = data['LIRGs_x'].dropna().tolist()
-LIRGs_y = data['LIRGs_y'].dropna().tolist()
+LIRGs_x = data["LIRGs_x"].dropna().tolist()
+LIRGs_y = data["LIRGs_y"].dropna().tolist()
 
-qsos_x = data['qsos_x'].dropna().tolist()
-qsos_y = data['qsos_y'].dropna().tolist()
+qsos_x = data["qsos_x"].dropna().tolist()
+qsos_y = data["qsos_y"].dropna().tolist()
+
 
 def logon():
-    """ Log onto Kowalski """
+    """Log onto Kowalski"""
     s = Kowalski(
-        protocol='https', host='kowalski.caltech.edu', port=443,
-        verbose=False, username=username_kowalski, password=password_kowalski)
+        protocol="https",
+        host="kowalski.caltech.edu",
+        port=443,
+        verbose=False,
+        username=username_kowalski,
+        password=password_kowalski,
+    )
     return s
 
+
 def get_dets(s, name):
-    """ Fetch detection alerts from Kowalski """
+    """Fetch detection alerts from Kowalski"""
     q = {
         "query_type": "find",
         "query": {
             "catalog": "ZTF_alerts",
             "filter": {
-                'objectId': {'$eq': name},
-                'candidate.isdiffpos': {'$in': ['1', 't']},
+                "objectId": {"$eq": name},
+                "candidate.isdiffpos": {"$in": ["1", "t"]},
             },
             "projection": {
                 "_id": 0,
@@ -127,19 +154,20 @@ def get_dets(s, name):
                 "candidate.ssmagnr": 1,
                 "candidate.distpsnr1": 1,
                 "candidate.sgscore1": 1,
-                "candidate.drb": 1
-            }
-        }
+                "candidate.drb": 1,
+            },
+        },
     }
     query_result = s.query(query=q)
     try:
-        out = query_result['default']['data']
+        out = query_result["default"]["data"]
         return out
     except:
         return []
-    
+
+
 def alert_table(detections):
-    flattened_data = [item['candidate'] for item in detections]
+    flattened_data = [item["candidate"] for item in detections]
     df = pd.DataFrame(flattened_data)
 
     # If you need to convert to CSV for any reason
@@ -148,56 +176,59 @@ def alert_table(detections):
     print(df)
     # Display the DataFrame
     return df
-        
-def get_drb(s,name,dets):
-    """ Calculate the median position from alerts, and the scatter """
+
+
+def get_drb(s, name, dets):
+    """Calculate the median position from alerts, and the scatter"""
     det_alerts = dets
     if not det_alerts:
         return None, None, None, None
-    
-    #det_prv = get_prv_dets(s, name)
-    
-    drbs = [det['candidate']['drb'] for det in det_alerts if 'drb' in det['candidate']]
-    
+
+    # det_prv = get_prv_dets(s, name)
+
+    drbs = [det["candidate"]["drb"] for det in det_alerts if "drb" in det["candidate"]]
+
     if not drbs:
         return None, None, None, None
-    
+
     # Calculate the median position
     med = np.median(drbs)
     mini = np.min(drbs)
     mx = np.max(drbs)
     avg = np.mean(drbs)
 
-    return med,mini,mx,avg
+    return med, mini, mx, avg
 
-def get_span(s,name,dets):
-    """ Calculate the median position from alerts, and the scatter """
+
+def get_span(s, name, dets):
+    """Calculate the median position from alerts, and the scatter"""
     det_alerts = dets
     if not det_alerts:
         return None
-    
+
     det_prv = get_prv_dets(s, name)
-    
-    detects = [det['candidate']['jd'] for det in det_alerts]
+
+    detects = [det["candidate"]["jd"] for det in det_alerts]
 
     if det_prv:
         for det in det_prv:
-            if len(det)>50:
-                detects.append(det['jd'])
+            if len(det) > 50:
+                detects.append(det["jd"])
 
     if not detects:
         return None
-    
+
     return max(detects) - min(detects)
 
-def get_pos(s,name):
-    """ Calculate the median position from alerts, and the scatter """
+
+def get_pos(s, name):
+    """Calculate the median position from alerts, and the scatter"""
     det_alerts = get_dets(s, name)
     if not det_alerts:
         return None, None, None
     det_prv = get_prv_dets(s, name)
-    ras = [det['candidate']['ra'] for det in det_alerts]
-    decs = [det['candidate']['dec'] for det in det_alerts]
+    ras = [det["candidate"]["ra"] for det in det_alerts]
+    decs = [det["candidate"]["dec"] for det in det_alerts]
 
     # Calculate the median position
     ra = np.median(ras)
@@ -205,181 +236,308 @@ def get_pos(s,name):
 
     if det_prv is not None:
         for det in det_prv:
-            if len(det)>50:
-                ras.append(det['ra'])
-                decs.append(det['dec'])
+            if len(det) > 50:
+                ras.append(det["ra"])
+                decs.append(det["dec"])
 
     scat_sep = 0
-    if len(ras)>1:
+    if len(ras) > 1:
         # Calculate the separations between each pair
         seps = []
-        for i,raval in enumerate(ras[:-1]):
-            c1 = SkyCoord(raval, decs[i], unit='deg')
-            c2 = SkyCoord(ras[i+1], decs[i+1], unit='deg')
+        for i, raval in enumerate(ras[:-1]):
+            c1 = SkyCoord(raval, decs[i], unit="deg")
+            c2 = SkyCoord(ras[i + 1], decs[i + 1], unit="deg")
             seps.append(c1.separation(c2).arcsec)
         # Calculate the median separation
         scat_sep = np.median(seps)
 
-    return ra,dec,scat_sep
+    return ra, dec, scat_sep
 
 
-def get_galactic(ra,dec):
-    """ Convert to galactic coordinates, ra and dec given in decimal deg """
-    c = SkyCoord(ra,dec,unit='deg')
+def get_galactic(ra, dec):
+    """Convert to galactic coordinates, ra and dec given in decimal deg"""
+    c = SkyCoord(ra, dec, unit="deg")
     galactic_l = c.galactic.l.deg
     galactic_b = c.galactic.b.deg
     return galactic_l, galactic_b
 
+
 def get_ecliptic(ra, dec):
-    """ Convert to ecliptic coordinates, ra and dec given in decimal degrees """
+    """Convert to ecliptic coordinates, ra and dec given in decimal degrees"""
     # Create a SkyCoord object with RA and Dec
-    c = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
-    
-    obstime = Time(58000, format='mjd')
+    c = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
+
+    obstime = Time(58000, format="mjd")
 
     # Convert to Geocentric True Ecliptic coordinates with obstime
     ecliptic_coord = c.transform_to(GeocentricTrueEcliptic(obstime=obstime))
-    
+
     # Extract ecliptic longitude and latitude
     ecliptic_lon = ecliptic_coord.lon.deg
     ecliptic_lat = ecliptic_coord.lat.deg
-    
+
     return ecliptic_lon, ecliptic_lat
 
 
 def get_lc(s, name):
-    """ Retrieve LC for object """
+    """Retrieve LC for object"""
     # The alerts
-    df_alerts = pd.DataFrame([val['candidate'] for val in get_dets(s, name)])
-    df_alerts['isalert'] = [True] * len(df_alerts)
+    df_alerts = pd.DataFrame([val["candidate"] for val in get_dets(s, name)])
+    df_alerts["isalert"] = [True] * len(df_alerts)
     lc = df_alerts
 
-    # Get 30-day history from forced photometry 
-    det_prv_forced = get_prv_dets_forced(s, name) 
+    # Get 30-day history from forced photometry
+    det_prv_forced = get_prv_dets_forced(s, name)
     if det_prv_forced is not None:  # if source is recent enough
         df_forced = pd.DataFrame(det_prv_forced)
-        if 'limmag5sig' in df_forced.keys():  # otherwise no point
-            df_forced['isalert'] = [False] * len(df_forced)
-            
+        if "limmag5sig" in df_forced.keys():  # otherwise no point
+            df_forced["isalert"] = [False] * len(df_forced)
+
             # Merge the two dataframes
-            lc = df_alerts.merge(
-                df_forced, on='jd', how='outer', 
-                suffixes=('_alerts', '_forced30d')).sort_values('jd').reset_index()
-            
-            cols_to_drop = ['index', 'rcid', 'rfid', 'sciinpseeing', 'scibckgnd',
-                'scisigpix', 'magzpsci', 'magzpsciunc', 'magzpscirms', 'clrcoeff',
-                'clrcounc', 'exptime', 'adpctdif1', 'adpctdif2', 'procstatus',
-                'distnr', 'ranr', 'decnr', 'magnr', 'sigmagnr', 'chinr',
-                'sharpnr', 'alert_mag', 'alert_ra', 'alert_dec', 'ra', 'dec',
-                'forcediffimflux', 'forcediffimfluxunc', 'limmag3sig']
+            lc = (
+                df_alerts.merge(
+                    df_forced, on="jd", how="outer", suffixes=("_alerts", "_forced30d")
+                )
+                .sort_values("jd")
+                .reset_index()
+            )
+
+            cols_to_drop = [
+                "index",
+                "rcid",
+                "rfid",
+                "sciinpseeing",
+                "scibckgnd",
+                "scisigpix",
+                "magzpsci",
+                "magzpsciunc",
+                "magzpscirms",
+                "clrcoeff",
+                "clrcounc",
+                "exptime",
+                "adpctdif1",
+                "adpctdif2",
+                "procstatus",
+                "distnr",
+                "ranr",
+                "decnr",
+                "magnr",
+                "sigmagnr",
+                "chinr",
+                "sharpnr",
+                "alert_mag",
+                "alert_ra",
+                "alert_dec",
+                "ra",
+                "dec",
+                "forcediffimflux",
+                "forcediffimfluxunc",
+                "limmag3sig",
+            ]
             cols_to_drop_existing = [col for col in cols_to_drop if col in lc.columns]
             lc = lc.drop(cols_to_drop_existing, axis=1)
-            lc['fid'] = lc['fid_alerts'].combine_first(lc['fid_forced30d'])
-            lc['programid'] = lc['programid_alerts'].combine_first(lc['programid_forced30d'])
-            lc['field'] = lc['field_alerts'].combine_first(lc['field_forced30d'])
-            lc['isalert'] = lc['isalert_alerts'].combine_first(lc['isalert_forced30d'])
-            lc = lc.drop(['fid_alerts', 'fid_forced30d', 'field_alerts', 'field_forced30d',
-                          'programid_alerts', 'programid_forced30d', 'isalert_alerts',
-                          'isalert_forced30d'], axis=1)
+            lc["fid"] = lc["fid_alerts"].combine_first(lc["fid_forced30d"])
+            lc["programid"] = lc["programid_alerts"].combine_first(
+                lc["programid_forced30d"]
+            )
+            lc["field"] = lc["field_alerts"].combine_first(lc["field_forced30d"])
+            lc["isalert"] = lc["isalert_alerts"].combine_first(lc["isalert_forced30d"])
+            lc = lc.drop(
+                [
+                    "fid_alerts",
+                    "fid_forced30d",
+                    "field_alerts",
+                    "field_forced30d",
+                    "programid_alerts",
+                    "programid_forced30d",
+                    "isalert_alerts",
+                    "isalert_forced30d",
+                ],
+                axis=1,
+            )
 
             # Select magnitudes. Options: magpsf/sigmapsf (alert), mag/magerr (30d)
-            lc['mag_final'] = lc['magpsf']  # alert value
-            lc['emag_final'] = lc['sigmapsf']  # alert value
-            if 'mag' in lc.keys():  # sometimes not there...
-                lc.loc[lc['snr'] > 3, 'mag_final'] = lc.loc[lc['snr'] > 3, 'mag']  # 30d hist
-                lc['emag_final'] = lc['sigmapsf']  # alert value
-                lc.loc[lc['snr'] > 3, 'emag_final'] = lc.loc[lc['snr'] > 3, 'magerr']  # 30d hist
-                lc = lc.drop(['magpsf', 'sigmapsf', 'magerr', 'mag'], axis=1)
+            lc["mag_final"] = lc["magpsf"]  # alert value
+            lc["emag_final"] = lc["sigmapsf"]  # alert value
+            if "mag" in lc.keys():  # sometimes not there...
+                lc.loc[lc["snr"] > 3, "mag_final"] = lc.loc[
+                    lc["snr"] > 3, "mag"
+                ]  # 30d hist
+                lc["emag_final"] = lc["sigmapsf"]  # alert value
+                lc.loc[lc["snr"] > 3, "emag_final"] = lc.loc[
+                    lc["snr"] > 3, "magerr"
+                ]  # 30d hist
+                lc = lc.drop(["magpsf", "sigmapsf", "magerr", "mag"], axis=1)
 
             # Select limits. Sometimes limmag5sig is NaN, but if that's a nondet too, then...
-            lc['maglim'] = lc['limmag5sig'] if 'limmag5sig' in lc.columns else None
+            lc["maglim"] = lc["limmag5sig"] if "limmag5sig" in lc.columns else None
 
             # Define whether detection or not
-            lc['isdet'] = np.logical_or(lc['isalert'] == True, lc['snr'] > 3 if 'snr' in lc.columns else False)
+            lc["isdet"] = np.logical_or(
+                lc["isalert"] == True, lc["snr"] > 3 if "snr" in lc.columns else False
+            )
 
             # Drop final things
-            cols_to_drop_final = ['pid', 'diffmaglim', 'snr', 'limmag5sig', 'programid', 'field']
-            cols_to_drop_final_existing = [col for col in cols_to_drop_final if col in lc.columns]
+            cols_to_drop_final = [
+                "pid",
+                "diffmaglim",
+                "snr",
+                "limmag5sig",
+                "programid",
+                "field",
+            ]
+            cols_to_drop_final_existing = [
+                col for col in cols_to_drop_final if col in lc.columns
+            ]
             lc = lc.drop(cols_to_drop_final_existing, axis=1)
 
             # Drop rows where both mag_final and maglim is NaN
-            drop = np.logical_and(np.isnan(lc['mag_final']), np.isnan(lc['maglim']))
+            drop = np.logical_and(np.isnan(lc["mag_final"]), np.isnan(lc["maglim"]))
             lc = lc[~drop]
         else:
             # Still make some of the same changes
-            if 'magpsf' in lc.keys():
-                lc['mag_final'] = lc['magpsf']
+            if "magpsf" in lc.keys():
+                lc["mag_final"] = lc["magpsf"]
             else:
-                lc['mag_final'] = None
-            
-            if 'sigmapsf' in lc.keys():
-                lc['emag_final'] = lc['sigmapsf']
+                lc["mag_final"] = None
+
+            if "sigmapsf" in lc.keys():
+                lc["emag_final"] = lc["sigmapsf"]
             else:
-                lc['emag_final'] = None
-            lc = lc.drop(['magpsf', 'sigmapsf', 'programid'], axis=1, errors='ignore')
+                lc["emag_final"] = None
+            lc = lc.drop(["magpsf", "sigmapsf", "programid"], axis=1, errors="ignore")
     else:
         # Still make some of the same changes
-        if 'magpsf' in lc.keys():
-            lc['mag_final'] = lc['magpsf']
+        if "magpsf" in lc.keys():
+            lc["mag_final"] = lc["magpsf"]
         else:
-            lc['mag_final'] = None
-        
-        if 'sigmapsf' in lc.keys():
-            lc['emag_final'] = lc['sigmapsf']
+            lc["mag_final"] = None
+
+        if "sigmapsf" in lc.keys():
+            lc["emag_final"] = lc["sigmapsf"]
         else:
-            lc['emag_final'] = None
-        lc = lc.drop(['magpsf', 'sigmapsf', 'programid'], axis=1, errors='ignore')
+            lc["emag_final"] = None
+        lc = lc.drop(["magpsf", "sigmapsf", "programid"], axis=1, errors="ignore")
 
     df_prv = pd.DataFrame(get_prv_dets(s, name))
     if df_prv is not None:
         if len(df_prv) > 0:  # not always the case
-            df_prv['isalert'] = [False] * len(df_prv)
+            df_prv["isalert"] = [False] * len(df_prv)
             # Merge the two dataframes
-            lc = lc.merge(
-                df_prv, on='jd', how='outer', 
-                suffixes=('_alerts', '_30d')).sort_values('jd').reset_index()
-            
-            cols_to_drop = ['index', 'rcid', 'rfid', 'sciinpseeing', 'scibckgnd',
-                'scisigpix', 'magzpsci', 'magzpsciunc', 'magzpscirms', 'clrcoeff',
-                'clrcounc', 'exptime', 'adpctdif1', 'adpctdif2', 'procstatus', 
-                'distnr', 'ranr', 'decnr', 'magnr', 'sigmagnr', 'chinr',
-                'sharpnr', 'alert_mag', 'alert_ra', 'alert_dec', 'ra', 'dec',
-                'programpi', 'nid', 'rbversion', 'pdiffimfilename',
-                'forcediffimflux', 'forcediffimfluxunc', 'limmag3sig',
-                'pid', 'programid', 'candid', 'tblid', 'xpos', 'ypos', 'chipsf',
-                'magap', 'sigmagap', 'sky', 'magdiff', 'fwhm', 'classtar', 'mindtoedge',
-                'magfromlim', 'seeratio', 'aimage', 'bimage', 'aimagerat', 'bimagerat',
-                'elong', 'nneg', 'rb', 'sumrat', 'magapbig', 'sigmagapbig', 'scorr', 'nbad']
+            lc = (
+                lc.merge(df_prv, on="jd", how="outer", suffixes=("_alerts", "_30d"))
+                .sort_values("jd")
+                .reset_index()
+            )
+
+            cols_to_drop = [
+                "index",
+                "rcid",
+                "rfid",
+                "sciinpseeing",
+                "scibckgnd",
+                "scisigpix",
+                "magzpsci",
+                "magzpsciunc",
+                "magzpscirms",
+                "clrcoeff",
+                "clrcounc",
+                "exptime",
+                "adpctdif1",
+                "adpctdif2",
+                "procstatus",
+                "distnr",
+                "ranr",
+                "decnr",
+                "magnr",
+                "sigmagnr",
+                "chinr",
+                "sharpnr",
+                "alert_mag",
+                "alert_ra",
+                "alert_dec",
+                "ra",
+                "dec",
+                "programpi",
+                "nid",
+                "rbversion",
+                "pdiffimfilename",
+                "forcediffimflux",
+                "forcediffimfluxunc",
+                "limmag3sig",
+                "pid",
+                "programid",
+                "candid",
+                "tblid",
+                "xpos",
+                "ypos",
+                "chipsf",
+                "magap",
+                "sigmagap",
+                "sky",
+                "magdiff",
+                "fwhm",
+                "classtar",
+                "mindtoedge",
+                "magfromlim",
+                "seeratio",
+                "aimage",
+                "bimage",
+                "aimagerat",
+                "bimagerat",
+                "elong",
+                "nneg",
+                "rb",
+                "sumrat",
+                "magapbig",
+                "sigmagapbig",
+                "scorr",
+                "nbad",
+            ]
             cols_to_drop_existing = [col for col in cols_to_drop if col in lc.columns]
             lc = lc.drop(cols_to_drop_existing, axis=1)
-            lc['fid'] = lc['fid_alerts'].combine_first(lc['fid_30d'])
-            lc['isalert'] = lc['isalert_alerts'].combine_first(lc['isalert_30d'])
-            lc = lc.drop(['fid_alerts', 'fid_30d', 'field_alerts', 'field_30d', 'field',
-                          'programid', 'isalert_alerts', 'isalert_30d', 'pid'], axis=1,
-                         errors='ignore')
+            lc["fid"] = lc["fid_alerts"].combine_first(lc["fid_30d"])
+            lc["isalert"] = lc["isalert_alerts"].combine_first(lc["isalert_30d"])
+            lc = lc.drop(
+                [
+                    "fid_alerts",
+                    "fid_30d",
+                    "field_alerts",
+                    "field_30d",
+                    "field",
+                    "programid",
+                    "isalert_alerts",
+                    "isalert_30d",
+                    "pid",
+                ],
+                axis=1,
+                errors="ignore",
+            )
 
             # Put magpsf into mag_final
-            if 'magpsf' in lc:
-                lc['mag_final'] = lc['mag_final'].combine_first(lc['magpsf'])
-            if 'sigmapsf' in lc:
-                lc['emag_final'] = lc['emag_final'].combine_first(lc['sigmapsf'])
+            if "magpsf" in lc:
+                lc["mag_final"] = lc["mag_final"].combine_first(lc["magpsf"])
+            if "sigmapsf" in lc:
+                lc["emag_final"] = lc["emag_final"].combine_first(lc["sigmapsf"])
 
             # Select limits. Options: diffmaglim, limmag5sig
-            if 'maglim' in lc:  # if it had a det_prv_forced
-                lc['maglim'] = lc['maglim'].combine_first(lc['diffmaglim'] if 'diffmaglim' in lc.columns else None)
+            if "maglim" in lc:  # if it had a det_prv_forced
+                lc["maglim"] = lc["maglim"].combine_first(
+                    lc["diffmaglim"] if "diffmaglim" in lc.columns else None
+                )
             else:
-                lc['maglim'] = lc['diffmaglim'] if 'diffmaglim' in lc.columns else None
-                if 'diffmaglim' in lc.columns:
-                    lc = lc.drop(['diffmaglim'], axis=1)
+                lc["maglim"] = lc["diffmaglim"] if "diffmaglim" in lc.columns else None
+                if "diffmaglim" in lc.columns:
+                    lc = lc.drop(["diffmaglim"], axis=1)
 
     # Define whether detection or not
     try:
-        lc['isdet'] = np.logical_or(lc['isalert'] == True, ~np.isnan(lc['mag_final']))
+        lc["isdet"] = np.logical_or(lc["isalert"] == True, ~np.isnan(lc["mag_final"]))
     except TypeError:
         raise ValueError("Data type issue detected while processing the light curve.")
     # If there were no prv dets at all, add a maglim column
-    if 'maglim' not in lc.keys():
-        lc['maglim'] = [None] * len(lc)
+    if "maglim" not in lc.keys():
+        lc["maglim"] = [None] * len(lc)
 
     return lc
 
@@ -396,24 +554,24 @@ def get_prv_dets(s, name):
     list or None: A list of previous candidates if found, None otherwise.
     """
 
-    q = {"query_type": "find",
-         "query": {
-             "catalog": "ZTF_alerts_aux",
-             "filter": {
-                     '_id': {'$eq': name},
-             },
-             "projection": {
-                     "_id": 0,
-                     "prv_candidates": 1,
-             }
-         }
-         }
+    q = {
+        "query_type": "find",
+        "query": {
+            "catalog": "ZTF_alerts_aux",
+            "filter": {
+                "_id": {"$eq": name},
+            },
+            "projection": {
+                "_id": 0,
+                "prv_candidates": 1,
+            },
+        },
+    }
     query_result = s.query(query=q)
-    if len(query_result['default']['data'])>0:
-        out = query_result['default']['data'][0]['prv_candidates']
+    if len(query_result["default"]["data"]) > 0:
+        out = query_result["default"]["data"][0]["prv_candidates"]
         return out
     return None
-
 
 
 def get_prv_dets_forced(s, name):
@@ -428,23 +586,25 @@ def get_prv_dets_forced(s, name):
     list or None: A list of forced photometry histories if found, None otherwise.
     """
 
-    q = {"query_type": "find",
-         "query": {
-             "catalog": "ZTF_alerts_aux",
-             "filter": {
-                     '_id': {'$eq': name},
-             },
-             "projection": {
-                     "_id": 0,
-                     "fp_hists": 1,
-             }
-         }
-         }
+    q = {
+        "query_type": "find",
+        "query": {
+            "catalog": "ZTF_alerts_aux",
+            "filter": {
+                "_id": {"$eq": name},
+            },
+            "projection": {
+                "_id": 0,
+                "fp_hists": 1,
+            },
+        },
+    }
     query_result = s.query(query=q)
-    if len(query_result['default']['data'])>0:
-        if 'fp_hists' in query_result['default']['data'][0]:
-            return query_result['default']['data'][0]['fp_hists']
+    if len(query_result["default"]["data"]) > 0:
+        if "fp_hists" in query_result["default"]["data"][0]:
+            return query_result["default"]["data"][0]["fp_hists"]
     return None
+
 
 def make_triplet(alert, normalize=False):
     """
@@ -453,12 +613,12 @@ def make_triplet(alert, normalize=False):
     """
     cutout_dict = dict()
 
-    for cutout in ('science', 'template', 'difference'):
-        tmpstr = 'cutout' + cutout.capitalize()
-        cutout_data = alert[tmpstr]['stampData']
+    for cutout in ("science", "template", "difference"):
+        tmpstr = "cutout" + cutout.capitalize()
+        cutout_data = alert[tmpstr]["stampData"]
 
         # unzip
-        with gzip.open(io.BytesIO(cutout_data), 'rb') as f:
+        with gzip.open(io.BytesIO(cutout_data), "rb") as f:
             with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
                 data = hdu[0].data
                 # replace nans with zeros
@@ -470,54 +630,61 @@ def make_triplet(alert, normalize=False):
         # pad to 63x63 if smaller
         shape = cutout_dict[cutout].shape
         if shape != (63, 63):
-            cutout_dict[cutout] = np.pad(cutout_dict[cutout], [(0, 63 - shape[0]), (0, 63 - shape[1])],
-                                         mode='constant', constant_values=1e-9)
+            cutout_dict[cutout] = np.pad(
+                cutout_dict[cutout],
+                [(0, 63 - shape[0]), (0, 63 - shape[1])],
+                mode="constant",
+                constant_values=1e-9,
+            )
 
     triplet = np.zeros((63, 63, 3))
-    triplet[:, :, 0] = cutout_dict['science']
-    triplet[:, :, 1] = cutout_dict['template']
-    triplet[:, :, 2] = cutout_dict['difference']
+    triplet[:, :, 0] = cutout_dict["science"]
+    triplet[:, :, 1] = cutout_dict["template"]
+    triplet[:, :, 2] = cutout_dict["difference"]
     return triplet
 
 
 def plot_triplet(tr):
-    """ From Dima's Kowalski tutorial """
-    fig,axarr = plt.subplots(1,3,figsize=(5.5, 2.1), dpi=120)
-    titles = ['Science', 'Reference', 'Difference']
+    """From Dima's Kowalski tutorial"""
+    fig, axarr = plt.subplots(1, 3, figsize=(5.5, 2.1), dpi=120)
+    titles = ["Science", "Reference", "Difference"]
     u_scale_factor = [40, 40, 10]
     l_scale_factor = [30, 40, 1]
-    for ii,ax in enumerate(axarr):
-        ax.axis('off')
-        data = tr[:,:,ii]
+    for ii, ax in enumerate(axarr):
+        ax.axis("off")
+        data = tr[:, :, ii]
         dat = data.flatten()
-        sig = np.median(np.abs(dat-np.median(dat)))
+        sig = np.median(np.abs(dat - np.median(dat)))
         median = np.median(data)
         ax.imshow(
-            data, origin='upper', cmap=plt.cm.bone,
-            vmin=median-l_scale_factor[ii]*sig,
-            vmax=median+u_scale_factor[ii]*sig) # Corrected vmax index
-        #norm=LogNorm())
-        ax.set_title(titles[ii], fontsize = 12)
+            data,
+            origin="upper",
+            cmap=plt.cm.bone,
+            vmin=median - l_scale_factor[ii] * sig,
+            vmax=median + u_scale_factor[ii] * sig,
+        )  # Corrected vmax index
+        # norm=LogNorm())
+        ax.set_title(titles[ii], fontsize=12)
 
     fig.subplots_adjust(wspace=0)
     return fig  # Return the figure to allow saving
 
 
-def plot_ztf_cutout(s, alert, cutout_type='science'):
-    """ Plot the ZTF cutouts: science, reference, difference """
-    cutout_data = alert['cutout' + cutout_type.capitalize()]['stampData']
-    
+def plot_ztf_cutout(s, alert, cutout_type="science"):
+    """Plot the ZTF cutouts: science, reference, difference"""
+    cutout_data = alert["cutout" + cutout_type.capitalize()]["stampData"]
+
     # unzip
-    with gzip.open(io.BytesIO(cutout_data), 'rb') as f:
+    with gzip.open(io.BytesIO(cutout_data), "rb") as f:
         with fits.open(io.BytesIO(f.read()), ignore_missing_simple=True) as hdu:
             data = hdu[0].data
             # replace nans with zeros
             data = np.nan_to_num(data)
 
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.imshow(data, cmap='gray', origin='lower')
-    ax.set_title(f'{cutout_type.capitalize()} Cutout')
-    plt.axis('off')
+    ax.imshow(data, cmap="gray", origin="lower")
+    ax.set_title(f"{cutout_type.capitalize()} Cutout")
+    plt.axis("off")
     plt.tight_layout()
     return fig
 
@@ -528,67 +695,78 @@ def analyze_sdss_redshift(ra, dec, peak_magnitude=None, radius=10):
     Calculates physical properties and includes RA/Dec for cross-match plotting
     """
     # Get the best available redshift using confirmed working functions
-    z, sep, objid, ra_match, dec_match, z_type = get_sdss_redshift_confirmed(ra, dec, radius)
-    
+    z, sep, objid, ra_match, dec_match, z_type = get_sdss_redshift_confirmed(
+        ra, dec, radius
+    )
+
     if z >= 99:
         logging.debug("No SDSS redshift found")
         return None
-    
+
     # Check if this is a reasonable association (within radius)
     if sep > radius:
         logging.debug(f"SDSS match too far: {sep:.2f} > {radius} arcsec")
         return None
-    
+
     # Calculate physical properties if we have a peak magnitude
     result = {
-        'redshift': z,
-        'separation_arcsec': sep,
-        'objid': objid,
-        'ra_match': ra_match,  # RA of matched SDSS source for plotting
-        'dec_match': dec_match,  # Dec of matched SDSS source for plotting  
-        'redshift_type': z_type,  # 'spec' or 'photo'
-        'is_association': sep < radius
+        "redshift": z,
+        "separation_arcsec": sep,
+        "objid": objid,
+        "ra_match": ra_match,  # RA of matched SDSS source for plotting
+        "dec_match": dec_match,  # Dec of matched SDSS source for plotting
+        "redshift_type": z_type,  # 'spec' or 'photo'
+        "is_association": sep < radius,
     }
-    
+
     if peak_magnitude is not None:
         # Calculate absolute magnitude using distance modulus
         from astropy.cosmology import Planck18
-        
+
         try:
             distance_modulus = Planck18.distmod(z).value
             absolute_magnitude = peak_magnitude - distance_modulus
-            
+
             # Calculate angular separation in physical units (kpc)
-            angular_diameter_distance = Planck18.angular_diameter_distance(z).value  # Mpc
-            physical_separation_kpc = (sep/3600) * (np.pi/180) * angular_diameter_distance * 1000
-            
-            result.update({
-                'absolute_magnitude': absolute_magnitude,
-                'physical_separation_kpc': physical_separation_kpc,
-                'distance_modulus': distance_modulus
-            })
-            
-            print(f"SDSS {z_type}-z association: z={z:.4f}, "
-                  f"M_abs={absolute_magnitude:.2f}, "
-                  f"sep={physical_separation_kpc:.1f} kpc")
-                  
+            angular_diameter_distance = Planck18.angular_diameter_distance(
+                z
+            ).value  # Mpc
+            physical_separation_kpc = (
+                (sep / 3600) * (np.pi / 180) * angular_diameter_distance * 1000
+            )
+
+            result.update(
+                {
+                    "absolute_magnitude": absolute_magnitude,
+                    "physical_separation_kpc": physical_separation_kpc,
+                    "distance_modulus": distance_modulus,
+                }
+            )
+
+            print(
+                f"SDSS {z_type}-z association: z={z:.4f}, "
+                f"M_abs={absolute_magnitude:.2f}, "
+                f"sep={physical_separation_kpc:.1f} kpc"
+            )
+
         except Exception as e:
             print(f"Error calculating physical properties: {e}")
-    
+
     return result
 
+
 def filter_and_plot_alerts(s, output_dir, object_id):
-    
+
     # Define the desired order and keys for plots
     plot_keys_definitions = {
-        'first': 'First Detection',
-        'last': 'Last Detection',
-        'median': 'Median Detection',
-        'highest_snr': 'Highest S/N',
-        'highest_drb': 'Highest DRB',
-        'lowest_drb': 'Lowest DRB',
-        'brightest_g': 'Brightest g-band',
-        'brightest_r': 'Brightest r-band'
+        "first": "First Detection",
+        "last": "Last Detection",
+        "median": "Median Detection",
+        "highest_snr": "Highest S/N",
+        "highest_drb": "Highest DRB",
+        "lowest_drb": "Lowest DRB",
+        "brightest_g": "Brightest g-band",
+        "brightest_r": "Brightest r-band",
     }
     plot_keys_ordered = list(plot_keys_definitions.keys())
     # Initialize results with None placeholders for each key in order
@@ -596,7 +774,9 @@ def filter_and_plot_alerts(s, output_dir, object_id):
 
     # Check if any files are missing to determine if querying/plotting is needed
     need_query_or_plot = False
-    potential_filenames = [os.path.join(output_dir, f"{object_id}_{key}.png") for key in plot_keys_ordered]
+    potential_filenames = [
+        os.path.join(output_dir, f"{object_id}_{key}.png") for key in plot_keys_ordered
+    ]
     for fname in potential_filenames:
         if not os.path.isfile(fname):
             need_query_or_plot = True
@@ -604,109 +784,124 @@ def filter_and_plot_alerts(s, output_dir, object_id):
 
     if not need_query_or_plot:
         # All potential files exist, return their basenames in the correct order
-        return [os.path.basename(fname) for fname in potential_filenames if os.path.exists(fname)]
+        return [
+            os.path.basename(fname)
+            for fname in potential_filenames
+            if os.path.exists(fname)
+        ]
 
     # Proceed with querying and plotting
     q0 = {
         "query_type": "find",
-        "query": {
-            "catalog": "ZTF_alerts",
-            "filter": {"objectId": object_id}
-        },
+        "query": {"catalog": "ZTF_alerts", "filter": {"objectId": object_id}},
         "kwargs": {
-            "limit": 1000, # Consider if this limit is sufficient
-        }
+            "limit": 1000,  # Consider if this limit is sufficient
+        },
     }
     out = s.query(q0)
     alerts = out["default"]["data"]
-    
+
     if len(alerts) == 0:
         print("No alerts found for the given object ID.")
-        return [] # Return empty list if no alerts
+        return []  # Return empty list if no alerts
 
     # Convert alerts to DataFrame
-    df = pd.DataFrame([alert['candidate'] for alert in alerts])
-    
-    # Ensure 'drb' column exists and handle potential non-numeric values if necessary
-    if 'drb' in df.columns:
-        df['drb'] = pd.to_numeric(df['drb'], errors='coerce') # Convert to numeric, coerce errors to NaN
-    else:
-        df['drb'] = np.nan # Add NaN column if 'drb' doesn't exist
+    df = pd.DataFrame([alert["candidate"] for alert in alerts])
 
-    if 'scorr' not in df.columns: # Ensure scorr exists for S/N
-        df['scorr'] = np.nan 
+    # Ensure 'drb' column exists and handle potential non-numeric values if necessary
+    if "drb" in df.columns:
+        df["drb"] = pd.to_numeric(
+            df["drb"], errors="coerce"
+        )  # Convert to numeric, coerce errors to NaN
+    else:
+        df["drb"] = np.nan  # Add NaN column if 'drb' doesn't exist
+
+    if "scorr" not in df.columns:  # Ensure scorr exists for S/N
+        df["scorr"] = np.nan
 
     # --- Select Detections ---
     key_detections = {}
-    df_sorted = df.sort_values(by='jd')
+    df_sorted = df.sort_values(by="jd")
 
     if not df_sorted.empty:
-        key_detections['first'] = df_sorted.iloc[0]
-        key_detections['last'] = df_sorted.iloc[-1]
-        key_detections['median'] = df_sorted.iloc[len(df_sorted) // 2]
-    
-    if not df['scorr'].isna().all():
-         key_detections['highest_snr'] = df.loc[df['scorr'].idxmax()] if not df['scorr'].isnull().all() else None
+        key_detections["first"] = df_sorted.iloc[0]
+        key_detections["last"] = df_sorted.iloc[-1]
+        key_detections["median"] = df_sorted.iloc[len(df_sorted) // 2]
+
+    if not df["scorr"].isna().all():
+        key_detections["highest_snr"] = (
+            df.loc[df["scorr"].idxmax()] if not df["scorr"].isnull().all() else None
+        )
 
     # DRB checks - ensure column exists and has valid values
-    if 'drb' in df.columns and not df['drb'].isna().all():
-         key_detections['highest_drb'] = df.loc[df['drb'].idxmax()] if not df['drb'].isnull().all() else None
-         key_detections['lowest_drb'] = df.loc[df['drb'].idxmin()] if not df['drb'].isnull().all() else None
+    if "drb" in df.columns and not df["drb"].isna().all():
+        key_detections["highest_drb"] = (
+            df.loc[df["drb"].idxmax()] if not df["drb"].isnull().all() else None
+        )
+        key_detections["lowest_drb"] = (
+            df.loc[df["drb"].idxmin()] if not df["drb"].isnull().all() else None
+        )
 
     # Brightest g/r checks
-    df_g = df[(df['fid'] == 1) & df['magpsf'].notna()]
+    df_g = df[(df["fid"] == 1) & df["magpsf"].notna()]
     if not df_g.empty:
-        key_detections['brightest_g'] = df_g.loc[df_g['magpsf'].idxmin()]
-    
-    df_r = df[(df['fid'] == 2) & df['magpsf'].notna()]
+        key_detections["brightest_g"] = df_g.loc[df_g["magpsf"].idxmin()]
+
+    df_r = df[(df["fid"] == 2) & df["magpsf"].notna()]
     if not df_r.empty:
-        key_detections['brightest_r'] = df_r.loc[df_r['magpsf'].idxmin()]
+        key_detections["brightest_r"] = df_r.loc[df_r["magpsf"].idxmin()]
 
     # --- Plotting Loop (in predefined order) ---
     for key in plot_keys_ordered:
         if key in key_detections and key_detections[key] is not None:
             detection = key_detections[key]
             fname = os.path.join(output_dir, f"{object_id}_{key}.png")
-            
+
             # Only plot if the file doesn't exist - CHECK RE-ADDED
             if not os.path.isfile(fname):
                 try:
                     # Find the corresponding full alert packet
-                    alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
+                    alert = next(
+                        alert
+                        for alert in alerts
+                        if alert["candidate"]["candid"] == detection["candid"]
+                    )
                     triplet = make_triplet(alert)
                     fig = plot_triplet(triplet)
                     fig.savefig(fname, bbox_inches="tight")
                     plt.close(fig)
                 except StopIteration:
-                    print(f"Warning: Could not find full alert packet for {key} detection (candid: {detection.get('candid', 'N/A')}). Skipping plot.")
+                    print(
+                        f"Warning: Could not find full alert packet for {key} detection (candid: {detection.get('candid', 'N/A')}). Skipping plot."
+                    )
                 except Exception as e:
                     print(f"Error plotting '{key}' for {object_id}: {e}")
-                    plt.close('all') # Close any potentially lingering plots
+                    plt.close("all")  # Close any potentially lingering plots
 
-            # Check if file exists (might have existed before or was just created) 
+            # Check if file exists (might have existed before or was just created)
             # and update the map if it does.
             if os.path.isfile(fname):
-                 plot_files_map[key] = os.path.basename(fname)
+                plot_files_map[key] = os.path.basename(fname)
         # No need for an else clause, the map entry remains None if detection missing or plot failed
-             
+
     # Return the list of filenames (or None) in the fixed order
     return [plot_files_map[key] for key in plot_keys_ordered]
 
-def plot_ps1_cutout(s,ddir,name,ra,dec):
-    """ Plot cutout from PS1 """
-    if dec>0:
+
+def plot_ps1_cutout(s, ddir, name, ra, dec):
+    """Plot cutout from PS1"""
+    if dec > 0:
         decsign = "+"
     else:
         decsign = "-"
-    
-    output_dir = ddir 
+
+    output_dir = ddir
     object_id = name
 
-        
     fnames = []
     need_query = False
     filters = ["first", "last", "median", "highest_snr", "highest_drb"]
-    
+
     for filter in filters:
         fname = "%s/%s_%s.png" % (output_dir, object_id, filter)
         if not os.path.isfile(fname):
@@ -716,108 +911,129 @@ def plot_ps1_cutout(s,ddir,name,ra,dec):
     if need_query:
         q0 = {
             "query_type": "find",
-            "query": {
-                "catalog": "ZTF_alerts",
-                "filter": {"objectId": object_id}
-            },
+            "query": {"catalog": "ZTF_alerts", "filter": {"objectId": object_id}},
             "kwargs": {
                 "limit": 1000,
-            }
+            },
         }
         out = s.query(q0)
         alerts = out["default"]["data"]
-        
+
         if len(alerts) == 0:
             print("No alerts found for the given object ID.")
             return
 
         # Convert alerts to DataFrame
-        df = pd.DataFrame([alert['candidate'] for alert in alerts])
-        
+        df = pd.DataFrame([alert["candidate"] for alert in alerts])
+
         # Extract the desired detections
         # Ensure the DataFrame is sorted by the 'jd' column in ascending order
-        df_sorted = df.sort_values(by='jd')
+        df_sorted = df.sort_values(by="jd")
 
         # Select the first, last, and median detections
         first_detection = df_sorted.iloc[0]
         last_detection = df_sorted.iloc[-1]
         median_detection = df_sorted.iloc[len(df_sorted) // 2]
-        highest_sn_detection = df.loc[df['scorr'].idxmax()]
-        highest_drb_detection = df.loc[df['drb'].idxmax()] if 'drb' in df else None
-        lowest_drb_detection = df.loc[df['drb'].idxmin()] if 'drb' in df else None
+        highest_sn_detection = df.loc[df["scorr"].idxmax()]
+        highest_drb_detection = df.loc[df["drb"].idxmax()] if "drb" in df else None
+        lowest_drb_detection = df.loc[df["drb"].idxmin()] if "drb" in df else None
 
         # Select brightest g-band and r-band
-        brightest_g_index = df.loc[(df['fid'] == 1) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 1].empty else None
-        brightest_g_detection = df.loc[brightest_g_index] if brightest_g_index is not None else None
-        brightest_r_index= df.loc[(df['fid'] == 2) & (df['magpsf'].notna())]['magpsf'].idxmin() if not df.loc[df['fid'] == 2].empty else None
-        brightest_r_detection = df.loc[brightest_r_index] if brightest_r_index is not None else None
+        brightest_g_index = (
+            df.loc[(df["fid"] == 1) & (df["magpsf"].notna())]["magpsf"].idxmin()
+            if not df.loc[df["fid"] == 1].empty
+            else None
+        )
+        brightest_g_detection = (
+            df.loc[brightest_g_index] if brightest_g_index is not None else None
+        )
+        brightest_r_index = (
+            df.loc[(df["fid"] == 2) & (df["magpsf"].notna())]["magpsf"].idxmin()
+            if not df.loc[df["fid"] == 2].empty
+            else None
+        )
+        brightest_r_detection = (
+            df.loc[brightest_r_index] if brightest_r_index is not None else None
+        )
 
         # Plot cutouts for each detection
         key_detections = {
-            'first': first_detection,
-            'last': last_detection,
-            'median': median_detection,
-            'highest_snr': highest_sn_detection,
+            "first": first_detection,
+            "last": last_detection,
+            "median": median_detection,
+            "highest_snr": highest_sn_detection,
         }
 
         if highest_drb_detection is not None:
-            key_detections['highest_drb'] = highest_drb_detection
-            key_detections['lowest_drb'] = lowest_drb_detection
-        
+            key_detections["highest_drb"] = highest_drb_detection
+            key_detections["lowest_drb"] = lowest_drb_detection
+
         if brightest_g_detection is not None:
-           key_detections['brightest_g'] = brightest_g_detection
-        
+            key_detections["brightest_g"] = brightest_g_detection
+
         if brightest_r_detection is not None:
-            key_detections['brightest_r'] = brightest_r_detection
+            key_detections["brightest_r"] = brightest_r_detection
 
         for key, detection in key_detections.items():
             print(f"Key: {key}")
             print(f"JD: {detection['jd']}")
             print(f"FID: {detection['fid']}")
-            print(f"DRB: {detection.get('drb', 'N/A')}")  # Safely get 'drb' in case it's not present
+            print(
+                f"DRB: {detection.get('drb', 'N/A')}"
+            )  # Safely get 'drb' in case it's not present
             print("-" * 40)
-            alert = next(alert for alert in alerts if alert['candidate']['candid'] == detection['candid'])
+            alert = next(
+                alert
+                for alert in alerts
+                if alert["candidate"]["candid"] == detection["candid"]
+            )
             triplet = make_triplet(alert)
             fig = plot_triplet(triplet)
-            fig.savefig(os.path.join(output_dir, f"{object_id}_{key}.png"), bbox_inches="tight")
+            fig.savefig(
+                os.path.join(output_dir, f"{object_id}_{key}.png"), bbox_inches="tight"
+            )
             plt.close(fig)
-    
+
     return fnames
 
-def plot_ps1_cutout(s,ddir,name,ra,dec):
-    """ Plot cutout from PS1 """
-    if dec>0:
-        decsign = "+"
-    else:
-        decsign = "-"
 
-    fname = ddir + "/%s_ps1.png" %name
-    if os.path.isfile(fname)==False:
-        img = stamps.get_ps_stamp(ra, dec, size=240, color=["y","g","i"])
-        plt.figure(figsize=(2.1,2.1), dpi=120)
-        img_array = np.asarray(img)
-        plt.imshow(img_array)
-        center_x = img_array.shape[1] // 2
-        center_y = img_array.shape[0] // 2
-        plt.title("PS1 (y/g/i)", fontsize = 12)
-        plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(fname, bbox_inches = "tight")
-        plt.close()
-    return fname
-
-
-def plot_ls_cutout(s,ddir,name,ra,dec):
-    """ Plot cutout from Legacy Survey """
+def plot_ps1_cutout(s, ddir, name, ra, dec):
+    """Plot cutout from PS1"""
     if dec > 0:
         decsign = "+"
     else:
         decsign = "-"
-        
-    fname = ddir + "/%s_ls.png"%name
-    if os.path.isfile(fname)==False:
-        url = "http://legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr9&pixscale=0.27&bands=grz" %(ra,dec)
-        plt.figure(figsize=(2.1,2.1), dpi=120)
+
+    fname = ddir + "/%s_ps1.png" % name
+    if os.path.isfile(fname) == False:
+        img = stamps.get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
+        plt.figure(figsize=(2.1, 2.1), dpi=120)
+        img_array = np.asarray(img)
+        plt.imshow(img_array)
+        center_x = img_array.shape[1] // 2
+        center_y = img_array.shape[0] // 2
+        plt.title("PS1 (y/g/i)", fontsize=12)
+        plt.axis("off")
+        plt.tight_layout()
+        plt.savefig(fname, bbox_inches="tight")
+        plt.close()
+    return fname
+
+
+def plot_ls_cutout(s, ddir, name, ra, dec):
+    """Plot cutout from Legacy Survey"""
+    if dec > 0:
+        decsign = "+"
+    else:
+        decsign = "-"
+
+    fname = ddir + "/%s_ls.png" % name
+    if os.path.isfile(fname) == False:
+        url = (
+            "http://legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr9&pixscale=0.27&bands=grz"
+            % (ra, dec)
+        )
+        plt.figure(figsize=(2.1, 2.1), dpi=120)
         try:
             r = requests.get(url)
             plt.imshow(Image.open(io.BytesIO(r.content)))
@@ -825,8 +1041,8 @@ def plot_ls_cutout(s,ddir,name,ra,dec):
             img_array = np.asarray(Image.open(io.BytesIO(r.content)))
             center_x = img_array.shape[1] // 2
             center_y = img_array.shape[0] // 2
-            plt.title("LegSurv DR9", fontsize = 12)
-            plt.axis('off')
+            plt.title("LegSurv DR9", fontsize=12)
+            plt.axis("off")
             plt.tight_layout()
             plt.savefig(fname, bbox_inches="tight")
             # Removed outputf references - these were legacy HTML output code
@@ -837,72 +1053,87 @@ def plot_ls_cutout(s,ddir,name,ra,dec):
         plt.close()
     return fname
 
-import matplotlib
-matplotlib.use('Agg')  # Use a non-interactive backend
-import matplotlib.pyplot as plt
 
 def plot_light_curve(lc, source_id, span=None):
     # Preserve existing data prep logic
-    non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
-    lc = lc.dropna(subset=['mag_final']) if lc['mag_final'].isna().sum() > 0 else lc
-    non_dets = non_dets.dropna(subset=['maglim']) if non_dets['maglim'].isna().sum() > 0 else non_dets
+    non_dets = lc[(lc["isdet"] == False) & (lc["maglim"] > 1)]
+    lc = lc.dropna(subset=["mag_final"]) if lc["mag_final"].isna().sum() > 0 else lc
+    non_dets = (
+        non_dets.dropna(subset=["maglim"])
+        if non_dets["maglim"].isna().sum() > 0
+        else non_dets
+    )
 
     # Convert JD to MJD
     from astropy.time import Time
-    lc['mjd'] = Time(lc['jd'], format='jd').mjd - 58000
-    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
+
+    lc["mjd"] = Time(lc["jd"], format="jd").mjd - 58000
+    non_dets["mjd"] = Time(non_dets["jd"], format="jd").mjd - 58000
 
     fig = go.Figure()
-    color_map = {1: 'seagreen', 2: 'crimson', 3: 'goldenrod'}
-    symbol_map = {1: 'square', 2: 'circle', 3: 'diamond'}
+    color_map = {1: "seagreen", 2: "crimson", 3: "goldenrod"}
+    symbol_map = {1: "square", 2: "circle", 3: "diamond"}
 
     # Upper limits
-    for band in non_dets['fid'].unique():
-        band_data = non_dets[non_dets['fid'] == band]
-        fig.add_trace(go.Scatter(
-            x=band_data['mjd'],
-            y=band_data['maglim'],
-            mode='markers',
-            marker=dict(color=color_map.get(band, 'gray'), symbol='triangle-down', opacity=0.7, size=10),
-            name=f'Upper Limit'
-        ))
-    
+    for band in non_dets["fid"].unique():
+        band_data = non_dets[non_dets["fid"] == band]
+        fig.add_trace(
+            go.Scatter(
+                x=band_data["mjd"],
+                y=band_data["maglim"],
+                mode="markers",
+                marker=dict(
+                    color=color_map.get(band, "gray"),
+                    symbol="triangle-down",
+                    opacity=0.7,
+                    size=10,
+                ),
+                name=f"Upper Limit",
+            )
+        )
+
     # Detections
-    for band in lc['fid'].unique():
-        band_data = lc[lc['fid'] == band]
+    for band in lc["fid"].unique():
+        band_data = lc[lc["fid"] == band]
         # Determine filter name based on band (fid)
         if band == 1:
-            filter_name = 'g-band'
+            filter_name = "g-band"
         elif band == 2:
-            filter_name = 'r-band'
+            filter_name = "r-band"
         elif band == 3:
-            filter_name = 'i-band' # Assuming fid 3 is i-band
+            filter_name = "i-band"  # Assuming fid 3 is i-band
         else:
-            filter_name = f'band {band}' # Fallback for unknown bands
+            filter_name = f"band {band}"  # Fallback for unknown bands
 
-        fig.add_trace(go.Scatter(
-            x=band_data['mjd'],
-            y=band_data['mag_final'],
-            mode='markers',
-            error_y=dict(type='data', array=band_data['emag_final'], visible=True),
-            marker=dict(color=color_map.get(band, 'gray'), symbol=symbol_map.get(band, 'circle'), size=10),
-            name=filter_name # Use the determined filter name
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=band_data["mjd"],
+                y=band_data["mag_final"],
+                mode="markers",
+                error_y=dict(type="data", array=band_data["emag_final"], visible=True),
+                marker=dict(
+                    color=color_map.get(band, "gray"),
+                    symbol=symbol_map.get(band, "circle"),
+                    size=10,
+                ),
+                name=filter_name,  # Use the determined filter name
+            )
+        )
 
     # Flip y-axis
-    y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
-    y_max = lc['mag_final'].max() + 0.5 if not lc['mag_final'].empty else 0
+    y_min = lc["mag_final"].min() - 0.5 if not lc["mag_final"].empty else 0
+    y_max = lc["mag_final"].max() + 0.5 if not lc["mag_final"].empty else 0
 
-    if span == 'detections' and not lc.empty:
-        diff = lc['mjd'].max() - lc['mjd'].min()
+    if span == "detections" and not lc.empty:
+        diff = lc["mjd"].max() - lc["mjd"].min()
         if diff < 1:
-            x_min = lc['mjd'].min() - (diff * 1.2)
-            x_max = lc['mjd'].max() + (diff * 1.2)
+            x_min = lc["mjd"].min() - (diff * 1.2)
+            x_max = lc["mjd"].max() + (diff * 1.2)
         else:
-            x_min = lc['mjd'].min() - 0.5
-            x_max = lc['mjd'].max() + 0.5
+            x_min = lc["mjd"].min() - 0.5
+            x_max = lc["mjd"].max() + 0.5
         fig.update_xaxes(range=[x_min, x_max])
-    
+
     fig.update_layout(
         width=800,
         paper_bgcolor="white",
@@ -911,73 +1142,97 @@ def plot_light_curve(lc, source_id, span=None):
         xaxis_title="MJD - 58000",
         yaxis_title="Magnitude",
         xaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black"),
-        yaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black", range=[y_max, y_min])
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="lightgray",
+            linecolor="black",
+            range=[y_max, y_min],
+        ),
     )
 
-    plot_filename = f'static/light_curves/{source_id}_light_curve.html'
+    plot_filename = f"static/light_curves/{source_id}_light_curve.html"
     if span == "detections":
-        plot_filename = f'static/light_curves/{source_id}_light_curve_zoomed.html'
+        plot_filename = f"static/light_curves/{source_id}_light_curve_zoomed.html"
     pio.write_html(fig, file=plot_filename, auto_open=False, full_html=False)
     return plot_filename
 
+
 def plot_big_light_curve(lc, source_id, span=None):
     # Preserve existing data prep logic
-    non_dets = lc[(lc['isdet'] == False) & (lc['maglim'] > 1)]
-    lc = lc.dropna(subset=['mag_final']) if lc['mag_final'].isna().sum() > 0 else lc
-    non_dets = non_dets.dropna(subset=['maglim']) if non_dets['maglim'].isna().sum() > 0 else non_dets
+    non_dets = lc[(lc["isdet"] == False) & (lc["maglim"] > 1)]
+    lc = lc.dropna(subset=["mag_final"]) if lc["mag_final"].isna().sum() > 0 else lc
+    non_dets = (
+        non_dets.dropna(subset=["maglim"])
+        if non_dets["maglim"].isna().sum() > 0
+        else non_dets
+    )
 
     from astropy.time import Time
-    lc['mjd'] = Time(lc['jd'], format='jd').mjd - 58000
-    non_dets['mjd'] = Time(non_dets['jd'], format='jd').mjd - 58000
+
+    lc["mjd"] = Time(lc["jd"], format="jd").mjd - 58000
+    non_dets["mjd"] = Time(non_dets["jd"], format="jd").mjd - 58000
 
     fig = go.Figure()
-    color_map = {1: 'seagreen', 2: 'crimson', 3: 'goldenrod'}
-    symbol_map = {1: 'square', 2: 'circle', 3: 'square'}
+    color_map = {1: "seagreen", 2: "crimson", 3: "goldenrod"}
+    symbol_map = {1: "square", 2: "circle", 3: "square"}
 
     # Upper limits
-    for band in non_dets['fid'].unique():
-        band_data = non_dets[non_dets['fid'] == band]
-        fig.add_trace(go.Scatter(
-            x=band_data['mjd'],
-            y=band_data['maglim'],
-            mode='markers',
-            marker=dict(color=color_map.get(band, 'gray'), symbol='triangle-down', opacity=0.7, size=12),
-            name=f'Upper Limit'
-        ))
+    for band in non_dets["fid"].unique():
+        band_data = non_dets[non_dets["fid"] == band]
+        fig.add_trace(
+            go.Scatter(
+                x=band_data["mjd"],
+                y=band_data["maglim"],
+                mode="markers",
+                marker=dict(
+                    color=color_map.get(band, "gray"),
+                    symbol="triangle-down",
+                    opacity=0.7,
+                    size=12,
+                ),
+                name=f"Upper Limit",
+            )
+        )
 
     # Detections
-    for band in lc['fid'].unique():
-        band_data = lc[lc['fid'] == band]
+    for band in lc["fid"].unique():
+        band_data = lc[lc["fid"] == band]
         # Determine filter name based on band (fid)
         if band == 1:
-            filter_name = 'g-band'
+            filter_name = "g-band"
         elif band == 2:
-            filter_name = 'r-band'
+            filter_name = "r-band"
         elif band == 3:
-            filter_name = 'i-band' # Assuming fid 3 is i-band
+            filter_name = "i-band"  # Assuming fid 3 is i-band
         else:
-            filter_name = f'band {band}' # Fallback for unknown bands
+            filter_name = f"band {band}"  # Fallback for unknown bands
 
-        fig.add_trace(go.Scatter(
-            x=band_data['mjd'],
-            y=band_data['mag_final'],
-            mode='markers',
-            error_y=dict(type='data', array=band_data['emag_final'], visible=True),
-            marker=dict(color=color_map.get(band, 'gray'), symbol=symbol_map.get(band, 'circle'), size=12),
-            name=filter_name # Use the determined filter name
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=band_data["mjd"],
+                y=band_data["mag_final"],
+                mode="markers",
+                error_y=dict(type="data", array=band_data["emag_final"], visible=True),
+                marker=dict(
+                    color=color_map.get(band, "gray"),
+                    symbol=symbol_map.get(band, "circle"),
+                    size=12,
+                ),
+                name=filter_name,  # Use the determined filter name
+            )
+        )
 
-    y_min = lc['mag_final'].min() - 0.5 if not lc['mag_final'].empty else 0
-    y_max = lc['mag_final'].max() + 0.5 if not lc['mag_final'].empty else 0
+    y_min = lc["mag_final"].min() - 0.5 if not lc["mag_final"].empty else 0
+    y_max = lc["mag_final"].max() + 0.5 if not lc["mag_final"].empty else 0
 
-    if span == 'detections' and not lc.empty:
-        diff = lc['mjd'].max() - lc['mjd'].min()
+    if span == "detections" and not lc.empty:
+        diff = lc["mjd"].max() - lc["mjd"].min()
         if diff < 1:
-            x_min = lc['mjd'].min() - (diff * 1.2)
-            x_max = lc['mjd'].max() + (diff * 1.2)
+            x_min = lc["mjd"].min() - (diff * 1.2)
+            x_max = lc["mjd"].max() + (diff * 1.2)
         else:
-            x_min = lc['mjd'].min() - 0.5
-            x_max = lc['mjd'].max() + 0.5
+            x_min = lc["mjd"].min() - 0.5
+            x_max = lc["mjd"].max() + 0.5
         fig.update_xaxes(range=[x_min, x_max])
 
     fig.update_layout(
@@ -988,25 +1243,35 @@ def plot_big_light_curve(lc, source_id, span=None):
         xaxis_title="MJD - 58000",
         yaxis_title="Magnitude",
         xaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black"),
-        yaxis=dict(showgrid=True, gridcolor="lightgray", linecolor="black", range=[y_max, y_min])
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="lightgray",
+            linecolor="black",
+            range=[y_max, y_min],
+        ),
     )
 
-    plot_filename = f'static/light_curves/{source_id}_big_light_curve.html'
+    plot_filename = f"static/light_curves/{source_id}_big_light_curve.html"
     if span == "detections":
-        plot_filename = f'static/light_curves/{source_id}_big_light_curve_zoomed.html'
+        plot_filename = f"static/light_curves/{source_id}_big_light_curve_zoomed.html"
     pio.write_html(fig, file=plot_filename, auto_open=False, full_html=False)
     return plot_filename
 
 
 def xmatch_ls(ra, dec, radius=5):
-    """ Query Legacy Survey """
+    """Query Legacy Survey"""
     # Run the query
     columns = "ra,dec,type,ls_id"
     query = """
     SELECT %s
     FROM ls_dr9.tractor
     WHERE q3c_radial_query(ra, dec, %.6f, %.6f, %.2f/3600)
-    """ % (columns, ra, dec, radius)
+    """ % (
+        columns,
+        ra,
+        dec,
+        radius,
+    )
     try:
         result = qc.query(sql=query)
         df = convert(result)
@@ -1014,11 +1279,13 @@ def xmatch_ls(ra, dec, radius=5):
         nmatch = len(df)
         if nmatch >= 1:
             # Create table of values sorted by separation
-            c = SkyCoord(ra, dec, frame='icrs', unit='deg')
-            coos = SkyCoord(df["ra"].values, df["dec"].values, frame='icrs', unit='deg')
+            c = SkyCoord(ra, dec, frame="icrs", unit="deg")
+            coos = SkyCoord(df["ra"].values, df["dec"].values, frame="icrs", unit="deg")
             sep = c.separation(coos)
             sep_arcsec = sep.arcsec  # in arcsec
-            pa = c.position_angle(coos)  # positive angles East of North (match wrt science)
+            pa = c.position_angle(
+                coos
+            )  # positive angles East of North (match wrt science)
             pa_degree = pa.deg
             df["sep_arcsec"] = sep_arcsec
             df["pa_degree"] = pa_degree
@@ -1031,7 +1298,10 @@ def xmatch_ls(ra, dec, radius=5):
                     SELECT %s
                     FROM ls_dr9.photo_z
                     WHERE ls_id=%d
-                    """ % (columns, my_ls_id)
+                    """ % (
+                columns,
+                my_ls_id,
+            )
             result = qc.query(sql=query)
             df2 = convert(result)
             out = df.merge(df2)
@@ -1046,13 +1316,31 @@ def filter_ztf_alerts(ztf_alerts):
     filtered_data = []
     seen_sgscore1 = set()
     for _, row in ztf_alerts.iterrows():
-        if 'distpsnr1' in row and row['distpsnr1'] != -999.0 and 'sgscore1' in row and row['sgscore1'] != -999.0:
-            if row['sgscore1'] not in seen_sgscore1:
+        if (
+            "distpsnr1" in row
+            and row["distpsnr1"] != -999.0
+            and "sgscore1" in row
+            and row["sgscore1"] != -999.0
+        ):
+            if row["sgscore1"] not in seen_sgscore1:
                 filtered_data.append(row)
-                seen_sgscore1.add(row['sgscore1'])
+                seen_sgscore1.add(row["sgscore1"])
     return pd.DataFrame(filtered_data)
 
-def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size, sdss_data=None):
+
+def plot_polar_coordinates(
+    ztf_alerts,
+    ra_ps1,
+    dec_ps1,
+    legacy_survey_data,
+    source_ra,
+    source_dec,
+    output_path,
+    xlim,
+    ylim,
+    point_size,
+    sdss_data=None,
+):
     """
     Plots the polar coordinates of nearby sources with the transient at the center.
 
@@ -1064,16 +1352,15 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
     - output_path (str): Path to save the output plot.
     - sdss_data (dict): SDSS data with keys 'ra_match', 'dec_match', 'redshift_type', etc.
     """
-    
-    
-    # Filter ZTF alerts 
-    #ztf_alerts = filter_ztf_alerts(ztf_alerts)
+
+    # Filter ZTF alerts
+    # ztf_alerts = filter_ztf_alerts(ztf_alerts)
 
     # Create a SkyCoord object for the transient source
-    central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit='deg')
+    central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit="deg")
 
     # Process ZTF alerts
-    ztf_coords = SkyCoord(ra=ztf_alerts['ra'], dec=ztf_alerts['dec'], unit='deg')
+    ztf_coords = SkyCoord(ra=ztf_alerts["ra"], dec=ztf_alerts["dec"], unit="deg")
 
     # Calculate offsets in arcseconds
     ztf_ra_offset = (ztf_coords.ra - central_coord.ra).arcsec
@@ -1081,94 +1368,171 @@ def plot_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, sour
 
     # Plotting
     fig, ax = plt.subplots(figsize=(5, 5))
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
 
     # Plot ZTF alerts
-    filters = {1: 'green', 2: 'red'}
+    filters = {1: "green", 2: "red"}
     for fid, color in filters.items():
-        mask = ztf_alerts['fid'] == fid
-        #if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
-        scatter = ax.scatter(ztf_ra_offset[mask], ztf_dec_offset[mask], color=color, label=f'ztf{color[0]}', s=point_size)  # Reduce marker size to 50
-        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(ztf_alerts['ra'], ztf_alerts['dec'])]
+        mask = ztf_alerts["fid"] == fid
+        # if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
+        scatter = ax.scatter(
+            ztf_ra_offset[mask],
+            ztf_dec_offset[mask],
+            color=color,
+            label=f"ztf{color[0]}",
+            s=point_size,
+        )  # Reduce marker size to 50
+        labels = [
+            f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>"
+            for ra, dec in zip(ztf_alerts["ra"], ztf_alerts["dec"])
+        ]
         plugins.connect(fig, plugins.PointHTMLTooltip(scatter, labels=labels))
 
     # Plot Legacy Survey data if available
     if not legacy_survey_data.empty:
-        legacy_coords = SkyCoord(ra=legacy_survey_data['ra'], dec=legacy_survey_data['dec'], unit='deg')
+        legacy_coords = SkyCoord(
+            ra=legacy_survey_data["ra"], dec=legacy_survey_data["dec"], unit="deg"
+        )
         legacy_ra_offset = (legacy_coords.ra - central_coord.ra).arcsec
         legacy_dec_offset = (legacy_coords.dec - central_coord.dec).arcsec
-        legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=point_size*10, label='Legacy Survey')
-        
+        legacy_scatter = ax.scatter(
+            legacy_ra_offset,
+            legacy_dec_offset,
+            color="blue",
+            marker="*",
+            s=point_size * 10,
+            label="Legacy Survey",
+        )
+
         # Simplify HTML Tooltip content
-        labels = [f"Legacy Survey<br><div>RA: {ra:.6f}<br> Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
+        labels = [
+            f"Legacy Survey<br><div>RA: {ra:.6f}<br> Dec: {dec:.6f}</div>"
+            for ra, dec in zip(legacy_survey_data["ra"], legacy_survey_data["dec"])
+        ]
         plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
 
     # Plot Legacy Survey data if available
     if ra_ps1 and dec_ps1:
         # Create a SkyCoord object for the PS1 source
-        ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit='deg')
+        ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit="deg")
         ps1_ra_offset = (ps1_coord.ra - central_coord.ra).arcsec
         ps1_dec_offset = (ps1_coord.dec - central_coord.dec).arcsec
         # Plot PS1 source
-        ps1_scatter = ax.scatter(ps1_ra_offset, ps1_dec_offset, color='purple', marker='*', s=point_size*10, label='PS1')
-        plugins.connect(fig, plugins.PointHTMLTooltip(ps1_scatter, labels=[f'PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}']))
+        ps1_scatter = ax.scatter(
+            ps1_ra_offset,
+            ps1_dec_offset,
+            color="purple",
+            marker="*",
+            s=point_size * 10,
+            label="PS1",
+        )
+        plugins.connect(
+            fig,
+            plugins.PointHTMLTooltip(
+                ps1_scatter,
+                labels=[f"PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}"],
+            ),
+        )
 
     # Plot SDSS data if available
-    if sdss_data and sdss_data.get('ra_match') is not None and sdss_data.get('dec_match') is not None:
+    if (
+        sdss_data
+        and sdss_data.get("ra_match") is not None
+        and sdss_data.get("dec_match") is not None
+    ):
         # Create a SkyCoord object for the SDSS source
-        sdss_coord = SkyCoord(ra=sdss_data['ra_match'], dec=sdss_data['dec_match'], unit='deg')
+        sdss_coord = SkyCoord(
+            ra=sdss_data["ra_match"], dec=sdss_data["dec_match"], unit="deg"
+        )
         sdss_ra_offset = (sdss_coord.ra - central_coord.ra).arcsec
         sdss_dec_offset = (sdss_coord.dec - central_coord.dec).arcsec
-        
+
         # Choose color based on redshift type
-        sdss_color = 'orange' if sdss_data.get('redshift_type') == 'spec' else 'gold'
+        sdss_color = "orange" if sdss_data.get("redshift_type") == "spec" else "gold"
         sdss_label = f"SDSS ({sdss_data.get('redshift_type', 'unknown')}-z)"
-        
-        # Plot SDSS source  
-        sdss_scatter = ax.scatter(sdss_ra_offset, sdss_dec_offset, color=sdss_color, marker='*', s=point_size*12, label=sdss_label)
-        
+
+        # Plot SDSS source
+        sdss_scatter = ax.scatter(
+            sdss_ra_offset,
+            sdss_dec_offset,
+            color=sdss_color,
+            marker="*",
+            s=point_size * 12,
+            label=sdss_label,
+        )
+
         # Create tooltip with SDSS info
         tooltip_text = f"SDSS {sdss_data.get('redshift_type', 'unknown')}-z<br>"
-        tooltip_text += f"RA: {sdss_data['ra_match']:.6f}<br>Dec: {sdss_data['dec_match']:.6f}<br>"
+        tooltip_text += (
+            f"RA: {sdss_data['ra_match']:.6f}<br>Dec: {sdss_data['dec_match']:.6f}<br>"
+        )
         tooltip_text += f"z = {sdss_data.get('redshift', 'N/A'):.4f}<br>"
         tooltip_text += f"Sep: {sdss_data.get('separation_arcsec', 'N/A'):.2f}\""
-        
-        plugins.connect(fig, plugins.PointHTMLTooltip(sdss_scatter, labels=[tooltip_text]))
-            
-        
+
+        plugins.connect(
+            fig, plugins.PointHTMLTooltip(sdss_scatter, labels=[tooltip_text])
+        )
+
     # Central source
-    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient Avg.')  # Reduce marker size to 100
-    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient Avg.']))
+    central_scatter = ax.scatter(
+        0, 0, color="black", marker="o", s=point_size, label="Transient Avg."
+    )  # Reduce marker size to 100
+    plugins.connect(
+        fig, plugins.PointHTMLTooltip(central_scatter, labels=["Transient Avg."])
+    )
 
     # Add concentric circles
-    circle1 = plt.Circle((0, 0), 3, color='blue', fill=False, alpha=0.1)  # Increase radius to 3 arcseconds
-    circle2 = plt.Circle((0, 0), 1.5, color='blue', fill=False, alpha=0.3)  # Increase radius to 1.5 arcseconds
+    circle1 = plt.Circle(
+        (0, 0), 3, color="blue", fill=False, alpha=0.1
+    )  # Increase radius to 3 arcseconds
+    circle2 = plt.Circle(
+        (0, 0), 1.5, color="blue", fill=False, alpha=0.3
+    )  # Increase radius to 1.5 arcseconds
     ax.add_artist(circle1)
     ax.add_artist(circle2)
 
-    ax.set_xlabel('RA (arcsec)', fontsize=16)
-    ax.set_ylabel(r'Dec (arcsec)', fontsize=16)
-    ax.legend(title='Filter/Catalog')
-    ax.set_title('Coordinates of Nearby Sources', fontsize=18)
-    #ax.legend(loc='upper right')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5,-0.2), fancybox=True, shadow=True, ncol=2)
-    ax.grid(alpha =.1)
+    ax.set_xlabel("RA (arcsec)", fontsize=16)
+    ax.set_ylabel(r"Dec (arcsec)", fontsize=16)
+    ax.legend(title="Filter/Catalog")
+    ax.set_title("Coordinates of Nearby Sources", fontsize=18)
+    # ax.legend(loc='upper right')
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.2),
+        fancybox=True,
+        shadow=True,
+        ncol=2,
+    )
+    ax.grid(alpha=0.1)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
-    ax.invert_xaxis()  
+    ax.invert_xaxis()
 
     plt.tight_layout()
-    #fig.subplots_adjust(top=0.9, bottom=0.1, left=0.1, right=0.9, hspace=0.2, wspace=0.2)
+    # fig.subplots_adjust(top=0.9, bottom=0.1, left=0.1, right=0.9, hspace=0.2, wspace=0.2)
 
     # Save as HTML
     html_str = mpld3.fig_to_html(fig)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(html_str)
 
     plt.close(fig)
 
-def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, source_ra, source_dec, output_path, xlim, ylim, point_size, sdss_data=None):
+
+def plot_big_polar_coordinates(
+    ztf_alerts,
+    ra_ps1,
+    dec_ps1,
+    legacy_survey_data,
+    source_ra,
+    source_dec,
+    output_path,
+    xlim,
+    ylim,
+    point_size,
+    sdss_data=None,
+):
     """
     Plots the polar coordinates of nearby sources with the transient at the center.
 
@@ -1180,16 +1544,15 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
     - output_path (str): Path to save the output plot.
     - sdss_data (dict): SDSS data with keys 'ra_match', 'dec_match', 'redshift_type', etc.
     """
-    
-    
-    # Filter ZTF alerts 
-    #ztf_alerts = filter_ztf_alerts(ztf_alerts)
+
+    # Filter ZTF alerts
+    # ztf_alerts = filter_ztf_alerts(ztf_alerts)
 
     # Create a SkyCoord object for the transient source
-    central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit='deg')
+    central_coord = SkyCoord(ra=source_ra, dec=source_dec, unit="deg")
 
     # Process ZTF alerts
-    ztf_coords = SkyCoord(ra=ztf_alerts['ra'], dec=ztf_alerts['dec'], unit='deg')
+    ztf_coords = SkyCoord(ra=ztf_alerts["ra"], dec=ztf_alerts["dec"], unit="deg")
 
     # Calculate offsets in arcseconds
     ztf_ra_offset = (ztf_coords.ra - central_coord.ra).arcsec
@@ -1197,110 +1560,175 @@ def plot_big_polar_coordinates(ztf_alerts, ra_ps1, dec_ps1, legacy_survey_data, 
 
     # Plotting
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
 
     # Plot ZTF alerts
-    filters = {1: 'green', 2: 'red'}
+    filters = {1: "green", 2: "red"}
     for fid, color in filters.items():
-        mask = ztf_alerts['fid'] == fid
-        #if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
-        scatter = ax.scatter(ztf_ra_offset[mask], ztf_dec_offset[mask], color=color, label=f'ztf{color[0]}', s=point_size * 1.1)  # Reduce marker size to 50
-        labels = [f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>" for ra, dec in zip(ztf_alerts['ra'], ztf_alerts['dec'])]
+        mask = ztf_alerts["fid"] == fid
+        # if ztf_ra_offset[mask] and ztf_dec_offset > 0.5:
+        scatter = ax.scatter(
+            ztf_ra_offset[mask],
+            ztf_dec_offset[mask],
+            color=color,
+            label=f"ztf{color[0]}",
+            s=point_size * 1.1,
+        )  # Reduce marker size to 50
+        labels = [
+            f"<div>RA: {ra:.6f}, Dec: {dec:.6f}</div>"
+            for ra, dec in zip(ztf_alerts["ra"], ztf_alerts["dec"])
+        ]
         plugins.connect(fig, plugins.PointHTMLTooltip(scatter, labels=labels))
 
     # Plot Legacy Survey data if available
     if not legacy_survey_data.empty:
-        legacy_coords = SkyCoord(ra=legacy_survey_data['ra'], dec=legacy_survey_data['dec'], unit='deg')
+        legacy_coords = SkyCoord(
+            ra=legacy_survey_data["ra"], dec=legacy_survey_data["dec"], unit="deg"
+        )
         legacy_ra_offset = (legacy_coords.ra - central_coord.ra).arcsec
         legacy_dec_offset = (legacy_coords.dec - central_coord.dec).arcsec
-        legacy_scatter = ax.scatter(legacy_ra_offset, legacy_dec_offset, color='blue', marker='*', s=point_size *10, label='Legacy Survey')
-        
+        legacy_scatter = ax.scatter(
+            legacy_ra_offset,
+            legacy_dec_offset,
+            color="blue",
+            marker="*",
+            s=point_size * 10,
+            label="Legacy Survey",
+        )
+
         # Simplify HTML Tooltip content
-        labels = [f"Legacy Survey<br><div>RA: {ra:.6f}<br> Dec: {dec:.6f}</div>" for ra, dec in zip(legacy_survey_data['ra'], legacy_survey_data['dec'])]
+        labels = [
+            f"Legacy Survey<br><div>RA: {ra:.6f}<br> Dec: {dec:.6f}</div>"
+            for ra, dec in zip(legacy_survey_data["ra"], legacy_survey_data["dec"])
+        ]
         plugins.connect(fig, plugins.PointHTMLTooltip(legacy_scatter, labels=labels))
 
     # Plot Legacy Survey data if available
     if ra_ps1 and dec_ps1:
         # Create a SkyCoord object for the PS1 source
-        ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit='deg')
+        ps1_coord = SkyCoord(ra=ra_ps1, dec=dec_ps1, unit="deg")
         ps1_ra_offset = (ps1_coord.ra - central_coord.ra).arcsec
         ps1_dec_offset = (ps1_coord.dec - central_coord.dec).arcsec
         # Plot PS1 source
-        ps1_scatter = ax.scatter(ps1_ra_offset, ps1_dec_offset, color='purple', marker='*', s=point_size*10, label='PS1')
-        plugins.connect(fig, plugins.PointHTMLTooltip(ps1_scatter, labels=[f'PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}']))
+        ps1_scatter = ax.scatter(
+            ps1_ra_offset,
+            ps1_dec_offset,
+            color="purple",
+            marker="*",
+            s=point_size * 10,
+            label="PS1",
+        )
+        plugins.connect(
+            fig,
+            plugins.PointHTMLTooltip(
+                ps1_scatter,
+                labels=[f"PS1 Source<br>RA: {ra_ps1:.6f}<br>Dec: {dec_ps1:.6f}"],
+            ),
+        )
 
     # Plot SDSS data if available
-    if sdss_data and sdss_data.get('ra_match') is not None and sdss_data.get('dec_match') is not None:
+    if (
+        sdss_data
+        and sdss_data.get("ra_match") is not None
+        and sdss_data.get("dec_match") is not None
+    ):
         # Create a SkyCoord object for the SDSS source
-        sdss_coord = SkyCoord(ra=sdss_data['ra_match'], dec=sdss_data['dec_match'], unit='deg')
+        sdss_coord = SkyCoord(
+            ra=sdss_data["ra_match"], dec=sdss_data["dec_match"], unit="deg"
+        )
         sdss_ra_offset = (sdss_coord.ra - central_coord.ra).arcsec
         sdss_dec_offset = (sdss_coord.dec - central_coord.dec).arcsec
-        
+
         # Choose color based on redshift type
-        sdss_color = 'orange' if sdss_data.get('redshift_type') == 'spec' else 'gold'
+        sdss_color = "orange" if sdss_data.get("redshift_type") == "spec" else "gold"
         sdss_label = f"SDSS ({sdss_data.get('redshift_type', 'unknown')}-z)"
-        
-        # Plot SDSS source  
-        sdss_scatter = ax.scatter(sdss_ra_offset, sdss_dec_offset, color=sdss_color, marker='*', s=point_size*12, label=sdss_label)
-        
+
+        # Plot SDSS source
+        sdss_scatter = ax.scatter(
+            sdss_ra_offset,
+            sdss_dec_offset,
+            color=sdss_color,
+            marker="*",
+            s=point_size * 12,
+            label=sdss_label,
+        )
+
         # Create tooltip with SDSS info
         tooltip_text = f"SDSS {sdss_data.get('redshift_type', 'unknown')}-z<br>"
-        tooltip_text += f"RA: {sdss_data['ra_match']:.6f}<br>Dec: {sdss_data['dec_match']:.6f}<br>"
+        tooltip_text += (
+            f"RA: {sdss_data['ra_match']:.6f}<br>Dec: {sdss_data['dec_match']:.6f}<br>"
+        )
         tooltip_text += f"z = {sdss_data.get('redshift', 'N/A'):.4f}<br>"
         tooltip_text += f"Sep: {sdss_data.get('separation_arcsec', 'N/A'):.2f}\""
-        
-        plugins.connect(fig, plugins.PointHTMLTooltip(sdss_scatter, labels=[tooltip_text]))
-            
-        
+
+        plugins.connect(
+            fig, plugins.PointHTMLTooltip(sdss_scatter, labels=[tooltip_text])
+        )
+
     # Central source
-    central_scatter = ax.scatter(0, 0, color='black', marker='o', s=point_size, label='Transient Avg.')  # Reduce marker size to 100
-    plugins.connect(fig, plugins.PointHTMLTooltip(central_scatter, labels=['Transient Avg.']))
+    central_scatter = ax.scatter(
+        0, 0, color="black", marker="o", s=point_size, label="Transient Avg."
+    )  # Reduce marker size to 100
+    plugins.connect(
+        fig, plugins.PointHTMLTooltip(central_scatter, labels=["Transient Avg."])
+    )
 
     # Add concentric circles
-    circle1 = plt.Circle((0, 0), 3, color='blue', fill=False, alpha=0.1)  # Increase radius to 3 arcseconds
-    circle2 = plt.Circle((0, 0), 1.5, color='blue', fill=False, alpha=0.3)  # Increase radius to 1.5 arcseconds
+    circle1 = plt.Circle(
+        (0, 0), 3, color="blue", fill=False, alpha=0.1
+    )  # Increase radius to 3 arcseconds
+    circle2 = plt.Circle(
+        (0, 0), 1.5, color="blue", fill=False, alpha=0.3
+    )  # Increase radius to 1.5 arcseconds
     ax.add_artist(circle1)
     ax.add_artist(circle2)
 
-    ax.set_xlabel('RA (arcsec)', fontsize=18)
-    ax.set_ylabel(r'Dec (arcsec)', fontsize=18)
-    ax.legend(title='Filter/Catalog')
-    ax.set_title('Coordinates of Nearby Sources', fontsize=20)
-    #ax.legend(loc='upper right')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5,-0.1), fancybox=True, shadow=True, ncol=2)
+    ax.set_xlabel("RA (arcsec)", fontsize=18)
+    ax.set_ylabel(r"Dec (arcsec)", fontsize=18)
+    ax.legend(title="Filter/Catalog")
+    ax.set_title("Coordinates of Nearby Sources", fontsize=20)
+    # ax.legend(loc='upper right')
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.1),
+        fancybox=True,
+        shadow=True,
+        ncol=2,
+    )
 
-    ax.grid(alpha =.1)
+    ax.grid(alpha=0.1)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     ax.invert_xaxis()
-    
+
     plt.tight_layout()
-    #fig.subplots_adjust(top=.98, bottom=0.2, left=0.1, right=.75, hspace=0, wspace=0)
+    # fig.subplots_adjust(top=.98, bottom=0.2, left=0.1, right=.75, hspace=0, wspace=0)
 
     # Save as HTML
     html_str = mpld3.fig_to_html(fig)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(html_str)
 
     plt.close(fig)
 
+
 def get_most_confident_classification(classifications):
     """Determine the most confident classification."""
-    classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
+    classification_counts = defaultdict(lambda: {"count": 0, "confidence": 0})
     for classification in classifications:
-        classification_counts[classification.classification]['count'] += 1
-        if classification.confidence == 'Not confident':
-            classification_counts[classification.classification]['confidence'] += 1
-        elif classification.confidence == 'Confident':
-            classification_counts[classification.classification]['confidence'] += 2
-        elif classification.confidence == 'Certain':
-            classification_counts[classification.classification]['confidence'] += 3
+        classification_counts[classification.classification]["count"] += 1
+        if classification.confidence == "Not confident":
+            classification_counts[classification.classification]["confidence"] += 1
+        elif classification.confidence == "Confident":
+            classification_counts[classification.classification]["confidence"] += 2
+        elif classification.confidence == "Certain":
+            classification_counts[classification.classification]["confidence"] += 3
 
     if classification_counts:
         return max(
             classification_counts.items(),
-            key=lambda x: (x[1]['confidence'], x[1]['count'])
+            key=lambda x: (x[1]["confidence"], x[1]["count"]),
         )[0]
     return None
 
@@ -1312,22 +1740,21 @@ def get_ps1_host(s, name):
         "query": {
             "catalog": "ZTF_alerts",
             "filter": {
-                'objectId': {'$eq': name},
+                "objectId": {"$eq": name},
             },
-            "projection": {
-                "_id": 0,
-                "candidate.distpsnr1": 1
-            }
-        }
+            "projection": {"_id": 0, "candidate.distpsnr1": 1},
+        },
     }
     query_result = s.query(query=q)
-    out = query_result['default']['data']
-    return out['candidate']['distpsnr1']
+    out = query_result["default"]["data"]
+    return out["candidate"]["distpsnr1"]
+
 
 def get_ps1_photoz(ra, dec, radius=10):
-    """ Find the photoz for a PS1 object within 10 arcseconds """
+    """Find the photoz for a PS1 object within 10 arcseconds"""
     jobs = mastcasjobs.MastCasJobs(
-            userid=wsid_mastcasjobs, password=password_mastcasjobs, context="HLSP_PS1_STRM")
+        userid=wsid_mastcasjobs, password=password_mastcasjobs, context="HLSP_PS1_STRM"
+    )
     query = """select o.objID, o.uniquePspsOBid, o.raMean, o.decMean,
             o.class, o.prob_Galaxy, o.prob_Star, o.prob_QSO,
             o.extrapolation_Class, o.cellDistance_Class, o.cellID_Class,
@@ -1335,7 +1762,9 @@ def get_ps1_photoz(ra, dec, radius=10):
             o.extrapolation_Photoz, cellDistance_Photoz, o.cellID_Photoz
             from fGetNearbyObjEq({},{},{}) nb
             inner join catalogRecordRowStore o on o.objID=nb.objID
-            """.format(ra, dec, radius/60)
+            """.format(
+        ra, dec, radius / 60
+    )
     max_retries = 5
     retry_delay = 5
     for attempt in range(max_retries):
@@ -1345,7 +1774,7 @@ def get_ps1_photoz(ra, dec, radius=10):
             return tab
         except Exception as e:
             print(f"Attempt {attempt+1} failed with exception: {e}")
-            if 'deadlocked on lock resources' in str(e):
+            if "deadlocked on lock resources" in str(e):
                 time.sleep(retry_delay)
                 retry_delay *= 2
             else:
@@ -1353,23 +1782,24 @@ def get_ps1_photoz(ra, dec, radius=10):
     print("PS1 query failed after multiple retries")
     return []
 
+
 def analyze_ps1_photoz(s, name, ra, dec, radius=5):
     nearest_ps1_dist = get_ps1_host(s, name)
-    
+
     if nearest_ps1_dist < radius:
         print("Getting PS1 photo-z")
         tab = get_ps1_photoz(ra, dec, radius)
-        
+
         if nearest_ps1_dist < radius:
             print("Getting PS1 photo-z")
             tab = get_ps1_photoz(ra, dec, radius)
-            
+
             if len(tab) > 0:
                 print("PS1 photo-z values obtained")
-                ramatch = tab['raMean'].data
-                decmatch = tab['decMean'].data
-                cmatch = SkyCoord(ramatch, decmatch, unit='deg')
-                seps = cmatch.separation(SkyCoord(ra, dec, unit='deg')).arcsec
+                ramatch = tab["raMean"].data
+                decmatch = tab["decMean"].data
+                cmatch = SkyCoord(ramatch, decmatch, unit="deg")
+                seps = cmatch.separation(SkyCoord(ra, dec, unit="deg")).arcsec
                 ind = np.argmin(seps)
                 print(ramatch[ind], decmatch[ind])
                 return ramatch[ind], decmatch[ind]
@@ -1379,8 +1809,9 @@ def analyze_ps1_photoz(s, name, ra, dec, radius=5):
         else:
             print("No nearby PS1 host found within the specified radius")
             return None, None
-    
+
     return None, None
+
 
 def wise_xmatch(s, ra, dec, radius=3):
     print(f"Querying WISE for coordinates: RA={ra}, Dec={dec}, Radius={radius}")
@@ -1390,32 +1821,32 @@ def wise_xmatch(s, ra, dec, radius=3):
             "object_coordinates": {
                 "radec": "[(%.5f, %.5f)]" % (ra, dec),
                 "cone_search_radius": "%.2f" % radius,
-                "cone_search_unit": "arcsec"
+                "cone_search_unit": "arcsec",
             },
             "kwargs": {},
-            "catalogs": {
-                "AllWISE": {
-                    "filter": "{}",
-                    "projection": "{}"
-                }
-            }
-        }
+            "catalogs": {"AllWISE": {"filter": "{}", "projection": "{}"}},
+        },
     }
     r = s.query(query=qu)
-    out = r['default']['data']
-    key = list(out['AllWISE'].keys())[0]
+    out = r["default"]["data"]
+    key = list(out["AllWISE"].keys())[0]
     print(f"Output from WISE query: {out}")
-    if len(out['AllWISE'][key]) > 0:
-        dat = out['AllWISE'][key][0]
-        if np.logical_and.reduce(('w1mpro' in dat.keys(), 'w3mpro' in dat.keys(), 'w2mpro' in dat.keys())):
-            wmag = [dat['w1mpro'], dat['w2mpro'], dat['w3mpro']]
-            return dat['ra'], dat['dec'], wmag
+    if len(out["AllWISE"][key]) > 0:
+        dat = out["AllWISE"][key][0]
+        if np.logical_and.reduce(
+            ("w1mpro" in dat.keys(), "w3mpro" in dat.keys(), "w2mpro" in dat.keys())
+        ):
+            wmag = [dat["w1mpro"], dat["w2mpro"], dat["w3mpro"]]
+            return dat["ra"], dat["dec"], wmag
         else:
-            print("WISE data does not contain all required magnitudes (w1mpro, w2mpro, w3mpro).")
+            print(
+                "WISE data does not contain all required magnitudes (w1mpro, w2mpro, w3mpro)."
+            )
             return None, None, None
     else:
         print("No matching WISE data found within the specified radius.")
         return None, None, None
+
 
 def plot_wise(s, name, ra, dec, output_path):
     # WISE data (RA, Dec, WISE magnitudes)
@@ -1424,7 +1855,7 @@ def plot_wise(s, name, ra, dec, output_path):
     if not ra or not dec or not wmag:
         print(f"No WISE data available for source {name}.")
         return None
-    
+
     if len(wmag) != 3:
         print("WISE magnitudes are incomplete.")
         return None
@@ -1434,42 +1865,51 @@ def plot_wise(s, name, ra, dec, output_path):
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    # Plot the WISE source data 
-    scatter = ax.scatter(w2_w3, w1_w2, color='blue', label='WISE Source')
-
     # Plot the data from the CSV
-    plt.fill(stars_x, stars_y, label='Stars', alpha=0.3)
-    plt.fill(ellipticals_x, ellipticals_y, label='Ellipticals', alpha=0.3)
-    plt.fill(spirals_x, spirals_y, label='Spirals', alpha=0.3)
-    plt.fill(LIRGs_x, LIRGs_y, label='LIRGs', alpha=0.3)
-    plt.fill(qsos_x, qsos_y, label='QSOs/Seyferts', alpha=0.3)
+    ax.fill(stars_x, stars_y, label="Stars", alpha=0.3)
+    ax.fill(ellipticals_x, ellipticals_y, label="Ellipticals", alpha=0.3)
+    ax.fill(spirals_x, spirals_y, label="Spirals", alpha=0.3)
+    ax.fill(LIRGs_x, LIRGs_y, label="LIRGs", alpha=0.3)
+    ax.fill(qsos_x, qsos_y, label="QSOs/Seyferts", alpha=0.3)
+
+    # Plot the WISE source data
+    scatter = ax.scatter(
+        w2_w3, w1_w2, color="blue", label="WISE Source", s=100, zorder=5
+    )
 
     # Adding text labels for each group
-    plt.text(0.376, 0.376, 'Stars', fontsize=16, color='black', ha='center')
-    plt.text(0.696, 0.114, 'Ellipticals', fontsize=16, color='black', ha='center')
-    plt.text(2.036, 0.196, 'Spirals', fontsize=16, color='black', ha='center')
-    plt.text(4.895, 0.456, 'LIRGs', fontsize=16, color='black', ha='center')
-    plt.text(3.07, 1.276, 'QSOs/Seyferts', fontsize=16, color='black', ha='center')
+    ax.text(0.376, 0.376, "Stars", fontsize=16, color="black", ha="center")
+    ax.text(0.696, 0.114, "Ellipticals", fontsize=16, color="black", ha="center")
+    ax.text(2.036, 0.196, "Spirals", fontsize=16, color="black", ha="center")
+    ax.text(4.895, 0.456, "LIRGs", fontsize=16, color="black", ha="center")
+    ax.text(3.07, 1.276, "QSOs/Seyferts", fontsize=16, color="black", ha="center")
 
-    # Set axis labels and title 
-    ax.set_xlabel('W2 - W3', fontsize=14)
-    ax.set_ylabel('W1 - W2', fontsize=14)
-    ax.set_title(f'WISE Color-Color Plot\n(RA: {ra:.5f}, Dec: {dec:.5f})', fontsize=16)
+    # Set axis labels and title
+    ax.set_xlabel("W2 - W3", fontsize=14)
+    ax.set_ylabel("W1 - W2", fontsize=14)
+    ax.set_title(f"WISE Color-Color Plot\n(RA: {ra:.5f}, Dec: {dec:.5f})", fontsize=16)
     ax.legend()
-    ax.grid(alpha =.1)
+    ax.grid(alpha=0.1)
 
     # Tooltips and interactive plot
-    tooltip = plugins.PointHTMLTooltip(scatter, labels=[f"RA: {ra:.5f}, Dec: {dec:.5f}<br>W1-W2: {w1_w2:.2f}, W2-W3: {w2_w3:.2f}"], css="background-color: white; color: black; font-size: 14px;")
+    tooltip = plugins.PointHTMLTooltip(
+        scatter,
+        labels=[
+            f"RA: {ra:.5f}, Dec: {dec:.5f}<br>W1-W2: {w1_w2:.2f}, W2-W3: {w2_w3:.2f}"
+        ],
+        css="background-color: white; color: black; font-size: 14px;",
+    )
     plugins.connect(fig, tooltip)
 
     html_str = mpld3.fig_to_html(fig)
-    
+
     # Save the HTML to a file
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(html_str)
 
     plt.close(fig)
     return output_path
+
 
 def fetch_transient_data(kowalski_session, source_id):
     """Fetch all the required data for rendering a classification page for a given source."""
@@ -1487,93 +1927,122 @@ def fetch_transient_data(kowalski_session, source_id):
 
         # Fetch ecliptic coordinates
         ecliptic_lon, ecliptic_lat = get_ecliptic(ra, dec)
-        logging.debug(f"Ecliptic Coordinates - lon: {ecliptic_lon}, lat: {ecliptic_lat}")
+        logging.debug(
+            f"Ecliptic Coordinates - lon: {ecliptic_lon}, lat: {ecliptic_lat}"
+        )
 
         # Fetch the original public alerts first
         dets = get_dets(kowalski_session, source_id)
-        logging.debug(f"Original Public Alerts (dets): {dets[:5] if dets else 'No public alerts'}") # Log first 5 alerts
+        logging.debug(
+            f"Original Public Alerts (dets): {dets[:5] if dets else 'No public alerts'}"
+        )  # Log first 5 alerts
 
         # Fetch comprehensive light curve data (includes alerts, forced phot, prv dets)
         light_curve = get_lc(kowalski_session, source_id)
-        logging.debug(f"Comprehensive Light Curve DataFrame head:\n{light_curve.head() if not light_curve.empty else 'Empty LC DataFrame'}")
-        
+        logging.debug(
+            f"Comprehensive Light Curve DataFrame head:\n{light_curve.head() if not light_curve.empty else 'Empty LC DataFrame'}"
+        )
+
         # Calculate alert count based on actual detections in the comprehensive LC
-        detections_lc = pd.DataFrame() # Initialize empty DataFrame
-        if not light_curve.empty and 'isdet' in light_curve.columns:
-             detections_lc = light_curve[light_curve['isdet'] == True].copy()
+        detections_lc = pd.DataFrame()  # Initialize empty DataFrame
+        if not light_curve.empty and "isdet" in light_curve.columns:
+            detections_lc = light_curve[light_curve["isdet"] == True].copy()
         alert_count = detections_lc.shape[0]
         logging.debug(f"Total Detections (for count): {alert_count}")
 
         # Preprocess detections to ensure consistent data format between sources
         # Check for source of alerts and fill missing fields
-        if 'origin' in detections_lc.columns:
-            logging.debug(f"Detection origins: {detections_lc['origin'].value_counts().to_dict()}")
+        if "origin" in detections_lc.columns:
+            logging.debug(
+                f"Detection origins: {detections_lc['origin'].value_counts().to_dict()}"
+            )
             # Check for alerts with missing required columns and add placeholders
-            needed_columns = ['programid', 'field', 'ssdistnr', 'ssmagnr', 'sgscore1', 'distpsnr1']
+            needed_columns = [
+                "programid",
+                "field",
+                "ssdistnr",
+                "ssmagnr",
+                "sgscore1",
+                "distpsnr1",
+            ]
             for col in needed_columns:
                 if col not in detections_lc.columns:
                     detections_lc[col] = None
         else:
             # If origin column missing, assume all are from main alert stream
-            detections_lc['origin'] = 'alert'
-    
+            detections_lc["origin"] = "alert"
+
         # For easier debugging
-        logging.debug(f"Detection sources: {detections_lc['origin'].value_counts() if 'origin' in detections_lc.columns else 'Unknown'}")
+        logging.debug(
+            f"Detection sources: {detections_lc['origin'].value_counts() if 'origin' in detections_lc.columns else 'Unknown'}"
+        )
 
         # Prepare data for the alert table from the comprehensive LC detections
         # Select and rename columns to match table expectations, handle missing data
         table_columns_map = {
-            'jd': 'jd',
-            'fid': 'fid',
+            "jd": "jd",
+            "fid": "fid",
             # These might be NaN if the detection came from forced photometry/prv_candidates
-            'programid': 'programid', 
-            'field': 'field',        
-            'ra': 'ra',            
-            'dec': 'dec',           
-            'mag_final': 'magpsf',   # Use mag_final as the magnitude
-            'emag_final': 'sigmapsf', # Use emag_final as the error
-            'ssdistnr': 'ssdistnr',   
-            'ssmagnr': 'ssmagnr',    
-            'sgscore1': 'sgscore1',  
-            'distpsnr1': 'distpsnr1',
-            'origin': 'origin'      # Add origin field to show data source
+            "programid": "programid",
+            "field": "field",
+            "ra": "ra",
+            "dec": "dec",
+            "mag_final": "magpsf",  # Use mag_final as the magnitude
+            "emag_final": "sigmapsf",  # Use emag_final as the error
+            "ssdistnr": "ssdistnr",
+            "ssmagnr": "ssmagnr",
+            "sgscore1": "sgscore1",
+            "distpsnr1": "distpsnr1",
+            "origin": "origin",  # Add origin field to show data source
         }
         raw_alerts_for_table = pd.DataFrame()
         if not detections_lc.empty:
             raw_alerts_for_table = detections_lc.copy()
             # Select columns that exist in detections_lc based on the map keys
-            existing_source_cols = [col for col in table_columns_map.keys() if col in raw_alerts_for_table.columns]
+            existing_source_cols = [
+                col
+                for col in table_columns_map.keys()
+                if col in raw_alerts_for_table.columns
+            ]
             raw_alerts_for_table = raw_alerts_for_table[existing_source_cols]
             # Rename columns to match HTML table keys (the values in the map)
-            raw_alerts_for_table = raw_alerts_for_table.rename(columns=table_columns_map)
+            raw_alerts_for_table = raw_alerts_for_table.rename(
+                columns=table_columns_map
+            )
             # Ensure all expected columns exist, fill missing ones with NaN
             expected_table_cols = list(table_columns_map.values())
             for expected_col in expected_table_cols:
                 if expected_col not in raw_alerts_for_table.columns:
-                    raw_alerts_for_table[expected_col] = np.nan 
+                    raw_alerts_for_table[expected_col] = np.nan
             # Reorder columns to the expected sequence for the table
             raw_alerts_for_table = raw_alerts_for_table[expected_table_cols]
-            
+
         # Convert NaN to None for JSON/template compatibility if needed, then to dicts
-        raw_alerts = raw_alerts_for_table.replace({np.nan: None}).to_dict(orient='records')
+        raw_alerts = raw_alerts_for_table.replace({np.nan: None}).to_dict(
+            orient="records"
+        )
         logging.debug(f"Data for Alert Table (first 5 rows): {raw_alerts[:5]}")
 
         # Fetch DRB stats based on original alerts (dets)
         # DRB is specific to alert packets, so using original alerts makes sense here.
         med_drb, min_drb, max_drb, avg_drb = get_drb(kowalski_session, source_id, dets)
-        logging.debug(f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}")
+        logging.debug(
+            f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}"
+        )
 
         # Directories for cutouts and plots
-        cutout_dir = os.path.join(basedir, 'static', 'cutouts')
-        light_cur = os.path.join(basedir, 'static', 'light_curves')
-        wise_dir = os.path.join(basedir, 'static', 'wise_plots')
+        cutout_dir = os.path.join(basedir, "static", "cutouts")
+        light_cur = os.path.join(basedir, "static", "light_curves")
+        wise_dir = os.path.join(basedir, "static", "wise_plots")
 
         # WISE plot
         wise_plot_path = os.path.join(wise_dir, f"{source_id}_wise_plot.html")
         if os.path.exists(wise_plot_path):
             wise_filename = f"static/wise_plots/{source_id}_wise_plot.html"
         else:
-            wise_result = plot_wise(kowalski_session, source_id, ra, dec, wise_plot_path)
+            wise_result = plot_wise(
+                kowalski_session, source_id, ra, dec, wise_plot_path
+            )
             # Handle the case where plot_wise returns None
             if wise_result:
                 wise_filename = wise_result
@@ -1582,31 +2051,53 @@ def fetch_transient_data(kowalski_session, source_id):
 
         # Light curves (use the comprehensive light_curve DataFrame fetched earlier)
         light_curve_path = os.path.join(light_cur, f"{source_id}_light_curve.html")
-        big_light_curve_path = os.path.join(light_cur, f"{source_id}_big_light_curve.html")
-        light_curve_zoomed_path = os.path.join(light_cur, f"{source_id}_light_curve_zoomed.html")
-        big_light_curve_zoomed_path = os.path.join(light_cur, f"{source_id}_big_light_curve_zoomed.html")
+        big_light_curve_path = os.path.join(
+            light_cur, f"{source_id}_big_light_curve.html"
+        )
+        light_curve_zoomed_path = os.path.join(
+            light_cur, f"{source_id}_light_curve_zoomed.html"
+        )
+        big_light_curve_zoomed_path = os.path.join(
+            light_cur, f"{source_id}_big_light_curve_zoomed.html"
+        )
 
         # Check and generate light curve plots using the comprehensive 'light_curve' DataFrame
-        plot_filename = light_curve_path.replace(basedir + '/', '')
-        plot_filename_zoomed = light_curve_zoomed_path.replace(basedir + '/', '')
-        if not os.path.exists(light_curve_path) or not os.path.exists(light_curve_zoomed_path):
+        plot_filename = light_curve_path.replace(basedir + "/", "")
+        plot_filename_zoomed = light_curve_zoomed_path.replace(basedir + "/", "")
+        if not os.path.exists(light_curve_path) or not os.path.exists(
+            light_curve_zoomed_path
+        ):
             plot_filename = plot_light_curve(light_curve, source_id)
-            plot_filename_zoomed = plot_light_curve(light_curve, source_id, "detections")
+            plot_filename_zoomed = plot_light_curve(
+                light_curve, source_id, "detections"
+            )
 
-        plot_big_filename = big_light_curve_path.replace(basedir + '/', '')
-        plot_big_filename_zoomed = big_light_curve_zoomed_path.replace(basedir + '/', '')
-        if not os.path.exists(big_light_curve_path) or not os.path.exists(big_light_curve_zoomed_path):
+        plot_big_filename = big_light_curve_path.replace(basedir + "/", "")
+        plot_big_filename_zoomed = big_light_curve_zoomed_path.replace(
+            basedir + "/", ""
+        )
+        if not os.path.exists(big_light_curve_path) or not os.path.exists(
+            big_light_curve_zoomed_path
+        ):
             plot_big_filename = plot_big_light_curve(light_curve, source_id)
-            plot_big_filename_zoomed = plot_big_light_curve(light_curve, source_id, "detections")
+            plot_big_filename_zoomed = plot_big_light_curve(
+                light_curve, source_id, "detections"
+            )
 
         # ZTF cutouts - Call filter_and_plot_alerts to get the list (potentially with Nones)
         # This still uses the original alerts (via get_dets inside) to pick specific moments.
-        ztf_cutout_filenames_or_none = filter_and_plot_alerts(kowalski_session, cutout_dir, source_id)
-        
-        # Filter out None values for the list passed to the template, 
+        ztf_cutout_filenames_or_none = filter_and_plot_alerts(
+            kowalski_session, cutout_dir, source_id
+        )
+
+        # Filter out None values for the list passed to the template,
         # but the template will still use fixed indices on the original list
-        ztf_cutout_basenames_for_template = ztf_cutout_filenames_or_none # Pass the list with Nones
-        logging.debug(f"ZTF Cutout list (with Nones): {ztf_cutout_basenames_for_template}")
+        ztf_cutout_basenames_for_template = (
+            ztf_cutout_filenames_or_none  # Pass the list with Nones
+        )
+        logging.debug(
+            f"ZTF Cutout list (with Nones): {ztf_cutout_basenames_for_template}"
+        )
 
         # Pan-STARRS (PS1) cutouts
         ps1_cutout_path = os.path.join(cutout_dir, f"{source_id}_ps1.png")
@@ -1614,81 +2105,100 @@ def fetch_transient_data(kowalski_session, source_id):
         if os.path.exists(ps1_cutout_path):
             ps1_cutout_basename = f"{source_id}_ps1.png"
         else:
-            ps1_cutout = plot_ps1_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
+            ps1_cutout = plot_ps1_cutout(
+                kowalski_session, cutout_dir, source_id, ra, dec
+            )
             ps1_cutout_basename = os.path.basename(ps1_cutout) if ps1_cutout else None
 
         # Legacy Survey (LS) cutouts
         ls_cutout_path = os.path.join(cutout_dir, f"{source_id}_ls.png")
-        ls_cutout_basename = ''
+        ls_cutout_basename = ""
         # Reinstate os.path.exists check and retry loop
         if os.path.exists(ls_cutout_path):
-             ls_cutout_basename = f"{source_id}_ls.png"
+            ls_cutout_basename = f"{source_id}_ls.png"
         else:
             # Try to plot/fetch with retries if it doesn't exist
-            for attempt in range(3): # Reduced retries slightly
-                 ls_cutout = plot_ls_cutout(kowalski_session, cutout_dir, source_id, ra, dec)
-                 if ls_cutout and os.path.exists(ls_cutout):
-                     ls_cutout_basename = os.path.basename(ls_cutout)
-                     break # Success
-                 time.sleep(1) # Wait 1 second before retrying
+            for attempt in range(3):  # Reduced retries slightly
+                ls_cutout = plot_ls_cutout(
+                    kowalski_session, cutout_dir, source_id, ra, dec
+                )
+                if ls_cutout and os.path.exists(ls_cutout):
+                    ls_cutout_basename = os.path.basename(ls_cutout)
+                    break  # Success
+                time.sleep(1)  # Wait 1 second before retrying
             # If still no basename after retries, it remains ''
         logging.debug(f"LS Cutout Basename: {ls_cutout_basename}")
 
-        legacy_survey_data = xmatch_ls(ra, dec) # Fetch Legacy Survey data
-        
+        legacy_survey_data = xmatch_ls(ra, dec)  # Fetch Legacy Survey data
+
         legacy_amount = legacy_survey_data.shape[0]
         if legacy_amount > 0:
             legacy_closest = legacy_survey_data.iloc[0]
             legacy_data = [
-                legacy_closest.sep_arcsec.round(2),   # Separation in arcseconds
-                legacy_closest.pa_degree.round(1),    # Position angle in degrees
-                legacy_closest.z_phot_median.round(2),# Photometric redshift median
-                legacy_closest.z_phot_l68.round(2),   # 68% lower bound on photometric redshift
-                legacy_closest.z_phot_u68.round(2),   # 68% upper bound on photometric redshift
-                legacy_closest.type 
+                legacy_closest.sep_arcsec.round(2),  # Separation in arcseconds
+                legacy_closest.pa_degree.round(1),  # Position angle in degrees
+                legacy_closest.z_phot_median.round(2),  # Photometric redshift median
+                legacy_closest.z_phot_l68.round(
+                    2
+                ),  # 68% lower bound on photometric redshift
+                legacy_closest.z_phot_u68.round(
+                    2
+                ),  # 68% upper bound on photometric redshift
+                legacy_closest.type,
             ]
         else:
             legacy_data = []
-        
+
         logging.debug(f"Legacy Survey Data: {legacy_survey_data}")
 
         sdss_result = analyze_sdss_redshift(ra, dec, radius=5)
         if sdss_result:
             logging.debug(f"SDSS Association Found:")
-            logging.debug(f"  Redshift: {sdss_result['redshift']:.4f} ({sdss_result['redshift_type']})")
-            logging.debug(f"  Separation: {sdss_result['separation_arcsec']:.2f} arcsec")
-            if 'physical_separation_kpc' in sdss_result:
-                logging.debug(f"  Physical separation: {sdss_result['physical_separation_kpc']:.1f} kpc")
+            logging.debug(
+                f"  Redshift: {sdss_result['redshift']:.4f} ({sdss_result['redshift_type']})"
+            )
+            logging.debug(
+                f"  Separation: {sdss_result['separation_arcsec']:.2f} arcsec"
+            )
+            if "physical_separation_kpc" in sdss_result:
+                logging.debug(
+                    f"  Physical separation: {sdss_result['physical_separation_kpc']:.1f} kpc"
+                )
         else:
             logging.debug("No SDSS association found")
-       
 
         # Aggregate Pan-STARRS data and remove duplicates from original 'dets'
         pan_starrs_data = []
         seen_sgscore1 = set()
         # Use the original 'dets' list here to check alert packet info
-        if dets: # Check if dets is not empty
+        if dets:  # Check if dets is not empty
             for det in dets:
-                candidate = det['candidate']
+                candidate = det["candidate"]
                 # Filter based on your conditions
-                if 'distpsnr1' in candidate and candidate['distpsnr1'] != -999.0 and \
-                'sgscore1' in candidate and candidate['sgscore1'] != -999.0 and \
-                candidate['distpsnr1'] <= 5:
-                    if candidate['sgscore1'] not in seen_sgscore1:
-                        pan_starrs_data.append({
-                            'distpsnr1': candidate['distpsnr1'],
-                            'sgscore1': candidate['sgscore1']
-                        })
-                        seen_sgscore1.add(candidate['sgscore1'])
+                if (
+                    "distpsnr1" in candidate
+                    and candidate["distpsnr1"] != -999.0
+                    and "sgscore1" in candidate
+                    and candidate["sgscore1"] != -999.0
+                    and candidate["distpsnr1"] <= 5
+                ):
+                    if candidate["sgscore1"] not in seen_sgscore1:
+                        pan_starrs_data.append(
+                            {
+                                "distpsnr1": candidate["distpsnr1"],
+                                "sgscore1": candidate["sgscore1"],
+                            }
+                        )
+                        seen_sgscore1.add(candidate["sgscore1"])
 
         # Create DataFrame only from filtered data
         pan_starrs_df = pd.DataFrame(pan_starrs_data)
 
         if not pan_starrs_df.empty:
             # Find the closest match
-            closest_ps1 = pan_starrs_df.loc[pan_starrs_df['distpsnr1'].idxmin()]
-            ps1_dist = closest_ps1['distpsnr1']
-            ps1_sgs = closest_ps1['sgscore1']
+            closest_ps1 = pan_starrs_df.loc[pan_starrs_df["distpsnr1"].idxmin()]
+            ps1_dist = closest_ps1["distpsnr1"]
+            ps1_sgs = closest_ps1["sgscore1"]
         else:
             ps1_dist = None
             ps1_sgs = None
@@ -1697,49 +2207,109 @@ def fetch_transient_data(kowalski_session, source_id):
         # Convert original alert packets to DataFrame for polar plot function
         ztf_alerts_for_polar = pd.DataFrame()
         if dets:
-             ztf_alerts_for_polar = pd.DataFrame([det['candidate'] for det in dets])
-        
-        polar_plot_path = os.path.join('static', 'light_curves', f'{source_id}_polar_plot.html')
-        polar_big_plot_path = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot.html')
-        polar_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_polar_plot_out.html')
-        polar_big_plot_path_out = os.path.join('static', 'light_curves', f'{source_id}_big_polar_plot_out.html')
-        
-        if not os.path.exists(polar_plot_path) or not os.path.exists(polar_plot_path_out):
-            ra_ps1, dec_ps1 = analyze_ps1_photoz(kowalski_session, source_id, ra, dec, 3)
+            ztf_alerts_for_polar = pd.DataFrame([det["candidate"] for det in dets])
+
+        polar_plot_path = os.path.join(
+            "static", "light_curves", f"{source_id}_polar_plot.html"
+        )
+        polar_big_plot_path = os.path.join(
+            "static", "light_curves", f"{source_id}_big_polar_plot.html"
+        )
+        polar_plot_path_out = os.path.join(
+            "static", "light_curves", f"{source_id}_polar_plot_out.html"
+        )
+        polar_big_plot_path_out = os.path.join(
+            "static", "light_curves", f"{source_id}_big_polar_plot_out.html"
+        )
+
+        if not os.path.exists(polar_plot_path) or not os.path.exists(
+            polar_plot_path_out
+        ):
+            ra_ps1, dec_ps1 = analyze_ps1_photoz(
+                kowalski_session, source_id, ra, dec, 3
+            )
             # Pass the DataFrame created from original alerts and include SDSS data
-            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=15, sdss_data=sdss_result)
-            plot_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=15, sdss_data=sdss_result)
-            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path, xlim=(-2, 2), ylim=(-2, 2), point_size=17, sdss_data=sdss_result)
-            plot_big_polar_coordinates(ztf_alerts_for_polar, ra_ps1, dec_ps1, legacy_survey_data, ra, dec, polar_big_plot_path_out, xlim=(-10, 10), ylim=(-10, 10), point_size=17, sdss_data=sdss_result)
+            plot_polar_coordinates(
+                ztf_alerts_for_polar,
+                ra_ps1,
+                dec_ps1,
+                legacy_survey_data,
+                ra,
+                dec,
+                polar_plot_path,
+                xlim=(-2, 2),
+                ylim=(-2, 2),
+                point_size=15,
+                sdss_data=sdss_result,
+            )
+            plot_polar_coordinates(
+                ztf_alerts_for_polar,
+                ra_ps1,
+                dec_ps1,
+                legacy_survey_data,
+                ra,
+                dec,
+                polar_plot_path_out,
+                xlim=(-10, 10),
+                ylim=(-10, 10),
+                point_size=15,
+                sdss_data=sdss_result,
+            )
+            plot_big_polar_coordinates(
+                ztf_alerts_for_polar,
+                ra_ps1,
+                dec_ps1,
+                legacy_survey_data,
+                ra,
+                dec,
+                polar_big_plot_path,
+                xlim=(-2, 2),
+                ylim=(-2, 2),
+                point_size=17,
+                sdss_data=sdss_result,
+            )
+            plot_big_polar_coordinates(
+                ztf_alerts_for_polar,
+                ra_ps1,
+                dec_ps1,
+                legacy_survey_data,
+                ra,
+                dec,
+                polar_big_plot_path_out,
+                xlim=(-10, 10),
+                ylim=(-10, 10),
+                point_size=17,
+                sdss_data=sdss_result,
+            )
         # Retrieve classifications and determine the most confident classification
         classifications = Classification.query.filter_by(source_id=source_id).all()
-        classification_counts = defaultdict(lambda: {'count': 0, 'confidence': 0})
+        classification_counts = defaultdict(lambda: {"count": 0, "confidence": 0})
         classified_by_users = []
 
         for classification in classifications:
-            classification_counts[classification.classification]['count'] += 1
+            classification_counts[classification.classification]["count"] += 1
             classified_by_users.append(User.query.get(classification.user_id).username)
-            if classification.confidence == 'Not confident':
-                classification_counts[classification.classification]['confidence'] += 1
-            elif classification.confidence == 'Confident':
-                classification_counts[classification.classification]['confidence'] += 2
-            elif classification.confidence == 'Certain':
-                classification_counts[classification.classification]['confidence'] += 3
+            if classification.confidence == "Not confident":
+                classification_counts[classification.classification]["confidence"] += 1
+            elif classification.confidence == "Confident":
+                classification_counts[classification.classification]["confidence"] += 2
+            elif classification.confidence == "Certain":
+                classification_counts[classification.classification]["confidence"] += 3
 
         if classification_counts:
             most_confident_classification = max(
                 classification_counts.items(),
-                key=lambda x: (x[1]['confidence'], x[1]['count'])
+                key=lambda x: (x[1]["confidence"], x[1]["count"]),
             )[0]
         else:
             most_confident_classification = None
 
         logging.debug(f"Most Confident Classification: {most_confident_classification}")
 
-        coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
-        ra_str = coord.ra.to_string(unit=u.hour, sep=':', precision=4)
-        dec_str = coord.dec.to_string(unit=u.degree, sep=':', precision=4)
-        
+        coord = SkyCoord(ra=ra * u.degree, dec=dec * u.degree, frame="icrs")
+        ra_str = coord.ra.to_string(unit=u.hour, sep=":", precision=4)
+        dec_str = coord.dec.to_string(unit=u.degree, sep=":", precision=4)
+
         logging.debug(f"RA (string): {ra_str}, Dec (string): {dec_str}")
         # Return the core data needed
         data = {
@@ -1765,12 +2335,12 @@ def fetch_transient_data(kowalski_session, source_id):
             "plot_filename_zoomed": plot_filename_zoomed,  # Match key 'plot_filename_zoomed'
             "plot_big_filename": plot_big_filename,  # Match key 'plot_big_filename'
             "plot_big_filename_zoomed": plot_big_filename_zoomed,  # Match key 'plot_big_filename_zoomed'
-            "ztf_cutout": ztf_cutout_basenames_for_template, # Pass the list with Nones
+            "ztf_cutout": ztf_cutout_basenames_for_template,  # Pass the list with Nones
             "ps1_cutout": ps1_cutout_basename,  # Match key 'ps1_cutout'
             "ls_cutout": ls_cutout_basename,  # Match key 'ls_cutout'
             "legacy_amount": legacy_amount,
             "legacy_data": legacy_data,
-            "sdss_data": sdss_result, 
+            "sdss_data": sdss_result,
             "polar_plot": polar_plot_path,  # Match key 'polar_plot'
             "polar_big_plot": polar_big_plot_path,  # Match key 'polar_big_plot'
             "polar_plot_out": polar_plot_path_out,  # Match key 'polar_plot_out'
@@ -1781,17 +2351,20 @@ def fetch_transient_data(kowalski_session, source_id):
             "ra_str": ra_str,  # Match key 'ra_str'
             "dec_str": dec_str,  # Match key 'dec_str'
             # Pass the prepared raw_alerts list (from get_lc detections) to the template
-            "raw_alerts": raw_alerts
+            "raw_alerts": raw_alerts,
         }
-        
+
         # Log the number of entries being sent to the template for the table
-        logging.debug(f"Number of entries in raw_alerts being sent to template: {len(raw_alerts)}")
+        logging.debug(
+            f"Number of entries in raw_alerts being sent to template: {len(raw_alerts)}"
+        )
 
         return data
 
     except Exception as e:
         logging.error(f"Error while fetching transient data: {str(e)}")
         return None
+
 
 # Add confirmed working SDSS functions above the existing ones
 def get_sdss_specz_confirmed(ra, dec, radius=10):
@@ -1801,28 +2374,30 @@ def get_sdss_specz_confirmed(ra, dec, radius=10):
     Based on user's confirmed working function with RA/Dec extraction added
     """
     print("try SDSS query region")
-    pos = SkyCoord(ra, dec, unit='deg')
+    pos = SkyCoord(ra, dec, unit="deg")
     max_retries = 2
     for attempt in range(max_retries):
         try:
-            xid = SDSS.query_region(pos, radius='%s arcsec' %radius, spectro=True)
+            xid = SDSS.query_region(pos, radius="%s arcsec" % radius, spectro=True)
             if xid is not None:
-                if np.logical_and(len(xid) > 0, '<html>' not in str(xid[0])):
-                    ra_match = xid['ra'].data
-                    dec_match = xid['dec'].data
-                    z_match = xid['z'].data
-                    objid_match = xid['objid'].data  # Get objid for photometric query
-                    
-                    pos2 = SkyCoord(ra_match, dec_match, unit='deg')
+                if np.logical_and(len(xid) > 0, "<html>" not in str(xid[0])):
+                    ra_match = xid["ra"].data
+                    dec_match = xid["dec"].data
+                    z_match = xid["z"].data
+                    objid_match = xid["objid"].data  # Get objid for photometric query
+
+                    pos2 = SkyCoord(ra_match, dec_match, unit="deg")
                     sep_match = pos.separation(pos2).arcsec
                     ind_closest = np.argmin(sep_match)
                     sep = sep_match[ind_closest]
-                    
-                    return (xid['z'][ind_closest], 
-                           sep,
-                           objid_match[ind_closest], 
-                           ra_match[ind_closest], 
-                           dec_match[ind_closest])
+
+                    return (
+                        xid["z"][ind_closest],
+                        sep,
+                        objid_match[ind_closest],
+                        ra_match[ind_closest],
+                        dec_match[ind_closest],
+                    )
             return 99, 99, None, None, None
         except EOFError as e:
             with warnings.catch_warnings():
@@ -1832,6 +2407,7 @@ def get_sdss_specz_confirmed(ra, dec, radius=10):
     print("all attempts failed. returning fallback values")
     return 99, 99, None, None, None
 
+
 def get_sdss_photoz_with_objid(objid):
     """
     Query photometric redshift using confirmed working query structure
@@ -1839,28 +2415,29 @@ def get_sdss_photoz_with_objid(objid):
     """
     if objid is None:
         return 99, None
-        
+
     try:
         query = f"""
         SELECT z.objid, z.z AS photoz
         FROM Photoz AS z
         WHERE z.objid = {objid}
         """
-        
+
         result = qc.query(sql=query)
         df_result = convert(result)
-        
-        if len(df_result) > 0 and not pd.isna(df_result.iloc[0]['photoz']):
-            photoz = df_result.iloc[0]['photoz']
+
+        if len(df_result) > 0 and not pd.isna(df_result.iloc[0]["photoz"]):
+            photoz = df_result.iloc[0]["photoz"]
             print(f"Found photometric redshift: z={photoz:.4f}")
             return photoz, objid
         else:
             print("No photometric redshift available for this objid")
             return 99, None
-            
+
     except Exception as e:
         print(f"Photometric query failed: {e}")
         return 99, None
+
 
 def get_sdss_redshift_confirmed(ra, dec, radius=10):
     """
@@ -1869,22 +2446,22 @@ def get_sdss_redshift_confirmed(ra, dec, radius=10):
     Returns: redshift, separation_arcsec, objid, ra_match, dec_match, redshift_type
     """
     print("Trying SDSS spectroscopic redshift...")
-    
+
     # Try spectroscopic first (confirmed working)
     z_spec, sep, objid, ra_match, dec_match = get_sdss_specz_confirmed(ra, dec, radius)
-    
+
     if z_spec < 99:
         print(f"Found spectroscopic redshift: z={z_spec:.4f}")
-        return z_spec, sep, objid, ra_match, dec_match, 'spec'
-    
+        return z_spec, sep, objid, ra_match, dec_match, "spec"
+
     # If no spectroscopic redshift and we got an objid, try photometric
     if objid is not None:
         print("No spectroscopic redshift found, trying photometric...")
         z_photo, _ = get_sdss_photoz_with_objid(objid)
-        
+
         if z_photo < 99:
             print(f"Found photometric redshift: z={z_photo:.4f}")
-            return z_photo, sep, objid, ra_match, dec_match, 'photo'
-    
+            return z_photo, sep, objid, ra_match, dec_match, "photo"
+
     print("No SDSS redshift found (neither spec nor photo)")
     return 99, 99, None, None, None, None
