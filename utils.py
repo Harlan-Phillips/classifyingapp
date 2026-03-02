@@ -1846,26 +1846,35 @@ def wise_xmatch(s, ra, dec, radius=3):
     print(f"Output from WISE query: {out}")
     if len(out["AllWISE"][key]) > 0:
         dat = out["AllWISE"][key][0]
-        if np.logical_and.reduce(
+        has_mags = np.logical_and.reduce(
             ("w1mpro" in dat.keys(), "w3mpro" in dat.keys(), "w2mpro" in dat.keys())
-        ):
+        )
+        if has_mags:
             wmag = [dat["w1mpro"], dat["w2mpro"], dat["w3mpro"]]
-            return dat["ra"], dat["dec"], wmag
+
+            # Try to extract magnitude uncertainties if available
+            mag_err_keys = ("w1sigmpro", "w2sigmpro", "w3sigmpro")
+            if all(k in dat.keys() for k in mag_err_keys):
+                wmag_err = [dat["w1sigmpro"], dat["w2sigmpro"], dat["w3sigmpro"]]
+            else:
+                wmag_err = None
+
+            return dat["ra"], dat["dec"], wmag, wmag_err
         else:
             print(
                 "WISE data does not contain all required magnitudes (w1mpro, w2mpro, w3mpro)."
             )
-            return None, None, None
+            return None, None, None, None
     else:
         print("No matching WISE data found within the specified radius.")
-        return None, None, None
+        return None, None, None, None
 
 
 def plot_wise(s, name, ra, dec, output_path):
-    # WISE data (RA, Dec, WISE magnitudes)
-    ra, dec, wmag = wise_xmatch(s, ra, dec)
+    # WISE data (RA, Dec, WISE magnitudes and, if available, their uncertainties)
+    ra, dec, wmag, wmag_err = wise_xmatch(s, ra, dec)
 
-    if not ra or not dec or not wmag:
+    if ra is None or dec is None or wmag is None:
         print(f"No WISE data available for source {name}.")
         return None
 
@@ -1873,8 +1882,17 @@ def plot_wise(s, name, ra, dec, output_path):
         print("WISE magnitudes are incomplete.")
         return None
 
-    w1_w2 = wmag[0] - wmag[1]
-    w2_w3 = wmag[1] - wmag[2]
+    w1, w2, w3 = wmag
+    w1_w2 = w1 - w2
+    w2_w3 = w2 - w3
+
+    # Propagate uncertainties for the colors if errors are available
+    w1_w2_err = None
+    w2_w3_err = None
+    if wmag_err is not None and len(wmag_err) == 3:
+        e1, e2, e3 = wmag_err
+        w1_w2_err = np.sqrt(e1**2 + e2**2)
+        w2_w3_err = np.sqrt(e2**2 + e3**2)
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -1885,10 +1903,30 @@ def plot_wise(s, name, ra, dec, output_path):
     ax.fill(LIRGs_x, LIRGs_y, label="LIRGs", alpha=0.3)
     ax.fill(qsos_x, qsos_y, label="QSOs/Seyferts", alpha=0.3)
 
-    # Plot the WISE source data
-    scatter = ax.scatter(
-        w2_w3, w1_w2, color="blue", label="WISE Source", s=100, zorder=5
-    )
+    # Plot the WISE source data with error bars similar to the photometry graph
+    if w1_w2_err is not None and w2_w3_err is not None:
+        ax.errorbar(
+            w2_w3,
+            w1_w2,
+            xerr=w2_w3_err,
+            yerr=w1_w2_err,
+            fmt="o",
+            color="blue",
+            ecolor="blue",
+            elinewidth=1.5,
+            capsize=4,
+            markersize=8,
+            zorder=5,
+            label="WISE Source",
+        )
+        # Separate scatter for better interaction with mpld3 tooltips
+        scatter = ax.scatter(
+            [w2_w3], [w1_w2], color="blue", s=100, zorder=6, alpha=0
+        )
+    else:
+        scatter = ax.scatter(
+            w2_w3, w1_w2, color="blue", label="WISE Source", s=100, zorder=5
+        )
 
     # Adding text labels for each group
     ax.text(0.376, 0.376, "Stars", fontsize=16, color="black", ha="center")
@@ -1905,11 +1943,21 @@ def plot_wise(s, name, ra, dec, output_path):
     ax.grid(alpha=0.1)
 
     # Tooltips and interactive plot
+    if w1_w2_err is not None and w2_w3_err is not None:
+        label = (
+            f"RA: {ra:.5f}, Dec: {dec:.5f}<br>"
+            f"W1-W2: {w1_w2:.2f}±{w1_w2_err:.2f}, "
+            f"W2-W3: {w2_w3:.2f}±{w2_w3_err:.2f}"
+        )
+    else:
+        label = (
+            f"RA: {ra:.5f}, Dec: {dec:.5f}<br>"
+            f"W1-W2: {w1_w2:.2f}, W2-W3: {w2_w3:.2f}"
+        )
+
     tooltip = plugins.PointHTMLTooltip(
         scatter,
-        labels=[
-            f"RA: {ra:.5f}, Dec: {dec:.5f}<br>W1-W2: {w1_w2:.2f}, W2-W3: {w2_w3:.2f}"
-        ],
+        labels=[label],
         css="background-color: white; color: black; font-size: 14px;",
     )
     plugins.connect(fig, tooltip)
