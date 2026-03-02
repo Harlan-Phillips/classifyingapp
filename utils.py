@@ -328,8 +328,6 @@ def get_lc(s, name):
                 "alert_mag",
                 "alert_ra",
                 "alert_dec",
-                "ra",
-                "dec",
                 "forcediffimflux",
                 "forcediffimfluxunc",
                 "limmag3sig",
@@ -342,6 +340,10 @@ def get_lc(s, name):
             )
             lc["field"] = lc["field_alerts"].combine_first(lc["field_forced30d"])
             lc["isalert"] = lc["isalert_alerts"].combine_first(lc["isalert_forced30d"])
+            if "ra_alerts" in lc.columns and "ra_forced30d" in lc.columns:
+                lc["ra"] = lc["ra_alerts"].combine_first(lc["ra_forced30d"])
+            if "dec_alerts" in lc.columns and "dec_forced30d" in lc.columns:
+                lc["dec"] = lc["dec_alerts"].combine_first(lc["dec_forced30d"])
             lc = lc.drop(
                 [
                     "fid_alerts",
@@ -352,6 +354,10 @@ def get_lc(s, name):
                     "programid_forced30d",
                     "isalert_alerts",
                     "isalert_forced30d",
+                    "ra_alerts",
+                    "ra_forced30d",
+                    "dec_alerts",
+                    "dec_forced30d",
                 ],
                 axis=1,
             )
@@ -456,8 +462,6 @@ def get_lc(s, name):
                 "alert_mag",
                 "alert_ra",
                 "alert_dec",
-                "ra",
-                "dec",
                 "programpi",
                 "nid",
                 "rbversion",
@@ -498,6 +502,11 @@ def get_lc(s, name):
             lc = lc.drop(cols_to_drop_existing, axis=1)
             lc["fid"] = lc["fid_alerts"].combine_first(lc["fid_30d"])
             lc["isalert"] = lc["isalert_alerts"].combine_first(lc["isalert_30d"])
+            # Combine RA/Dec from previous detections
+            if "ra_alerts" in lc.columns and "ra_30d" in lc.columns:
+                lc["ra"] = lc["ra_alerts"].combine_first(lc["ra_30d"])
+            if "dec_alerts" in lc.columns and "dec_30d" in lc.columns:
+                lc["dec"] = lc["dec_alerts"].combine_first(lc["dec_30d"])
             lc = lc.drop(
                 [
                     "fid_alerts",
@@ -509,6 +518,10 @@ def get_lc(s, name):
                     "isalert_alerts",
                     "isalert_30d",
                     "pid",
+                    "ra_alerts",
+                    "ra_30d",
+                    "dec_alerts",
+                    "dec_30d",
                 ],
                 axis=1,
                 errors="ignore",
@@ -2206,8 +2219,16 @@ def fetch_transient_data(kowalski_session, source_id):
         # Create the polar plot using original 'dets'
         # Convert original alert packets to DataFrame for polar plot function
         ztf_alerts_for_polar = pd.DataFrame()
-        if dets:
-            ztf_alerts_for_polar = pd.DataFrame([det["candidate"] for det in dets])
+        if not detections_lc.empty:
+            ztf_alerts_for_polar = detections_lc.copy()
+
+            # Ensure RA/Dec exist
+            required_cols = ["ra", "dec"]
+            missing = [
+                col for col in required_cols if col not in ztf_alerts_for_polar.columns
+            ]
+            if missing:
+                logging.warning(f"Missing columns for polar plot: {missing}")
 
         polar_plot_path = os.path.join(
             "static", "light_curves", f"{source_id}_polar_plot.html"
