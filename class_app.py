@@ -279,7 +279,7 @@ def prefetch_transient_data(kowalski_session, user_id):
     """Prefetch data for the next transient."""
     with class_app.app_context():  # Push application context manually
         try:
-            next_source_id = get_random_id()
+            next_source_id = get_random_id(user_id=user_id)
             prefetched_data = fetch_transient_data(kowalski_session, next_source_id)
             if prefetched_data:
                 # Store the prefetched data in the cache instead of session
@@ -448,12 +448,58 @@ def export_test_transients():
 
     return send_file(output, as_attachment=True, download_name='test_transients.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-def get_random_id():
+def get_random_id(user_id):
+    """Return a random, not-yet-classified source_id for the given user.
+
+    Tries, in order:
+    1. Any ID the user has not classified yet and that is not the last shown.
+    2. Any ID the user has not classified yet.
+    3. Any ID that is not the last shown.
+    4. Any ID at all (fallback).
+    """
     test_transients_ids = load_test_transients_ids()
     if not test_transients_ids:
         flash('No test transients available.', 'danger')
         return redirect(url_for('index'))
-    random_source_id = random.choice(test_transients_ids)
+
+    last_random_source_id = session.get("last_random_source_id")
+    try:
+        user_id_int = int(user_id)
+    except Exception:
+        user_id_int = user_id
+
+    # Find all source_ids this user has already classified
+    try:
+        classified_ids = {
+            row[0]
+            for row in db.session.query(Classification.source_id)
+            .filter_by(user_id=user_id_int)
+            .distinct()
+        }
+    except Exception:
+        classified_ids = set()
+
+    # Build candidate pools with progressive relaxation
+    unclassified = [sid for sid in test_transients_ids if sid not in classified_ids]
+    unclassified_not_last = [
+        sid for sid in unclassified if sid != last_random_source_id
+    ]
+    not_last = [
+        sid for sid in test_transients_ids if sid != last_random_source_id
+    ]
+
+    if unclassified_not_last:
+        candidates = unclassified_not_last
+        pool_name = "unclassified_not_last"
+    elif unclassified:
+        candidates = unclassified
+        pool_name = "unclassified"
+    elif not_last:
+        candidates = not_last
+    else:
+        candidates = test_transients_ids
+
+    random_source_id = random.choice(candidates)
 
     return random_source_id
 
@@ -467,8 +513,21 @@ def random_transient():
     cached_transient = transient_cache.get(user_id) # Use get() instead of pop() here
 
     if cached_transient and cached_transient.get('status') == 'complete':
-        # Use the prefetched data by redirecting to its specific URL
+        # Use the prefetched data, but never show the same transient twice in a row.
         source_id = cached_transient['source_id']
+        last_source_id = session.get("last_random_source_id")
+
+        if source_id == last_source_id:
+            # Treat as if there is no usable cache to satisfy UX requirement.
+            new_source_id = get_random_id(user_id=user_id)
+
+            # Start prefetching immediately for the following click
+            thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
+            thread.start()
+
+            session["last_random_source_id"] = new_source_id
+            return redirect(url_for('classify_source', source_id=new_source_id))
+
         data = cached_transient['data']
         
         # The comprehensive raw_alerts data is already prepared in the cached data
@@ -484,12 +543,12 @@ def random_transient():
             # Check the origins of the alerts to see data sources
             origins = [alert.get('origin', 'unknown') for alert in raw_alerts]
             logging.debug(f"Alert origins: {Counter(origins)}")
-
+        
         # Update alert count to match raw_alerts length if needed
         if alert_count != len(raw_alerts):
             logging.debug(f"Updating alert_count from {alert_count} to {len(raw_alerts)}")
             data['alert_count'] = len(raw_alerts)
-
+        
         # Add VLASS images from session
         data['vlass_images'] = session.pop('vlass_images', [])
         
@@ -497,15 +556,18 @@ def random_transient():
         thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
         thread.start()
 
+        session["last_random_source_id"] = source_id
         return render_template('classify.html', **data)
       
     else:
         # No valid prefetched data, fetch a new random transient
         logging.debug("No valid prefetched data found. Getting new random ID.")
-        new_source_id = get_random_id()
+        new_source_id = get_random_id(user_id=user_id)
+
         # Start prefetching immediately since we know we need new data
         thread = Thread(target=prefetch_transient_data, args=(kowalski_session, user_id))
         thread.start()
+        session["last_random_source_id"] = new_source_id
         return redirect(url_for('classify_source', source_id=new_source_id))
 
 @class_app.route('/user_classifications')
