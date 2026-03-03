@@ -1870,7 +1870,9 @@ def wise_xmatch(s, ra, dec, radius=3):
         return None, None, None, None
 
 
-def plot_wise(s, name, ra, dec, output_path):
+def plot_wise(s, name, ra, dec, output_path, ps1_dist=None):
+    # Transient position (before wise_xmatch overwrites ra, dec with WISE source position)
+    ra_transient, dec_transient = ra, dec
     # WISE data (RA, Dec, WISE magnitudes and, if available, their uncertainties)
     ra, dec, wmag, wmag_err = wise_xmatch(s, ra, dec)
 
@@ -1881,6 +1883,11 @@ def plot_wise(s, name, ra, dec, output_path):
     if len(wmag) != 3:
         print("WISE magnitudes are incomplete.")
         return None
+
+    # Distance from transient to WISE source (arcsec)
+    coord_transient = SkyCoord(ra=ra_transient, dec=dec_transient, unit="deg")
+    coord_wise = SkyCoord(ra=ra, dec=dec, unit="deg")
+    wise_offset_arcsec = coord_transient.separation(coord_wise).arcsec
 
     w1, w2, w3 = wmag
     w1_w2 = w1 - w2
@@ -1941,6 +1948,21 @@ def plot_wise(s, name, ra, dec, output_path):
     ax.set_title(f"WISE Color-Color Plot\n(RA: {ra:.5f}, Dec: {dec:.5f})", fontsize=16)
     ax.legend()
     ax.grid(alpha=0.1)
+
+    # Distance labels in top right corner
+    dist_lines = [f"WISE offset: {wise_offset_arcsec:.2f}"]
+    if ps1_dist is not None:
+        dist_lines.append(f"PS1 closest: {ps1_dist:.2f}")
+    ax.text(
+        0.95,
+        0.95,
+        "\n".join(dist_lines),
+        transform=ax.transAxes,
+        fontsize=12,
+        ha="right",
+        va="top",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.8),
+    )
 
     # Tooltips and interactive plot
     if w1_w2_err is not None and w2_w3_err is not None:
@@ -2091,6 +2113,36 @@ def fetch_transient_data(kowalski_session, source_id):
             f"DRB - Med: {med_drb}, Min: {min_drb}, Max: {max_drb}, Avg: {avg_drb}"
         )
 
+        # Aggregate Pan-STARRS data for closest PS1 distance (used by WISE plot and template)
+        pan_starrs_data = []
+        seen_sgscore1 = set()
+        if dets:
+            for det in dets:
+                candidate = det["candidate"]
+                if (
+                    "distpsnr1" in candidate
+                    and candidate["distpsnr1"] != -999.0
+                    and "sgscore1" in candidate
+                    and candidate["sgscore1"] != -999.0
+                    and candidate["distpsnr1"] <= 5
+                ):
+                    if candidate["sgscore1"] not in seen_sgscore1:
+                        pan_starrs_data.append(
+                            {
+                                "distpsnr1": candidate["distpsnr1"],
+                                "sgscore1": candidate["sgscore1"],
+                            }
+                        )
+                        seen_sgscore1.add(candidate["sgscore1"])
+        pan_starrs_df = pd.DataFrame(pan_starrs_data)
+        if not pan_starrs_df.empty:
+            closest_ps1 = pan_starrs_df.loc[pan_starrs_df["distpsnr1"].idxmin()]
+            ps1_dist = closest_ps1["distpsnr1"]
+            ps1_sgs = closest_ps1["sgscore1"]
+        else:
+            ps1_dist = None
+            ps1_sgs = None
+
         # Directories for cutouts and plots
         cutout_dir = os.path.join(basedir, "static", "cutouts")
         light_cur = os.path.join(basedir, "static", "light_curves")
@@ -2102,7 +2154,7 @@ def fetch_transient_data(kowalski_session, source_id):
             wise_filename = f"static/wise_plots/{source_id}_wise_plot.html"
         else:
             wise_result = plot_wise(
-                kowalski_session, source_id, ra, dec, wise_plot_path
+                kowalski_session, source_id, ra, dec, wise_plot_path, ps1_dist=ps1_dist
             )
             # Handle the case where plot_wise returns None
             if wise_result:
@@ -2227,42 +2279,6 @@ def fetch_transient_data(kowalski_session, source_id):
                 )
         else:
             logging.debug("No SDSS association found")
-
-        # Aggregate Pan-STARRS data and remove duplicates from original 'dets'
-        pan_starrs_data = []
-        seen_sgscore1 = set()
-        # Use the original 'dets' list here to check alert packet info
-        if dets:  # Check if dets is not empty
-            for det in dets:
-                candidate = det["candidate"]
-                # Filter based on your conditions
-                if (
-                    "distpsnr1" in candidate
-                    and candidate["distpsnr1"] != -999.0
-                    and "sgscore1" in candidate
-                    and candidate["sgscore1"] != -999.0
-                    and candidate["distpsnr1"] <= 5
-                ):
-                    if candidate["sgscore1"] not in seen_sgscore1:
-                        pan_starrs_data.append(
-                            {
-                                "distpsnr1": candidate["distpsnr1"],
-                                "sgscore1": candidate["sgscore1"],
-                            }
-                        )
-                        seen_sgscore1.add(candidate["sgscore1"])
-
-        # Create DataFrame only from filtered data
-        pan_starrs_df = pd.DataFrame(pan_starrs_data)
-
-        if not pan_starrs_df.empty:
-            # Find the closest match
-            closest_ps1 = pan_starrs_df.loc[pan_starrs_df["distpsnr1"].idxmin()]
-            ps1_dist = closest_ps1["distpsnr1"]
-            ps1_sgs = closest_ps1["sgscore1"]
-        else:
-            ps1_dist = None
-            ps1_sgs = None
 
         # Create the polar plot using original 'dets'
         # Convert original alert packets to DataFrame for polar plot function
